@@ -1,0 +1,48 @@
+.button{
+  font-weight: $weight-bold;
+}
+
+.button.is-outlined { //MAKE OUTLINED STILL WORK ON HOVER
+  &.is-info, &.is-primary, &.is-warning, &.is-success, &.is-danger {
+    &:hover, &:focus {
+      background-color: transparent;
+      color: inherit;
+    }
+  }
+
+  &.is-info {
+    &:hover, &:focus {
+      border-color: darken($info, 2.5%); //2.5% https://github.com/jgthms/bulma/blob/master/sass/elements/button.sass#L126
+      color: darken($info, 2.5%);
+      color:red;
+    }
+  }
+
+  &.is-primary {
+    &:hover, &:focus {
+      border-color: darken($primary, 2.5%);
+      color: darken($primary, 2.5%);
+    }
+  }
+
+  &.is-warning {
+    &:hover, &:focus {
+      border-color: darken($warning, 2.5%);
+      color: darken($warning, 2.5%);
+    }
+  }
+
+  &.is-success {
+    &:hover, &:focus {
+      border-color: darken($success, 2.5%);
+      color: darken($success, 2.5%);
+    }
+  }
+
+  &.is-danger {
+    &:hover, &:focus {
+      border-color: darken($danger, 2.5%);
+      color: darken($danger, 2.5%);
+    }
+  }
+}

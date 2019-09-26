@@ -1,0 +1,28 @@
+.light{
+  width:24px;
+  height:24px;
+  display: inline-block;
+  border-radius: 50%;
+  border: 2px solid $grey-light;
+  background-color: $light;
+  &.is-success{
+    background-color: $success;
+    //border-color: $success-invert;
+  }
+  &.is-danger{
+    background-color: $danger;
+    //border-color: $danger-invert;
+  }
+  &.is-warning{
+    background-color: $warning;
+    //border-color: $warning-invert;
+  }
+  &.is-info{
+    background-color: $info;
+    //border-color: $info-invert;
+  }
+  &.is-primary{
+    background-color: $primary;
+    //border-color: $primary-invert;
+  }
+}

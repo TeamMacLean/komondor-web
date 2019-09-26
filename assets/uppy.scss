@@ -1,0 +1,5 @@
+@import '~@uppy/dashboard/src/style';
+
+.uppy-Dashboard-browse{
+  @extend .button;
+}

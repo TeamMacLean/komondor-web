@@ -1,0 +1,139 @@
+// Import Bulma's core
+@import "~bulma/sass/utilities/_all";
+
+// Set your colors
+$primary: #9c88ff;
+//$primary:#3C3F41;
+$primary-invert: findColorInvert($primary);
+$twitter: #4099FF;
+$twitter-invert: findColorInvert($twitter);
+
+// Setup $colors to use as bulma classes (e.g. 'is-twitter')
+$colors: (
+  "white": ($white, $black),
+  "black": ($black, $white),
+  "light": ($light, $light-invert),
+  "dark": ($dark, $dark-invert),
+  "primary": ($primary, $primary-invert),
+  "info": ($info, $info-invert),
+  "success": ($success, $success-invert),
+  "warning": ($warning, $warning-invert),
+  "danger": ($danger, $danger-invert),
+  "twitter": ($twitter, $twitter-invert)
+);
+
+// Links
+//$link: $primary;
+//$link-invert: $primary-invert;
+//$link-focus-border: $primary;
+$link: $blue;
+//$link-hover: $blue;
+$link-invert: $blue-invert;
+$link-focus-border: $blue;
+
+$primary-dark: darken($primary, 4);
+$primary-light: lighten($primary, 4);
+
+.has-text-text{
+  color: $text !important;
+}
+
+
+// Import Bulma and Buefy styles
+@import "~bulma";
+@import "~buefy/src/scss/buefy";
+
+// MDI
+$mdi-font-path: "~@mdi/font/fonts";
+@import "~@mdi/font/scss/materialdesignicons";
+
+
+//CUSTOM
+
+
+@import "error";
+@import "nav";
+@import "news";
+@import "animation";
+@import "buttons";
+@import "lights";
+@import "uppy";
+@import "v-tooltip";
+
+.tag:not(body) {
+  &.is-outlined {
+    background-color: transparent;
+    border: 1px solid $light;
+  }
+}
+
+.is-vertical-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: calc(100vh - 52px);
+}
+
+.is-margin-auto {
+  margin: auto;
+}
+
+.card {
+  border-radius: $radius;
+}
+
+.bd-header .subtitle {
+  color: #7a7a7a;
+}
+
+//.field.has-addons .button:last-child:not(:only-child) { //for username field
+//  border-top-left-radius: 0;
+//  border-bottom-left-radius: 0;
+//}
+
+.truncate {
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.container.is-large {
+  max-width: 1012px;
+}
+
+.is--1 {
+  font-size: 4rem;
+}
+
+.m-1 {
+  margin: 1.5rem;
+}
+
+.m-2 {
+  margin: 3rem;
+}
+
+.p-1 {
+  padding: 1.5rem;
+}
+
+.p-2 {
+  padding: 3rem;
+}
+
+.pb-1 {
+  padding-bottom: 1rem;
+}
+
+.mb-1 {
+  margin-bottom: 1rem;
+}
+
+.modal-card {
+  border-radius: 6px;
+}
+
+.break-all{
+  word-break: break-all;
+}
