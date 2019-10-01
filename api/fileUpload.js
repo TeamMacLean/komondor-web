@@ -1,4 +1,4 @@
-const File = require('./models/File');
+import File from './models/File'
 
 export default {
 
@@ -9,12 +9,12 @@ export default {
     const name = event.file.id;
     const originalName = parsed.filename.decoded;
     const type = parsed.filetype.decoded;
-    const captureID = parsed.captureID.decoded;
+    const uploadID = parsed.uploadID.decoded;
     const description = parsed.description ? parsed.description.decoded : null;
 
-    if (name && originalName && type && captureID) {
+    if (name && originalName && type && uploadID) {
       new File({
-        captureID,
+        uploadID,
         name,
         type,
         originalName,

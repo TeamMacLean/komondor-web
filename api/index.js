@@ -12,6 +12,7 @@ import groupRoutes from './routes/groups';
 import userRoutes from './routes/users';
 import newsRoutes from './routes/news';
 import Utils from "./utils";
+import path from 'path';
 
 try {
   mongoose.connect('mongodb://localhost:27017/komondor', {useNewUrlParser: true});
@@ -22,8 +23,10 @@ try {
 
 //TUS
 const tusServer = new tus.Server();
+console.log('dir',__dirname);
 tusServer.datastore = new tus.FileStore({
-  path: '/files'
+  directory: path.join(__dirname, '../','files'),
+  path: '/api/uploads'
 });
 tusServer.on(tus.EVENTS.EVENT_UPLOAD_COMPLETE, (event) => {
   fileUpload.create(event);
@@ -37,7 +40,11 @@ tusServer.on(tus.EVENTS.EVENT_UPLOAD_COMPLETE, (event) => {
 const app = express();
 
 //tus route
-app.all([process.env.TUS_PATH, process.env.TUS_PATH + '/*', process.env.TUS_PATH + '/*.*'], tusServer.handle.bind(tusServer));
+// const uploadApp = express();
+// uploadApp.all('*', tusServer.handle.bind(tusServer));
+// app.use('/api/uploads/', uploadApp);
+const filesURL = '/uploads';
+app.all([filesURL, filesURL + '/*', filesURL + '/*.*'], tusServer.handle.bind(tusServer));
 
 app.use((req, res, next) => {
   console.log(req.method, req.url);

@@ -19,16 +19,16 @@
   }
 
   export default {
-    props: [],
+    props: ['uploadID'],
     mounted() {
 
 
       const uppy = Uppy({
         debug: true,
         autoProceed: false,
-        // meta: {
-        //   captureID: captureID
-        // },
+        meta: {
+          uploadID: this.uploadID
+        },
         restrictions: {
           maxFileSize: 20000 * 1000000,
           maxNumberOfFiles: 999,
@@ -53,61 +53,62 @@
           ],
           // browserBackButtonClose: true
         })
-        .use(Tus, {endpoint: '/files/'});
+        // .use(Tus, {endpoint: '/api/files/'});
+    .use(Tus, {endpoint: '/api/uploads/'});
 
       uppy.on('complete', result => {
         console.log('successful files:', result.successful);
         console.log('failed files:', result.failed);
 
-        const successfulFileNames = result.successful.map(s => {
-          return s.name;
-        }).join(', ');
-        const failedFileNames = result.failed.map(s => {
-          return s.name;
-        }).join(', ');
-
-        function displaySuccess() {
-          // self.$buefy.dialog.alert('Good (TODO)');
-          // Swal.fire({
-          //     title: 'Good job!',
-          //     text: successfulFileNames + ' successfully uploaded',
-          //     type: 'success',
-          //     onAfterClose: function () {
-          //       location.reload();
-          //     }
-          //   })
-        }
-
-        function displayFailed() {
-          // self.$buefy.dialog.alert('Bad (TODO)');
-          // Swal.fire({
-          //   type: 'error',
-          //   title: 'Oops...',
-          //   text: failedFileNames + ' failed to upload',
-          //   onAfterClose: function () {
-          //     if (result.successful.length) {
-          //       displaySuccess();
-          //     } else {
-          //       location.reload();
-          //     }
-          //   }
-          // })
-
-          // this.$buefy.dialog.alert({
-          //   title: 'Error',
-          //   message: failedFileNames + ' failed to upload',
-          //   type: 'is-danger',
-          //   hasIcon: true,
-          //   icon: 'times-circle',
-          //   iconPack: 'fa'
-          // })
-        }
-
-        if (result.failed.length) {
-          displayFailed(); //calls success after if available
-        } else {
-          displaySuccess();
-        }
+        // const successfulFileNames = result.successful.map(s => {
+        //   return s.name;
+        // }).join(', ');
+        // const failedFileNames = result.failed.map(s => {
+        //   return s.name;
+        // }).join(', ');
+        //
+        // function displaySuccess() {
+        //   // self.$buefy.dialog.alert('Good (TODO)');
+        //   // Swal.fire({
+        //   //     title: 'Good job!',
+        //   //     text: successfulFileNames + ' successfully uploaded',
+        //   //     type: 'success',
+        //   //     onAfterClose: function () {
+        //   //       location.reload();
+        //   //     }
+        //   //   })
+        // }
+        //
+        // function displayFailed() {
+        //   // self.$buefy.dialog.alert('Bad (TODO)');
+        //   // Swal.fire({
+        //   //   type: 'error',
+        //   //   title: 'Oops...',
+        //   //   text: failedFileNames + ' failed to upload',
+        //   //   onAfterClose: function () {
+        //   //     if (result.successful.length) {
+        //   //       displaySuccess();
+        //   //     } else {
+        //   //       location.reload();
+        //   //     }
+        //   //   }
+        //   // })
+        //
+        //   // this.$buefy.dialog.alert({
+        //   //   title: 'Error',
+        //   //   message: failedFileNames + ' failed to upload',
+        //   //   type: 'is-danger',
+        //   //   hasIcon: true,
+        //   //   icon: 'times-circle',
+        //   //   iconPack: 'fa'
+        //   // })
+        // }
+        //
+        // if (result.failed.length) {
+        //   displayFailed(); //calls success after if available
+        // } else {
+        //   displaySuccess();
+        // }
 
       });
 

@@ -14,7 +14,10 @@ const schema = new Schema({
 schema.pre('validate', function () {
   return Group.find({})
     .then(allOthers => {
-      return Utils.generateSafeName(this.name, allOthers);
+
+      allOthers.filter(f => f._id.toString() === this._id.toString());
+
+      return Utils.generateSafeName(this.name, allOthers.filter(f => f._id.toString() !== this._id.toString()));
     })
     .then(safeName => {
       this.safeName = safeName;

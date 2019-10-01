@@ -26,7 +26,7 @@ const schema = new Schema({
 schema.pre('validate', function () {
   return Run.find({})
     .then(allOthers => {
-      return Utils.generateSafeName(this.scientificName, allOthers);
+      return Utils.generateSafeName(this.name, allOthers.filter(f => f._id.toString() !== this._id.toString()));
     })
     .then(safeName => {
       this.safeName = safeName;

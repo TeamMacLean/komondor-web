@@ -102,16 +102,16 @@
 
   export default {
     components: {SigninCard, Home},
-    fetch({store, redirect}) {
-      if (store.state.auth.loggedIn) {
-        return Promise.all([
-          store.dispatch('refreshProjects'),
-          store.dispatch('refreshNews')
-        ])
-      } else {
-        return Promise.resolve()
-      }
-    },
+    // fetch({store, redirect}) {
+      //   if (store.state.auth.loggedIn) {
+      //     return Promise.all([
+      //       // store.dispatch('refreshProjects'),
+      //       // store.dispatch('refreshNews')
+      //     ])
+      //   } else {
+      //     return Promise.resolve()
+      //   }
+    // },
     computed: {
       renderHome() {
         return this.$store.state.auth.loggedIn

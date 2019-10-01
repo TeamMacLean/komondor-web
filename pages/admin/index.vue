@@ -21,13 +21,15 @@
             <div class="columns" v-for="i in Math.ceil(groups.length / 4)">
               <div class="column is-3" v-for="group in groups.slice((i - 1) * 4, i * 4)">
                 <div class="card">
-                  <div class="card-content">
+                  <div class="card-content truncate">
                     <a @click="editGroup(group)">
-                      <p class="title is-4 truncate">{{group.name}}</p>
+                      <p class="title is-4 truncate">
+                        {{group.name}}
+                      </p>
                     </a>
-                    <p class="subtitle is-6 truncate">@{{group.safeName}}</p>
+                    <p class="subtitle is-6">@{{group.safeName}}</p>
 
-                    <span class="tag is-danger" v-if="group.deleted">Danger</span>
+                    <b-tag v-if="group.deleted" type="is-danger">Deleted</b-tag>
                   </div>
                 </div>
               </div>
@@ -38,11 +40,11 @@
           <b-tab-item label="Projects">
             <ProjectList/>
             <!--<ul>-->
-              <!--<li v-for="project in projects">-->
-                <!--<nuxt-link :to="{ name: 'project', query: { id: project._id }}">-->
-                  <!--{{project.name}}-->
-                <!--</nuxt-link>-->
-              <!--</li>-->
+            <!--<li v-for="project in projects">-->
+            <!--<nuxt-link :to="{ name: 'project', query: { id: project._id }}">-->
+            <!--{{project.name}}-->
+            <!--</nuxt-link>-->
+            <!--</li>-->
             <!--</ul>-->
           </b-tab-item>
           <b-tab-item label="Samples">
@@ -63,6 +65,7 @@
 <script>
   import GroupModal from '~/components/groups/editModal.vue';
   import ProjectList from '~/components/projects/ProjectList.vue'
+
   export default {
     middleware: ['auth', 'admin'],
     components: {GroupModal, ProjectList},
@@ -81,15 +84,22 @@
         // groupLdapList: []
       }
     },
-    fetch({store}) {
+    mounted() {
       return Promise.all([
-        store.dispatch('refreshProjects'),
-        store.dispatch('refreshGroups'),
-        store.dispatch('refreshUsers'),
-        store.dispatch('refreshSamples')
+        this.$store.dispatch('refreshProjects'),
+        this.$store.dispatch('refreshGroups'),
+        this.$store.dispatch('refreshUsers'),
+        this.$store.dispatch('refreshSamples')
       ])
-
     },
+    // fetch({store}) {
+    // return Promise.all([
+    //   store.dispatch('refreshProjects'),
+    //   store.dispatch('refreshGroups'),
+    //   store.dispatch('refreshUsers'),
+    //   store.dispatch('refreshSamples')
+    // ])
+    // },
 
     computed: {
       samples() {

@@ -56,6 +56,10 @@ router.route('/groups/edit')
 
             group.ldapGroups = req.body.ldapGroups;
             group.name = req.body.name;
+            console.log('sendToEna', req.body);
+            if (req.body.sendToEna) {
+              group.sendToEna = req.body.sendToEna;
+            }
 
             group.save()
               .then(savedGroup => {

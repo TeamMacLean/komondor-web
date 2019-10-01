@@ -35,9 +35,14 @@ export default {
     'nuxt-buefy',
     // 'nuxt-fontawesome', //V
   ],
+  pwa:{
+    meta:{
+      theme_color:'#8D80FA'
+    }
+  },
   buefy: {
     css: false,
-    // materialDesignIcons: true,
+    materialDesignIcons: false,
     // defaultIconPack: 'mdi',
     // defaultIconPack: 'fas',
     // defaultIconComponent: 'font-awesome-icon'

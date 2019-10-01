@@ -1,12 +1,18 @@
 export const state = () => ({
   // stock: null,
-  users: [],
   user: null,
+  users: [],
+  refreshingUsers:false,
   groups: [],
+  refreshingGroups:false,
   projects: [],
+  refreshingProjects:false,
   samples: [],
+  refreshingSamples:false,
   runs:[],
-  news: []
+  refreshingRuns:false,
+  news: [],
+  refreshingNews:false,
 });
 
 export const getters = {
@@ -24,26 +30,26 @@ export const getters = {
     }
   },
 
-  getCachedProjectById: state => (id) => {
-    const found = state.projects.filter(p => {
-      return p.id === id;
-    });
-    if (found.length) {
-      return found[0];
-    } else {
-      return null;
-    }
-  },
-  getCachedSampleById: state => (id) => {
-    const found = state.samples.filter(p => {
-      return p.id === id;
-    });
-    if (found.length) {
-      return found[0];
-    } else {
-      return null;
-    }
-  }
+  // getCachedProjectById: state => (id) => {
+  //   const found = state.projects.filter(p => {
+  //     return p.id === id;
+  //   });
+  //   if (found.length) {
+  //     return found[0];
+  //   } else {
+  //     return null;
+  //   }
+  // },
+  // getCachedSampleById: state => (id) => {
+  //   const found = state.samples.filter(p => {
+  //     return p.id === id;
+  //   });
+  //   if (found.length) {
+  //     return found[0];
+  //   } else {
+  //     return null;
+  //   }
+  // }
   // filteredGroups: state => (filterText) => {
   //   if (filterText && filterText.length) {
   //     return state.projects.filter(p => p.name.toLowerCase().indexOf(filterText.toLowerCase()) > -1)
@@ -92,59 +98,76 @@ export const actions = {
   async nuxtServerInit(store, context) {
   },
   async refreshNews({store,commit}) {
-
+    // commit('refreshingNews', true);
     return this.$axios.get('/api/news')
       .then(({data}) => {
         commit('setNews', data.news);
       })
       .catch(err => {
-        // commit('setNews', [])
+      })
+      .finally(()=>{
+        // commit('refreshingNews', false);
       })
 
   },
   async refreshUsers({commit}) {
+    // commit('refreshingUsers', true);
     return this.$axios.get('/api/users')
       .then(({data}) => {
         commit('setUsers', data.users);
       })
       .catch((err) => {
-        // commit('setUsers', []);
+      })
+      .finally(()=>{
+        // commit('refreshingUsers', false);
       })
   },
   async refreshGroups({commit}) {
+    // commit('refreshingGroups', true);
     return this.$axios.get('/api/groups')
       .then(({data}) => {
         commit('setGroups', data.groups);
       })
       .catch((err) => {
-        // commit('setGroups', []);
+      })
+      .finally(()=>{
+        // commit('refreshingGroups', false);
       })
   },
   async refreshProjects({commit}) {
+    // commit('refreshingProjects', true);
     return this.$axios.get('/api/projects')
       .then(({data}) => {
         commit('setProjects', data.projects);
       })
       .catch((err) => {
-        // commit('setProjects', []);
+      })
+      .finally(()=>{
+        // commit('refreshingProjects', false);
       })
   },
   async refreshSamples({commit}) {
+    // commit('refreshingSamples', true);
     return this.$axios.get('/api/samples')
       .then(({data}) => {
         commit('setSamples', data.samples);
       })
       .catch((err) => {
-        // commit('setSamples', []);
+      })
+      .finally(()=>{
+        // commit('refreshingSamples', false);
       })
   },
   async refreshRuns({commit}) {
+    // commit('refreshingRuns', true);
     return this.$axios.get('/api/runs')
       .then(({data}) => {
         commit('setRuns', data.runs);
       })
       .catch((err) => {
-        // commit('setRuns', []);
+      })
+      .finally(()=>{
+        // commit('refreshingRuns', false);
       })
   },
 

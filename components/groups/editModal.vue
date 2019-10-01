@@ -43,7 +43,7 @@
             </b-field>
 
             <div class="field" v-if="groupToEdit">
-              <b-switch :value="groupToEdit.sendToEna">
+              <b-switch :value="groupToEdit.sendToEna" v-model="sendToEna">
                 Send to ENA
               </b-switch>
             </div>
@@ -88,9 +88,11 @@
         if (this.groupToEdit) {
           this.newGroupsName = this.groupToEdit.name;
           this.ldapGroups = this.groupToEdit.ldapGroups;
+          this.sendToEna = this.groupToEdit.sendToEna;
         } else {
           this.newGroupsName = '';
           this.ldapGroups = [];
+          this.sendToEna = false;
         }
         return this.groupToEdit
       }
@@ -104,7 +106,8 @@
           return this.$axios.post('/api/groups/edit', {
             id: this.groupToEdit._id,
             name: this.newGroupsName,
-            ldapGroups: this.ldapGroups
+            ldapGroups: this.ldapGroups,
+            sendToEna:this.sendToEna
           })
             .then(savedGroup => {
               this.$parent.isGroupModalActive = false;
@@ -149,7 +152,6 @@
       },
       addLdapGroup() {
         if (this.newGroupLdap) {
-          console.log('b', this.ldapGroups);
           this.ldapGroups.push(this.newGroupLdap);
           this.newGroupLdap = '';
         }

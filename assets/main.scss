@@ -34,7 +34,7 @@ $link-focus-border: $blue;
 $primary-dark: darken($primary, 4);
 $primary-light: lighten($primary, 4);
 
-.has-text-text{
+.has-text-text {
   color: $text !important;
 }
 
@@ -92,10 +92,17 @@ $mdi-font-path: "~@mdi/font/fonts";
 //}
 
 .truncate {
-  width: 100%;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+  //display: inline-block;
+  //max-width: 100%;
+  //overflow: hidden;
+  //text-overflow: ellipsis;
+  //white-space: nowrap;
+  //vertical-align: top;
 }
 
 .container.is-large {
@@ -107,33 +114,37 @@ $mdi-font-path: "~@mdi/font/fonts";
 }
 
 .m-1 {
-  margin: 1.5rem;
+  margin: 4px;
 }
 
 .m-2 {
-  margin: 3rem;
+  margin: 8px;
 }
 
 .p-1 {
-  padding: 1.5rem;
+  padding: 4px;
 }
 
 .p-2 {
-  padding: 3rem;
+  padding: 8px;
 }
 
 .pb-1 {
-  padding-bottom: 1rem;
+  padding-bottom: 4px;
 }
 
 .mb-1 {
-  margin-bottom: 1rem;
+  margin-bottom: 4px;
+}
+
+.mb-2 {
+  margin-bottom: 8px;
 }
 
 .modal-card {
   border-radius: 6px;
 }
 
-.break-all{
+.break-all {
   word-break: break-all;
 }

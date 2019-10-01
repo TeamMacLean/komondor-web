@@ -16,19 +16,21 @@
             <b-field>
               <b-input placeholder="Find a project..." v-model="projectFilterText" @input="showAll"></b-input>
             </b-field>
-            <ul>
-              <li v-for="project in filteredProjects" class="truncate">
+            <ul id="sidebar-projects">
+              <b-loading :is-full-page="false" :active="$store.state.refreshingProjects" :can-cancel="false"></b-loading>
+              <li v-for="project in filteredProjects" v-tooltip.top-center='project.name'>
+                <div class="truncate mb-2">
 
-                <nuxt-link :to="{ name: 'project', query: { id: project._id }}"
-                           class="has-text-weight-bold has-text-text">
-                  <!--<b-icon-->
-                    <!--icon="alpha-p-box-outline"-->
-                    <!--size="is-small"-->
-                    <!--class="has-text-grey">-->
-                  <!--</b-icon>-->
-                  {{project.name}}
-                </nuxt-link>
-
+                  <nuxt-link :to="{ name: 'project', query: { id: project._id }}"
+                             class="has-text-weight-bold">
+                    <b-icon
+                      icon="alpha-p-box-outline"
+                      size="is-small"
+                      class="has-text-grey">
+                    </b-icon>
+                    {{project.name}}
+                  </nuxt-link>
+                </div>
               </li>
               <li style="margin-top:8px;">
                 <a class="has-text-black is-size-7" @click="showAll" v-if="filteredProjects.length && !showingAll">Show
@@ -44,9 +46,10 @@
           <div class="container">
 
             <h2 class="title is-5">
-              Recent
+              Recently added
             </h2>
 
+            <b-loading :is-full-page="false" :active="$store.state.refreshingNews" :can-cancel="false"></b-loading>
             <NewsCard v-for="(news, index) in $store.state.news" :news="news" :key="index"></NewsCard>
           </div>
         </div>
@@ -64,6 +67,14 @@
       return {
         showingAll: false,
         projectFilterText: '',
+      }
+    },
+    mounted() {
+      if (this.$store.state.auth.loggedIn) {
+        return Promise.all([
+          this.$store.dispatch('refreshProjects'),
+          this.$store.dispatch('refreshNews')
+        ])
       }
     },
     methods: {
