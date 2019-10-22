@@ -2,6 +2,9 @@
 
 > TSL Sequence Data
 
+## Config
+copy `.env.example` to `.env`
+
 ## Build Setup
 
 ``` bash
