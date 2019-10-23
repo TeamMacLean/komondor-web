@@ -99,7 +99,7 @@
         error({statusCode: 500, message: 'Project not found'});
       }
 
-      return $axios.get('/api/project', {params: {id: route.query.project}})
+      return $axios.get('/project', {params: {id: route.query.project}})
         .then(res => {
           if (res.status === 200) {
             return {
@@ -128,7 +128,7 @@
         this.sample.group = this.project.group;
         this.sample.project = this.project._id; //required
         // this.project.tags = this.tags;
-        this.$axios.post('/api/samples/new', this.sample)
+        this.$axios.post('/samples/new', this.sample)
           .then(result => {
             this.$buefy.toast.open({
               message: 'Sample created!',

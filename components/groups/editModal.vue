@@ -103,7 +103,7 @@
         //save vs edit
 
         if (this.isEdit) {
-          return this.$axios.post('/api/groups/edit', {
+          return this.$axios.post('/groups/edit', {
             id: this.groupToEdit._id,
             name: this.newGroupsName,
             ldapGroups: this.ldapGroups,
@@ -125,7 +125,7 @@
               })
             })
         } else {
-          return this.$axios.post('/api/groups/new', {name: this.newGroupsName, ldapGroups: this.ldapGroups})
+          return this.$axios.post('/groups/new', {name: this.newGroupsName, ldapGroups: this.ldapGroups})
             .then(savedGroup => {
               this.$parent.isGroupModalActive = false;
               this.$store.dispatch('refreshGroups');
@@ -170,7 +170,7 @@
             // iconPack: 'fa',
             onConfirm: () => {
 
-              return this.$axios.post('/api/groups/delete', {id: this.groupToEdit._id})
+              return this.$axios.post('/groups/delete', {id: this.groupToEdit._id})
                 .then(() => {
                   this.$store.dispatch('refreshGroups');
                   this.$buefy.toast.open('Group deleted!');
@@ -212,7 +212,7 @@
             // iconPack: 'fa',
             onConfirm: () => {
 
-              return this.$axios.post('/api/groups/resurrect', {id: this.groupToEdit._id})
+              return this.$axios.post('/groups/resurrect', {id: this.groupToEdit._id})
                 .then(() => {
                   this.$store.dispatch('refreshGroups');
                   this.$buefy.toast.open('Group resurrected!');

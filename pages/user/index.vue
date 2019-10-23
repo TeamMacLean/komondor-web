@@ -60,7 +60,7 @@
         userNotFound()
       }
 
-      return $axios.get('/api/user', {params: {username: route.query.username, projects: true}})
+      return $axios.get('/user', {params: {username: route.query.username, projects: true}})
         .then(res => {
           if (res.status === 200) {
             if (res.data.user) {

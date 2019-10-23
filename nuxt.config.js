@@ -1,5 +1,3 @@
-import bodyParser from 'body-parser';
-
 require('dotenv').config();
 
 export default {
@@ -20,11 +18,11 @@ export default {
     ],
     // link: [{rel: 'icon', type: 'image/x-icon', href: '/icons/favicon.ico'}],
   },
-  serverMiddleware: [
-    bodyParser.json(),
-    bodyParser.urlencoded({extended: false}),
-    '~/api'
-  ],
+  // serverMiddleware: [
+  //   bodyParser.json(),
+  //   bodyParser.urlencoded({extended: false}),
+  //   '~'
+  // ],
   loading: {color: '#31CF65'},
   css: ['~/assets/main.scss'],
   plugins: [{src: '~/plugins/v-tooltip', ssr: false}],
@@ -54,10 +52,10 @@ export default {
     strategies: {
       local: {
         endpoints: {
-          login: {url: '/api/login', method: 'post', propertyName: 'token'},
+          login: {url: '/login', method: 'post', propertyName: 'token'},
           logout: false,
-          // logout: {url: '/api/logout', method: 'post'},
-          user: {url: '/api/me', method: 'get', propertyName: 'user'}
+          // logout: {url: '/logout', method: 'post'},
+          user: {url: '/me', method: 'get', propertyName: 'user'}
         },
         // tokenRequired: true,
         // tokenType: 'bearer'

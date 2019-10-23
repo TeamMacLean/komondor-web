@@ -63,7 +63,7 @@
       //   })
       // }
 
-      return $axios.get('/api/project', {params: {id: route.query.id}})
+      return $axios.get('/project', {params: {id: route.query.id}})
         .then(res => {
           if (res.status === 200 && res.data.project) {
             // res.data.project.samples = [];

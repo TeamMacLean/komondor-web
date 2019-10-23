@@ -2,7 +2,7 @@
   <div>
 
 
-    <div class="navbar-cusom">
+    <div class="navbar-custom">
       <div class="navbar-left-custom">
         <div class="navbar-brand">
           <nuxt-link class="navbar-item-custom no-hover" to="/">
@@ -10,7 +10,7 @@
           </nuxt-link>
         </div>
 
-        <nuxt-link class="navbar-item-custom" to="/projects">
+        <nuxt-link class="navbar-item-custom" to="/projects" v-if="this.$auth.loggedIn">
           Projects
         </nuxt-link>
       </div>

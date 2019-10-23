@@ -8,7 +8,8 @@
     "dev": "nuxt",
     "build": "nuxt build",
     "start": "nuxt start",
-    "generate": "nuxt generate"
+    "generate": "nuxt generate",
+    "pm2": "pm2 start npm --name komondor -- start"
   },
   "dependencies": {
     "@fortawesome/free-regular-svg-icons": "^5.10.2",

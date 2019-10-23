@@ -2,17 +2,23 @@ export const state = () => ({
   // stock: null,
   user: null,
   users: [],
-  refreshingUsers:false,
+  refreshingUsers: false,
   groups: [],
-  refreshingGroups:false,
+  refreshingGroups: false,
   projects: [],
-  refreshingProjects:false,
+  refreshingProjects: false,
   samples: [],
-  refreshingSamples:false,
-  runs:[],
-  refreshingRuns:false,
+  refreshingSamples: false,
+  runs: [],
+  refreshingRuns: false,
   news: [],
-  refreshingNews:false,
+  refreshingNews: false,
+  libraryTypes: [],
+  sequencingProviders: [],
+  sequencingTechnologies: [],
+  librarySources: [],
+  librarySelections: [],
+  libraryStrategies: [],
 });
 
 export const getters = {
@@ -90,87 +96,140 @@ export const mutations = {
 
   setNews(state, news) {
     state.news = news;
-  }
+  },
+
+
+  setLibraryTypes(state, list) {
+    state.libraryTypes = list;
+  },
+  setSequencingProviders(state, list) {
+    state.sequencingProviders = list;
+  },
+  setSequencingTechnologies(state, list) {
+    state.sequencingTechnologies = list;
+  },
+  setLibrarySources(state, list) {
+    state.librarySources = list;
+  },
+  setLibrarySelections(state, list) {
+    state.librarySelections = list;
+  },
+  setLibraryStrategies(state, list) {
+    state.libraryStrategies = list;
+  },
 
 };
 
 export const actions = {
   async nuxtServerInit(store, context) {
   },
-  async refreshNews({store,commit}) {
+  async refreshNews({store, commit}) {
     // commit('refreshingNews', true);
-    return this.$axios.get('/api/news')
+    return this.$axios.get('/news')
       .then(({data}) => {
         commit('setNews', data.news);
       })
       .catch(err => {
       })
-      .finally(()=>{
-        // commit('refreshingNews', false);
-      })
 
   },
   async refreshUsers({commit}) {
     // commit('refreshingUsers', true);
-    return this.$axios.get('/api/users')
+    return this.$axios.get('/users')
       .then(({data}) => {
         commit('setUsers', data.users);
       })
       .catch((err) => {
       })
-      .finally(()=>{
-        // commit('refreshingUsers', false);
-      })
   },
   async refreshGroups({commit}) {
     // commit('refreshingGroups', true);
-    return this.$axios.get('/api/groups')
+    return this.$axios.get('/groups')
       .then(({data}) => {
         commit('setGroups', data.groups);
       })
       .catch((err) => {
       })
-      .finally(()=>{
-        // commit('refreshingGroups', false);
-      })
   },
   async refreshProjects({commit}) {
     // commit('refreshingProjects', true);
-    return this.$axios.get('/api/projects')
+    return this.$axios.get('/projects')
       .then(({data}) => {
         commit('setProjects', data.projects);
       })
       .catch((err) => {
       })
-      .finally(()=>{
-        // commit('refreshingProjects', false);
-      })
   },
   async refreshSamples({commit}) {
     // commit('refreshingSamples', true);
-    return this.$axios.get('/api/samples')
+    return this.$axios.get('/samples')
       .then(({data}) => {
         commit('setSamples', data.samples);
       })
       .catch((err) => {
       })
-      .finally(()=>{
-        // commit('refreshingSamples', false);
-      })
   },
   async refreshRuns({commit}) {
     // commit('refreshingRuns', true);
-    return this.$axios.get('/api/runs')
+    return this.$axios.get('/runs')
       .then(({data}) => {
         commit('setRuns', data.runs);
       })
       .catch((err) => {
       })
-      .finally(()=>{
-        // commit('refreshingRuns', false);
+  },
+  async refreshLibraryTypes({commit}) {
+    return this.$axios.get('/runs')
+      .then(({data}) => {
+        commit('setRuns', data.runs);
+      })
+      .catch((err) => {
+      })
+  },
+  async refreshSequencingProviders({commit}) {
+    return this.$axios.get('/runs')
+      .then(({data}) => {
+        commit('setRuns', data.runs);
+      })
+      .catch((err) => {
+      })
+  },
+  async refreshSequencingTechnologies({commit}) {
+    return this.$axios.get('/runs')
+      .then(({data}) => {
+        commit('setRuns', data.runs);
+      })
+      .catch((err) => {
+      })
+  },
+  async refreshLibrarySources({commit}) {
+    return this.$axios.get('/runs')
+      .then(({data}) => {
+        commit('setRuns', data.runs);
+      })
+      .catch((err) => {
+      })
+  },
+  async refreshLibrarySelections({commit}) {
+    return this.$axios.get('/runs')
+      .then(({data}) => {
+        commit('setRuns', data.runs);
+      })
+      .catch((err) => {
+      })
+  },
+  async refreshLibraryStrategies({commit}) {
+    return this.$axios.get('/runs')
+      .then(({data}) => {
+        commit('setRuns', data.runs);
+      })
+      .catch((err) => {
       })
   },
 
+  async refreshLibraryAndSequencingStuff({commit}) {
+
+  }
 
 
 };

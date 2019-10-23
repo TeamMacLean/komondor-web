@@ -51,14 +51,14 @@
       }
 
       //use cached project if available
-      const cachedProject = store.getters.getCachedSampleById(route.query.id);
-      if (cachedProject) {
-        return Promise.resolve({
-          project: cachedProject
-        })
-      }
+      // const cachedProject = store.getters.getCachedSampleById(route.query.id);
+      // if (cachedProject) {
+      //   return Promise.resolve({
+      //     project: cachedProject
+      //   })
+      // }
 
-      return $axios.get('/api/sample', {params: {id: route.query.id}})
+      return $axios.get('/sample', {params: {id: route.query.id}})
         .then(res => {
           if (res.status === 200 && res.data.sample) {
             // res.data.project.samples = [];

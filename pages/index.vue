@@ -40,7 +40,7 @@
                 <br>
 
                 <div class="columns">
-                  <div class="column">
+                  <div class="column is-4">
                     <b-icon
                       icon="sprout"
                       size="is-large"
@@ -48,13 +48,8 @@
                     ></b-icon>
                     <p class="title is-5">Quam Cras Nibh</p>
                     <p class="subtitle is-6">Pellentesque ornare sem lacinia quam venenatis vestibulum.</p>
-                    <a class="button is-large is-info">
-                      <span class="is-size-6">
-                          Large button w/ regular size text
-                      </span>
-                    </a>
                   </div>
-                  <div class="column">
+                  <div class="column is-4">
                     <b-icon
                       icon="dna"
                       size="is-large"
@@ -62,13 +57,8 @@
                     ></b-icon>
                     <p class="title is-5">Quam Cras Nibh</p>
                     <p class="subtitle is-6">Pellentesque ornare sem lacinia quam venenatis vestibulum.</p>
-                    <a class="button is-large is-info">
-                      <span class="is-size-6">
-                          Large button w/ regular size text
-                      </span>
-                    </a>
                   </div>
-                  <div class="column">
+                  <div class="column is-4">
                     <b-icon
                       icon="flask"
                       size="is-large"
@@ -76,11 +66,6 @@
                     ></b-icon>
                     <p class="title is-5">Quam Cras Nibh</p>
                     <p class="subtitle is-6">Pellentesque ornare sem lacinia quam venenatis vestibulum.</p>
-                    <a class="button is-large is-info is-outlined">
-                      <span class="is-size-6">
-                          Large button w/ regular size text
-                      </span>
-                    </a>
                   </div>
                 </div>
 

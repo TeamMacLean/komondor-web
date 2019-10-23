@@ -59,6 +59,7 @@ $mdi-font-path: "~@mdi/font/fonts";
 @import "lights";
 @import "uppy";
 @import "v-tooltip";
+@import "darkmode";
 
 .tag:not(body) {
   &.is-outlined {

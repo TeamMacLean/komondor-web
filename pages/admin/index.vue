@@ -6,6 +6,21 @@
       <div class="container">
         <b-tabs class="block" :animated="false">
           <b-tab-item label="General">
+
+          </b-tab-item>
+          <b-tab-item label="Name Me Later">
+            <b-field label="Library types">
+            </b-field>
+            <b-field label="Sequencing providers">
+            </b-field>
+            <b-field label="Sequencing technologies">
+            </b-field>
+            <b-field label="Library sources">
+            </b-field>
+            <b-field label="Library selections">
+            </b-field>
+            <b-field label="Library strategies">
+            </b-field>
           </b-tab-item>
           <b-tab-item label="Users">
             <ul>

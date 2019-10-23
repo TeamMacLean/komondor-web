@@ -1,7 +1,7 @@
 <template>
   <div id="home">
     <div class="columns is-gapless">
-      <div class="column is-3 is-3-fullhd">
+      <div class="column is-3 is-3-fullhd has-background-light">
 
         <div class="section">
           <div class="container">
@@ -40,7 +40,7 @@
           </div>
         </div>
       </div>
-      <div class="column is-9 is-9-fullhd has-background-light">
+      <div class="column is-9 is-9-fullhd">
 
         <div class="section fill-height">
           <div class="container">

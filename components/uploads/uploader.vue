@@ -1,6 +1,7 @@
 <template>
   <div>
-    <div id="uppy-dashboard"></div>
+    <div v-if="!uploadID">ERROR! no uploadUD</div>
+    <div v-if="uploadID" id="uppy-dashboard"></div>
   </div>
 </template>
 
@@ -10,16 +11,12 @@
   import Tus from '@uppy/tus';
   import ThumbnailGenerator from '@uppy/thumbnail-generator';
 
-  if (process.browser) {
-    init();
-  }
-
-  function init() {
-    // window.uploader = uploader;
-  }
-
+  const server = process.env.API_URL;
   export default {
     props: ['uploadID'],
+
+
+
     mounted() {
 
 
@@ -33,7 +30,7 @@
           maxFileSize: 20000 * 1000000,
           maxNumberOfFiles: 999,
           minNumberOfFiles: 1,
-          allowedFileTypes: ['image/*', 'video/*', '.lif']
+          // allowedFileTypes: ['image/*', 'video/*', '.lif']
         }
       })
         .use(ThumbnailGenerator, {
@@ -46,16 +43,14 @@
           target: '#uppy-dashboard',
           // // replaceTargetContent: true,
           showProgressDetails: true,
-          // height: 470,
           metaFields: [
             {id: 'name', name: 'Name', placeholder: 'file name'},
-            {id: 'description', name: 'Description', placeholder: 'describe what the image/video'},
+            {id: 'description', name: 'Description', placeholder: 'describe what the file'},
           ],
-          // browserBackButtonClose: true
+          browserBackButtonClose: true
         })
-        // .use(Tus, {endpoint: '/api/files/'});
-    .use(Tus, {endpoint: '/api/uploads/'});
-
+        // .use(Tus, {endpoint: '/files/'});
+    .use(Tus, {endpoint: server+'/uploads'});
       uppy.on('complete', result => {
         console.log('successful files:', result.successful);
         console.log('failed files:', result.failed);

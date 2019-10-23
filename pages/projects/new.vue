@@ -66,35 +66,35 @@
           </b-input>
         </b-field>
 
-
-        <!--<b-field label="Tags">-->
-        <!--<b-taginput-->
-        <!--v-model="tags"-->
-        <!--:data="filteredTags"-->
-        <!--autocomplete-->
-        <!--:allow-new="true"-->
-        <!--icon="tag"-->
-        <!--placeholder="Add a tag"-->
-        <!--maxlength="10"-->
-        <!--maxtags="5"-->
-        <!--@typing="getFilteredTags">-->
-        <!--</b-taginput>-->
-        <!--</b-field>-->
-        <!--<hr>-->
-
         <hr>
 
         <b-field label="Additional files"
                  message="Please upload any documentation obtained from the sequencing provider, including copies of the communication. If the documentation pertains only to a certain sample or data set, then please add it there instead.">
-          <Uploader uploadID="uploadID"/>
+          <Uploader :uploadID="uploadID"/>
         </b-field>
 
 
         <hr>
 
         <!--<div class="buttons is-right">-->
+        <div class="field">
+          <b-checkbox v-model="doNotSendToEna">
+            Request that this not be sent to ENA
+          </b-checkbox>
+          <p class="help" v-if="!doNotSendToEna">Checking this will require you to give a reason why.</p>
+        </div>
+
+        <div class="field" v-if="doNotSendToEna">
+          <b-input v-model="doNotSendToEnaReason"
+                   type="textarea"
+                   minlength="50"
+                   placeholder="I believe this project should not be submitted to ENA because..."
+                   required></b-input>
+        </div>
+
+        <hr>
+
         <button type="submit" class="button is-success">Create project</button>
-        <!--</div>-->
       </form>
     </div>
   </div>
@@ -102,8 +102,6 @@
 
 
 <script>
-
-  // const initTags = ['type1', 'type2'];
 
   import Uploader from '~/components/uploads/uploader.vue';
   import uuidv1 from 'uuid/v1';
@@ -113,17 +111,17 @@
     components: {Uploader},
     data() {
       return {
-        // tags: [],
-        // filteredTags: initTags,
+        doNotSendToEna: false,
+        doNotSendToEnaReason: null,
         dropFiles: [],
         project: {
           name: '',
           group: null,
           shortDesc: '',
           longDesc: '',
-          isSelectOnly: false,
+          isSelectOnly: false
+        },
           uploadID: uuidv1()
-        }
       }
     },
     fetch({store}) {
@@ -145,7 +143,7 @@
       postForm() {
         this.project.owner = this.$auth.user.username; //required
         // this.project.tags = this.tags;
-        this.$axios.post('/api/projects/new', this.project)
+        this.$axios.post('/projects/new', this.project)
           .then(result => {
 
 
@@ -164,7 +162,7 @@
               title: 'Error',
               message: err.message,
               type: 'is-danger',
-              hasIcon: true
+              hasIcon: false
             })
           })
 

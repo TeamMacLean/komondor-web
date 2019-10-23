@@ -3,3 +3,8 @@
 .uppy-Dashboard-browse{
   @extend .button;
 }
+
+.uppy-Dashboard-inner{
+  margin: auto;
+  width:100% !important;
+}
