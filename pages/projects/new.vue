@@ -70,7 +70,7 @@
 
         <b-field label="Additional files"
                  message="Please upload any documentation obtained from the sequencing provider, including copies of the communication. If the documentation pertains only to a certain sample or data set, then please add it there instead.">
-          <Uploader :uploadID="uploadID"/>
+          <Uploader :uploadID="project.uploadID"/>
         </b-field>
 
 
@@ -103,72 +103,72 @@
 
 <script>
 
-  import Uploader from '~/components/uploads/uploader.vue';
-  import uuidv1 from 'uuid/v1';
+    import Uploader from '~/components/uploads/uploader.vue';
+    import uuidv4 from 'uuid/v4';
 
-  export default {
-    middleware: 'auth',
-    components: {Uploader},
-    data() {
-      return {
-        doNotSendToEna: false,
-        doNotSendToEnaReason: null,
-        dropFiles: [],
-        project: {
-          name: '',
-          group: null,
-          shortDesc: '',
-          longDesc: '',
-          isSelectOnly: false
+    export default {
+        middleware: 'auth',
+        components: {Uploader},
+        data() {
+            return {
+                doNotSendToEna: false,
+                doNotSendToEnaReason: null,
+                dropFiles: [],
+                project: {
+                    name: '',
+                    group: null,
+                    shortDesc: '',
+                    longDesc: '',
+                    isSelectOnly: false,
+                    uploadID: uuidv4()
+                }
+            }
         },
-          uploadID: uuidv1()
-      }
-    },
-    fetch({store}) {
-      // return Promise.all([
-      //   store.dispatch('refreshProjects'),
-      return store.dispatch('refreshGroups')
-      // store.dispatch('refreshUsers')
-      // ])
-    },
-    methods: {
-      // getFilteredTags(text) {
-      //   this.filteredTags = initTags.filter((option) => {
-      //     return option
-      //       .toString()
-      //       .toLowerCase()
-      //       .indexOf(text.toLowerCase()) >= 0
-      //   })
-      // },
-      postForm() {
-        this.project.owner = this.$auth.user.username; //required
-        // this.project.tags = this.tags;
-        this.$axios.post('/projects/new', this.project)
-          .then(result => {
+        fetch({store}) {
+            // return Promise.all([
+            //   store.dispatch('refreshProjects'),
+            return store.dispatch('refreshGroups')
+            // store.dispatch('refreshUsers')
+            // ])
+        },
+        methods: {
+            // getFilteredTags(text) {
+            //   this.filteredTags = initTags.filter((option) => {
+            //     return option
+            //       .toString()
+            //       .toLowerCase()
+            //       .indexOf(text.toLowerCase()) >= 0
+            //   })
+            // },
+            postForm() {
+                this.project.owner = this.$auth.user.username; //required
+                // this.project.tags = this.tags;
+                this.$axios.post('/projects/new', this.project)
+                    .then(result => {
 
 
-            this.$buefy.toast.open({
-              message: 'Project created!',
-              type: 'is-success'
-            });
-            this.$router.push({
-              name: 'project',
-              params: {id: result.data.project._id}
-            })
-          })
-          .catch(err => {
-            console.error(err);
-            this.$buefy.dialog.alert({
-              title: 'Error',
-              message: err.message,
-              type: 'is-danger',
-              hasIcon: false
-            })
-          })
+                        this.$buefy.toast.open({
+                            message: 'Project created!',
+                            type: 'is-success'
+                        });
+                        this.$router.push({
+                            name: 'project',
+                            params: {id: result.data.project._id}
+                        })
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        this.$buefy.dialog.alert({
+                            title: 'Error',
+                            message: err.message,
+                            type: 'is-danger',
+                            hasIcon: false
+                        })
+                    })
 
-      }
+            }
+        }
     }
-  }
 </script>
 
 <style>

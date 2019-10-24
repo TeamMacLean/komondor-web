@@ -2,6 +2,14 @@ require('dotenv').config();
 
 export default {
   mode: 'universal',
+  render: {
+    ssr: false
+  },
+  env: {
+    // baseURL: process.env.HOST,
+    API_URL: process.env.API_URL,
+    HOST: process.env.HOST
+  },
   server: {
     port: process.env.PORT || 3000, // default: 3000
     host: process.env.HOST || 'localhost', // default: localhost
@@ -27,15 +35,25 @@ export default {
   css: ['~/assets/main.scss'],
   plugins: [{src: '~/plugins/v-tooltip', ssr: false}],
   modules: [
-    '@nuxtjs/pwa',
+    // '@nuxtjs/pwa',
     '@nuxtjs/axios',
     '@nuxtjs/auth',
     'nuxt-buefy',
     // 'nuxt-fontawesome', //V
   ],
-  pwa:{
-    meta:{
-      theme_color:'#8D80FA'
+  pwa: {
+    manifest: {
+      lang: 'en',
+      name: "Komondor",
+      short_name: "Komondor - TSL Read Data",
+      display: 'standalone',
+      theme_color: '#8D80FA',
+    },
+    workbox: {
+      dev: false // Put workbox module into development mode based on current NODE_ENV variable
+    },
+    meta: {
+      theme_color: '#8D80FA'
     }
   },
   buefy: {
@@ -75,8 +93,6 @@ export default {
           customProperties: false
         }
       }
-    },
-    extend(config, ctx) {
     }
   }
 }

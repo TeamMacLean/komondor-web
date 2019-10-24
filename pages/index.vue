@@ -4,7 +4,7 @@
     <Home v-if="renderHome"></Home>
     <div v-else>
 
-      <section class="hero is-medium is-primary">
+      <section class="hero is-medium is-primary" style="height:calc(100vh - 52px);">
         <div class="hero-body">
           <div class="container is-large">
             <div class="columns">
@@ -28,81 +28,33 @@
       </section>
 
 
-      <section class="section has-background-light">
-        <div class="container is-large">
-          <div class="container">
-            <div class="card has-text-centered">
-              <div class="card-content">
-
-                <h2 class="title is-2">Commodo Nullam Venenatis Magna Lorem</h2>
-                <p class="subtitle is-5 ">Donec ullamcorper nulla non metus auctor fringilla.</p>
-
-                <br>
-
-                <div class="columns">
-                  <div class="column is-4">
-                    <b-icon
-                      icon="sprout"
-                      size="is-large"
-                      class="mb-1"
-                    ></b-icon>
-                    <p class="title is-5">Quam Cras Nibh</p>
-                    <p class="subtitle is-6">Pellentesque ornare sem lacinia quam venenatis vestibulum.</p>
-                  </div>
-                  <div class="column is-4">
-                    <b-icon
-                      icon="dna"
-                      size="is-large"
-                      class="mb-1"
-                    ></b-icon>
-                    <p class="title is-5">Quam Cras Nibh</p>
-                    <p class="subtitle is-6">Pellentesque ornare sem lacinia quam venenatis vestibulum.</p>
-                  </div>
-                  <div class="column is-4">
-                    <b-icon
-                      icon="flask"
-                      size="is-large"
-                      class="mb-1"
-                    ></b-icon>
-                    <p class="title is-5">Quam Cras Nibh</p>
-                    <p class="subtitle is-6">Pellentesque ornare sem lacinia quam venenatis vestibulum.</p>
-                  </div>
-                </div>
-
-              </div>
-            </div>
-          </div>
-
-        </div>
-      </section>
-
     </div>
   </div>
 </template>
 
 
 <script>
-  import SigninCard from '~/components/SigninCard';
-  import Home from '~/components/home/Home.vue';
+    import SigninCard from '~/components/SigninCard';
+    import Home from '~/components/home/Home.vue';
 
-  export default {
-    components: {SigninCard, Home},
-    // fetch({store, redirect}) {
-      //   if (store.state.auth.loggedIn) {
-      //     return Promise.all([
-      //       // store.dispatch('refreshProjects'),
-      //       // store.dispatch('refreshNews')
-      //     ])
-      //   } else {
-      //     return Promise.resolve()
-      //   }
-    // },
-    computed: {
-      renderHome() {
-        return this.$store.state.auth.loggedIn
-      }
+    export default {
+        components: {SigninCard, Home},
+        // fetch({store, redirect}) {
+        //   if (store.state.auth.loggedIn) {
+        //     return Promise.all([
+        //       // store.dispatch('refreshProjects'),
+        //       // store.dispatch('refreshNews')
+        //     ])
+        //   } else {
+        //     return Promise.resolve()
+        //   }
+        // },
+        computed: {
+            renderHome() {
+                return this.$store.state.auth.loggedIn
+            }
+        }
     }
-  }
 </script>
 
 <style>

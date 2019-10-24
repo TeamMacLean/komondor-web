@@ -105,50 +105,47 @@
 </template>
 
 <script>
+    import NavSearch from '~/components/NavSearch.vue'
 
-  import NavSearch from '~/components/NavSearch.vue'
+    export default {
+        name: 'HeadAfterLogin',
+        components: {NavSearch},
+        methods: {
+            async LogOut() {
+                await this.$auth.logout();
+                this.$buefy.toast.open('Logged out');
+                this.$router.push({
+                    path: '/'
+                })
+            }
+        },
+        mounted() {
+            function getAll(selector) {
+                return Array.prototype.slice.call(document.querySelectorAll(selector), 0);
+            }
 
+            var $dropdowns = getAll('.dropdown:not(.is-hoverable)');
 
-  if (process.browser) {
-    function getAll(selector) {
-      return Array.prototype.slice.call(document.querySelectorAll(selector), 0);
+            if ($dropdowns.length > 0) {
+                $dropdowns.forEach(function ($el) {
+                    $el.addEventListener('click', function (event) {
+                        event.stopPropagation();
+                        $el.classList.toggle('is-active');
+                    });
+                });
+
+                document.addEventListener('click', function (event) {
+                    closeDropdowns();
+                });
+            }
+
+            function closeDropdowns() {
+                $dropdowns.forEach(function ($el) {
+                    $el.classList.remove('is-active');
+                });
+            }
+        }
     }
-
-    var $dropdowns = getAll('.dropdown:not(.is-hoverable)');
-
-    if ($dropdowns.length > 0) {
-      $dropdowns.forEach(function ($el) {
-        $el.addEventListener('click', function (event) {
-          event.stopPropagation();
-          $el.classList.toggle('is-active');
-        });
-      });
-
-      document.addEventListener('click', function (event) {
-        closeDropdowns();
-      });
-    }
-
-    function closeDropdowns() {
-      $dropdowns.forEach(function ($el) {
-        $el.classList.remove('is-active');
-      });
-    }
-  }
-
-  export default {
-    name: 'HeadAfterLogin',
-    components: {NavSearch},
-    methods: {
-      async LogOut() {
-        await this.$auth.logout();
-        this.$buefy.toast.open('Logged out');
-        this.$router.push({
-          path: '/'
-        })
-      }
-    }
-  }
 </script>
 
 <style>

@@ -30,6 +30,8 @@
         <p>{{project.shortDesc}}</p>
         <p>{{project.longDesc}}</p>
 
+        files:{{project.additionalFiles}}
+
         <hr>
 
         <p class="title is-4">Samples</p>
@@ -67,6 +69,7 @@
         .then(res => {
           if (res.status === 200 && res.data.project) {
             // res.data.project.samples = [];
+              console.log('project', res.data.project);
             return {
               project: res.data.project
             }
