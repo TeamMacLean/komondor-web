@@ -20,20 +20,22 @@ export default {
       lang: 'en',
     },
     meta: [
-      {charset: 'utf-8'},
-      {name: 'viewport', content: 'width=device-width, initial-scale=1'},
-      {hid: 'description', name: 'description', content: process.env.npm_package_description || ''}
+      { charset: 'utf-8' },
+      { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+      { hid: 'description', name: 'description', content: process.env.npm_package_description || '' },
+      { name: 'apple-mobile-web-app-capable', content: 'yes'},
+      { name: 'mobile-web-app-capable', content: 'yes'}
     ],
-    // link: [{rel: 'icon', type: 'image/x-icon', href: '/icons/favicon.ico'}],
+    link: [{ rel: 'icon', type: 'image/x-icon', href: '/icons/favicon.ico' }],
   },
   // serverMiddleware: [
   //   bodyParser.json(),
   //   bodyParser.urlencoded({extended: false}),
   //   '~'
   // ],
-  loading: {color: '#31CF65'},
+  loading: { color: '#31CF65' },
   css: ['~/assets/main.scss'],
-  plugins: [{src: '~/plugins/v-tooltip', ssr: false}],
+  plugins: [{ src: '~/plugins/v-tooltip', ssr: false }],
   modules: [
     // '@nuxtjs/pwa',
     '@nuxtjs/axios',
@@ -44,8 +46,8 @@ export default {
   pwa: {
     manifest: {
       lang: 'en',
-      name: "Komondor",
-      short_name: "Komondor - TSL Read Data",
+      name: "Komondor - TSL Read Data",
+      short_name: "Komondor",
       display: 'standalone',
       theme_color: '#8D80FA',
     },
@@ -70,10 +72,10 @@ export default {
     strategies: {
       local: {
         endpoints: {
-          login: {url: '/login', method: 'post', propertyName: 'token'},
+          login: { url: '/login', method: 'post', propertyName: 'token' },
           logout: false,
           // logout: {url: '/logout', method: 'post'},
-          user: {url: '/me', method: 'get', propertyName: 'user'}
+          user: { url: '/me', method: 'get', propertyName: 'user' }
         },
         // tokenRequired: true,
         // tokenType: 'bearer'
@@ -84,6 +86,7 @@ export default {
     }
   },
   router: {
+    base: '/',
     linkActiveClass: 'is-active',
   },
   build: {

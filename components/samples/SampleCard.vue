@@ -4,7 +4,7 @@
       <p class="truncate">
         <nuxt-link :to="{ name: 'sample', query: { id: sample._id }}" class="title is-5">
           <b-icon
-            icon="alpha-s-box-outline"
+            icon="flask-outline"
             size="is-small"
             class="has-text-grey">
           </b-icon>

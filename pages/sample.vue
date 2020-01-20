@@ -4,11 +4,11 @@
       <div v-if="sample">
 
         <p class="title">
-          <b-icon
-            icon="alpha-s-box-outline"
+          <!-- <b-icon
+            icon="flask-outline"
             size="is-medium"
             class="has-text-grey">
-          </b-icon>
+          </b-icon> -->
           {{sample.scientificName}}
         </p>
 

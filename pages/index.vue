@@ -4,14 +4,14 @@
     <Home v-if="renderHome"></Home>
     <div v-else>
 
-      <section class="hero is-medium is-primary" style="height:calc(100vh - 52px);">
+      <section class="hero is-medium is-primary" style="height:calc(100vh - 49px);">
         <div class="hero-body">
           <div class="container is-large">
             <div class="columns">
               <div class="column">
                 <div class="container has-text-centered-mobile">
                   <h1 class="title is--1">
-                    Mollis Quam Euismod Ornare
+                    TSL Sequence Data
                   </h1>
                   <h2 class="subtitle">
                     Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Maecenas

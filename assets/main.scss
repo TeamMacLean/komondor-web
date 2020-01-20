@@ -22,6 +22,9 @@ $colors: (
   "twitter": ($twitter, $twitter-invert)
 );
 
+//FONT
+$body-size: 14px !default;
+
 // Links
 //$link: $primary;
 //$link-invert: $primary-invert;
@@ -60,6 +63,7 @@ $mdi-font-path: "~@mdi/font/fonts";
 @import "uppy";
 @import "v-tooltip";
 @import "darkmode";
+@import "cards";
 
 .tag:not(body) {
   &.is-outlined {

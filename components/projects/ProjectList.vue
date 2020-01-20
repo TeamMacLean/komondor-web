@@ -18,14 +18,22 @@
           </b-select>
         </div>
       </div>
+      <div class="control">
+        <div class="select">
+          <b-select placeholder="Sort by" v-model="sortBy">
+            <option :value="0">Date</option>
+            <option :value="1">Name</option>
+          </b-select>
+        </div>
+      </div>
       <p class="control">
         <nuxt-link to="/projects/new" class="button is-success">
           New
         </nuxt-link>
       </p>
     </div>
-    <div class="columns" v-for="i in Math.ceil(filteredProjects.length / 2)">
-      <div class="column is-6" v-for="project in filteredProjects.slice((i - 1) * 2, i * 2)">
+    <div class="columns" v-for="i in Math.ceil(filteredProjects.length / 2)" :key="i">
+      <div class="column is-6" v-for="(project, index) in filteredProjects.slice((i - 1) * 2, i * 2)" :key="index">
         <ProjectCard :project="project"/>
       </div>
     </div>
@@ -33,40 +41,51 @@
 </template>
 
 <script>
-  import ProjectCard from './ProjectCard.vue'
+    import ProjectCard from './ProjectCard.vue'
 
-  export default {
-    components: {
-      ProjectCard
-    },
-    props: ['projects'],
-    data() {
-      return {
-        filterText: '',
-        groupFilter: null
-      }
-    },
-    computed: {
-      projectsList() {
-        if (this.projects) {
-          return this.projects
-        } else {
-          return this.$store.state.projects;
+    export default {
+        components: {
+            ProjectCard
+        },
+        props: ['projects'],
+        data() {
+            return {
+                filterText: '',
+                groupFilter: null,
+                sortBy: 0
+            }
+        },
+        computed: {
+            projectsList() {
+                if (this.projects) {
+                    return this.projects
+                } else {
+                    return this.$store.state.projects;
+                }
+            },
+            filteredProjects() {
+                const self = this;
+                let filteredByGroup = self.projectsList;
+                if (self.groupFilter && self.groupFilter !== -1) {
+
+
+                    filteredByGroup = self.projectsList.filter(p => {
+                        const groupName = p.group._id || p.group;
+                        return groupName === self.groupFilter
+                    });
+                }
+                filteredByGroup = filteredByGroup.filter(p => p.name.toLowerCase().indexOf(self.filterText.toLowerCase()) > -1);
+                filteredByGroup = filteredByGroup
+                    .sort((a, b) => {
+                        console.log(this.sortBy === 0, this.sortBy === 1)
+                        if (this.sortBy === 0) {
+                            return new Date(b.createdAt) - new Date(a.createdAt);
+                        } else {
+                            return a.name.localeCompare(b.name)
+                        }
+                    });
+                return filteredByGroup;
+            }
         }
-      },
-      filteredProjects() {
-        const self = this;
-        let filteredByGroup = self.projectsList;
-        if (self.groupFilter && self.groupFilter !== -1) {
-
-
-          filteredByGroup = self.projectsList.filter(p => {
-            const groupName = p.group._id || p.group;
-            return groupName === self.groupFilter
-          });
-        }
-        return filteredByGroup.filter(p => p.name.toLowerCase().indexOf(self.filterText.toLowerCase()) > -1)
-      }
     }
-  }
 </script>

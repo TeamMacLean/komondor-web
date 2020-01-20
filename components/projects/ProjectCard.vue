@@ -5,7 +5,7 @@
         <p class="truncate">
 
           <b-icon
-            icon="alpha-p-box-outline"
+            icon="folder-text-outline"
             size="is-small"
             class="has-text-grey">
           </b-icon>

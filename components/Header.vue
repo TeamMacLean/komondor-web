@@ -10,15 +10,15 @@
           </nuxt-link>
         </div>
 
-        <nuxt-link class="navbar-item-custom" to="/projects" v-if="this.$auth.loggedIn">
+       <nuxt-link class="navbar-item-custom has-text-weight-bold" to="/projects" v-if="this.$auth.loggedIn">
           Projects
         </nuxt-link>
       </div>
 
 
-      <!--<div class="navbar-center-custom">-->
-      <!--<NavSearch v-if="this.$auth.loggedIn"/>-->
-      <!--</div>-->
+      <!-- <div class="navbar-center-custom"> -->
+      <!-- <NavSearch v-if="this.$auth.loggedIn"/> -->
+      <!-- </div> -->
 
 
       <div class="navbar-right-custom">
