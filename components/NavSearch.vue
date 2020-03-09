@@ -65,9 +65,11 @@ export default {
       });
     },
     getAsyncData: debounce(function(name) {
+      this.isFetching = true;
       this.$axios
         .get("/search", { params: { name: name } })
         .then(res => {
+          this.isFetching = false;
           this.data.length = 0;
           //TODO sort data
           res.data.results.projects.map(p => {
@@ -88,6 +90,7 @@ export default {
           console.log(this.data);
         })
         .catch(err => {
+          this.isFetching = false;
           this.data.length = 0;
           console.error(err);
         });
