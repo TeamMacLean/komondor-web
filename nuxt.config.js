@@ -23,8 +23,8 @@ export default {
       { charset: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
       { hid: 'description', name: 'description', content: process.env.npm_package_description || '' },
-      { name: 'apple-mobile-web-app-capable', content: 'yes'},
-      { name: 'mobile-web-app-capable', content: 'yes'}
+      { name: 'apple-mobile-web-app-capable', content: 'yes' },
+      { name: 'mobile-web-app-capable', content: 'yes' }
     ],
     link: [{ rel: 'icon', type: 'image/x-icon', href: '/icons/favicon.ico' }],
   },
@@ -90,6 +90,9 @@ export default {
     linkActiveClass: 'is-active',
   },
   build: {
+    extend(config, { isDev, isClient }) {
+      config.resolve.alias["vue"] = "vue/dist/vue.common";
+    },
     postcss: {
       preset: {
         features: {

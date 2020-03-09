@@ -2,7 +2,7 @@
   <div>
 
     <div class="field is-grouped">
-      <p class="control is-expanded">
+      <p class="control is-expanded is-hidden-mobile">
         <input class="input" type="text" placeholder="Find a project" v-model="filterText">
       </p>
       <div class="control">

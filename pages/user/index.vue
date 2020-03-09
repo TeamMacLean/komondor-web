@@ -13,11 +13,17 @@
               <h1 class="title">{{fullName}}</h1>
               <h2 class="subtitle">{{username}}</h2>
               <p>
-                <font-awesome-icon :icon="['fas', 'users']" style="margin-right:8px;"/>
+                <b-icon
+            icon="account-group"
+            size="is-small"
+            class="has-text-grey"/>
                 {{company}}
               </p>
               <p>
-                <font-awesome-icon :icon="['far', 'envelope']" style="margin-right:8px;"/>
+                <b-icon
+            icon="domain"
+            size="is-small"
+            class="has-text-grey"/>
                 <a :href="'mailto:'+email" target="_blank">{{email}}</a></p>
             </div>
           </div>

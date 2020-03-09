@@ -2,8 +2,9 @@
 @import "~bulma/sass/utilities/_all";
 
 // Set your colors
-$primary: #9c88ff;
-//$primary:#3C3F41;
+// $primary: #9c88ff; //purple
+// $primary:#253F56; //TSL blue
+$primary:#3C3F41; //black
 $primary-invert: findColorInvert($primary);
 $twitter: #4099FF;
 $twitter-invert: findColorInvert($twitter);
@@ -53,6 +54,10 @@ $mdi-font-path: "~@mdi/font/fonts";
 
 //CUSTOM
 
+//make buify modals HIGH
+.modal{
+  z-index: 11111;
+}
 
 @import "error";
 @import "nav";

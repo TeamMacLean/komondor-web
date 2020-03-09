@@ -38,10 +38,10 @@
   .navbar-link-custom, a.navbar-item-custom {
     cursor: pointer;
 
-    &:not(.no-hover):hover, &:not(.no-hover):focus, &.is-active:not(.no-hover) {
-      background-color: darken($primary, 2.5%);
-      color: darken(#fff, 2.5%);
-    }
+    // &:not(.no-hover):hover, &:not(.no-hover):focus, &.is-active:not(.no-hover) {
+    //   background-color: darken($primary, 2.5%);
+    //   color: darken(#fff, 2.5%);
+    // }
   }
 
   .navbar-item-custom {

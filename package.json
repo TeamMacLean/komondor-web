@@ -5,22 +5,22 @@
   "author": "Martin Page",
   "private": true,
   "scripts": {
-    "build": "nuxt build",
     "dev": "nuxt",
+    "build": "nuxt build",
     "generate": "nuxt generate",
     "pm2": "pm2 start npm --name komondor-web -- start",
     "start": "nuxt start",
     "test": "jest"
   },
   "dependencies": {
-    "@fortawesome/free-regular-svg-icons": "^5.11.2",
-    "@fortawesome/free-solid-svg-icons": "^5.11.2",
     "@mdi/font": "^4.5.95",
     "@nuxtjs/auth": "^4.8.4",
     "@nuxtjs/axios": "^5.7.1",
     "@nuxtjs/pwa": "^3.0.0-beta.19",
     "@uppy/core": "^1.5.1",
     "@uppy/dashboard": "^1.4.1",
+    "@uppy/drag-drop": "^1.4.6",
+    "@uppy/file-input": "^1.4.5",
     "@uppy/thumbnail-generator": "^1.4.0",
     "@uppy/tus": "^1.4.2",
     "bulma": "^0.8.0",
@@ -38,8 +38,9 @@
     "nuxt-compress": "^1.0.2",
     "nuxt-fontawesome": "^0.4.0",
     "sass-loader": "^8.0.0",
+    "spark-md5": "^3.0.0",
     "uuid": "^3.3.3",
+    "v-runtime-template": "^1.10.0",
     "v-tooltip": "^2.0.2"
-  },
-  "devDependencies": {}
+  }
 }

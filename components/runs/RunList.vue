@@ -10,8 +10,8 @@
         </nuxt-link>
       </p>
     </div>
-    <div class="columns" v-for="i in Math.ceil(filteredRuns.length / 2)">
-      <div class="column is-6" v-for="run in filteredRuns.slice((i - 1) * 2, i * 2)">
+    <div class="columns" v-for="i in Math.ceil(filteredRuns.length / 2)" :key="i">
+      <div class="column is-6" v-for="run in filteredRuns.slice((i - 1) * 2, i * 2)"  :key="run._id">
         <RunCard :run="run"/>
       </div>
     </div>
@@ -41,7 +41,7 @@
       },
       filteredRuns() {
         const self = this;
-        return self.runsList.filter(p => p.scientificName.toLowerCase().indexOf(self.filterText.toLowerCase()) > -1)
+        return self.runsList.filter(p => p.name.toLowerCase().indexOf(self.filterText.toLowerCase()) > -1)
       }
     }
   }

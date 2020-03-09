@@ -1,142 +1,162 @@
 <template>
   <div class="section">
     <div class="container">
-
       <h1 class="title">New Run</h1>
-      <h2 class="subtitle">Aenean eu leo quam. Pellentesque ornare sem lacinia quam venenatis vestibulum. Morbi leo
-        risus, porta ac consectetur ac, vestibulum at eros.</h2>
-      <hr>
+      <!-- <h2 class="subtitle">
+        Aenean eu leo quam. Pellentesque ornare sem lacinia quam venenatis vestibulum. Morbi leo
+        risus, porta ac consectetur ac, vestibulum at eros.
+      </h2>-->
+      <hr />
       <form @submit.prevent="postForm">
-
-        <b-field label="Sample">
-          <!--          {{sam.name}}-->
-        </b-field>
-
-
         <div class="columns">
           <div class="column">
-            <b-field label="Name" message="Sed posuere consectetur est at lobortis.">
+            <b-field label="Name" message="A short, informative name to identify your data set.">
               <b-input
-                expanded="true"
+                expanded
                 name="name"
                 v-model="run.name"
                 minlength="5"
                 maxlength="20"
                 required
-                id="name">
-              </b-input>
+                id="name"
+              ></b-input>
             </b-field>
           </div>
           <div class="column">
-            <b-field label="Insert size" message="Sed posuere consectetur est at lobortis.">
-              <b-input placeholder="Number"
-                       expanded="true"
-                       type="number"
-                       min="0">
-              </b-input>
+            <b-field
+              label="Insert size"
+              message="What is the average insert size covered by your read pairs? This should be in the communication with your provider."
+            >
+              <b-input placeholder="Number" expanded type="number" min="0" required v-model="run.insertSize"></b-input>
             </b-field>
           </div>
         </div>
 
         <div class="columns">
-
           <div class="column">
-            <b-field label="Sequencing provider" message="Sed posuere consectetur est at lobortis.">
-              <b-select placeholder="Select a sequencing provider" expanded="true">
-                <option
-                  v-for="option in sequencingProviders"
-                  :value="option.id"
-                  :key="option.id">
-                  {{ option.name }}
-                </option>
-              </b-select>
+            <b-field
+              label="Sequencing provider"
+              message="Which company/institute did your sequencing? Please provide at least the name."
+            >
+              <b-input placeholder="EI" expanded type="text" required v-model="run.sequencingProvider"></b-input>
             </b-field>
           </div>
           <div class="column">
-            <b-field label="Sequencing technology" message="Sed posuere consectetur est at lobortis.">
-              <b-select placeholder="Select a sequencing technology" expanded="true">
+            <b-field
+              label="Sequencing technology"
+              message="What was the technology used for sequencing? This should be in the communication with your provider."
+            >
+              <b-select
+                placeholder="Select a sequencing technology"
+                required
+                expanded
+                v-model="run.sequencingTechnology"
+              >
                 <option
                   v-for="option in sequencingTechnologies"
-                  :value="option.id"
-                  :key="option.id">
-                  {{ option.name }}
-                </option>
+                  :value="option.value"
+                  :key="option._id"
+                >{{ option.value }}</option>
               </b-select>
             </b-field>
           </div>
         </div>
 
-
         <div class="columns">
           <div class="column">
-            <b-field label="Library source" message="Sed posuere consectetur est at lobortis.">
-              <b-select placeholder="Select a library source" expanded="true">
+            <b-field
+              label="Library source"
+              message="From what kind of material was your library prepared?"
+            >
+              <b-select
+                placeholder="Select a library source"
+                required
+                expanded
+                v-model="run.librarySource"
+              >
                 <option
                   v-for="option in librarySources"
-                  :value="option.id"
-                  :key="option.id">
-                  {{ option.name }}
-                </option>
+                  :value="option.value"
+                  :key="option._id"
+                >{{ option.value }}</option>
               </b-select>
             </b-field>
           </div>
 
           <div class="column">
-            <b-field label="Library selection" message="Sed posuere consectetur est at lobortis.">
-              <b-select placeholder="Select a library selection" expanded="true">
+            <b-field
+              label="Library selection"
+              message="Which protocol was used when creating the library?"
+            >
+              <b-select
+                placeholder="Select a library selection"
+                required
+                expanded
+                v-model="run.librarySelection"
+              >
                 <option
                   v-for="option in librarySelections"
-                  :value="option.id"
-                  :key="option.id">
-                  {{ option.name }}
-                </option>
+                  :value="option.value"
+                  :key="option._id"
+                >{{ option.value }}</option>
               </b-select>
             </b-field>
           </div>
-
-
         </div>
         <div class="columns">
           <div class="column">
-            <b-field label="Library type" message="Sed posuere consectetur est at lobortis.">
-              <b-select placeholder="Select a library type" expanded="true">
+            <b-field
+              label="Library type"
+              message="Do you have unpaired, paired, or mate-pair reads?"
+            >
+              <b-select
+                placeholder="Select a library type"
+                required
+                expanded
+                v-model="run.libraryType"
+              >
                 <option
                   v-for="option in libraryTypes"
-                  :value="option.id"
-                  :key="option.id">
-                  {{ option.name }}
-                </option>
+                  :value="option.value"
+                  :key="option._id"
+                >{{ option.value }}</option>
               </b-select>
             </b-field>
           </div>
-
 
           <div class="column">
-            <b-field label="Library strategy" message="Sed posuere consectetur est at lobortis.">
-              <b-select placeholder="Select a library strategy" expanded="true">
+            <b-field
+              label="Library strategy"
+              message="What kind of sequencing experiment was performed?"
+            >
+              <b-select
+                placeholder="Select a library strategy"
+                required
+                expanded
+                v-model="run.libraryStrategy"
+              >
                 <option
                   v-for="option in libraryStrategies"
-                  :value="option.id"
-                  :key="option.id">
-                  {{ option.name }}
-                </option>
+                  :value="option.value"
+                  :key="option._id"
+                >{{ option.value }}</option>
               </b-select>
             </b-field>
           </div>
-
         </div>
 
-        <hr>
-
-        Supporting Files
-
-
-        <hr>
-
-        Raw read data
-
-        //TODO any reason not to provide processed here?
-
+        <hr />
+        <b-field label="Raw reads"
+        message="TODO WARN USER TO USE GZIPPED IF THEY UPLOAD FASTQ" >
+          <UploadRaw :uploadID="run.rawUploadID" :paired="this.paired" />
+        </b-field>
+        <hr />
+        <b-field
+          label="Additional files"
+          message="Please upload any documentation obtained from the sequencing provider, including copies of the communication. If the documentation pertains only to a certain sample or data set, then please add it there instead."
+        >
+          <Uploader :uploadID="run.additionalUploadID" />
+        </b-field>
         <!--<div class="buttons is-right">-->
         <button type="submit" class="button is-success">Create run</button>
         <!--</div>-->
@@ -146,123 +166,130 @@
 </template>
 
 <script>
-    export default {
-        middleware: 'auth',
-        asyncData({store, route, $axios, error}) {
+import Uploader from "~/components/uploads/Uploader.vue";
+import UploadRaw from "~/components/uploads/UploaderRaw.vue";
+import uuidv4 from "uuid/v4";
+export default {
+  middleware: "auth",
+  components: { Uploader, UploadRaw },
+  mounted() {
+    this.$store.dispatch("refreshOptions");
 
-            if (!route.query.sample) {
-                error({statusCode: 500, message: 'Project not found'});
-            }
-
-            return $axios.get('/sample', {params: {id: route.query.sample}})
-                .then(res => {
-                    if (res.status === 200) {
-                        return {
-                            sample: res.data.sample,
-                            run: {
-                                sample: res.data.sample.id,
-                                libraryType: null,
-                                sequencingProvider: null,
-                                sequencingTechnologie: null,
-                                librarySource: null,
-                                librarySelection: null,
-                                libraryStrategy: null,
-                                insertSize: null,
-                                ncbi: '',
-                                conditions: '',
-                            }
-                        }
-                    }
-                    error({statusCode: 500, message: 'Project not found'});
-                })
-                .catch(err => {
-                    console.error(err);
-                    error({statusCode: 500, message: 'Project not found'});
-                });
-
-
-        },
-        computed: {
-            libraryTypes() {
-                return JSON.parse(JSON.stringify(this.$store.state.libraryTypes))
-            },
-            sequencingProviders() {
-                return JSON.parse(JSON.stringify(this.$store.state.sequencingProviders))
-            },
-            sequencingTechnologies() {
-                return JSON.parse(JSON.stringify(this.$store.state.sequencingTechnologies))
-            },
-            librarySources() {
-                return JSON.parse(JSON.stringify(this.$store.state.librarySources))
-            },
-            librarySelections() {
-                return JSON.parse(JSON.stringify(this.$store.state.librarySelections))
-            },
-            libraryStrategies() {
-                return JSON.parse(JSON.stringify(this.$store.state.libraryStrategies))
-            },
-
-        }
-        // asyncData({store, route, $axios, error}) {
-        //
-        //   if (!route.query.project) {
-        //     error({statusCode: 500, message: 'Project not found'});
-        //   }
-        //
-        //   return $axios.get('/project', {params: {id: route.query.project}})
-        //     .then(res => {
-        //       if (res.status === 200) {
-        //         return {
-        //           project: res.data.project,
-        //           sample: {
-        //             project: res.data.project.id,
-        //             scientificName: '',
-        //             commonName: null,
-        //             ncbi: '',
-        //             conditions: '',
-        //           }
-        //         }
-        //       }
-        //       error({statusCode: 500, message: 'Project not found'});
-        //     })
-        //     .catch(err => {
-        //       console.error(err);
-        //       error({statusCode: 500, message: 'Project not found'});
-        //     });
-        //
-        //
-        // },
-        // methods: {
-        //   postForm() {
-        //     this.sample.owner = this.$auth.user.username; //required
-        //     this.sample.group = this.project.group;
-        //     this.sample.project = this.project._id; //required
-        //     // this.project.tags = this.tags;
-        //     this.$axios.post('/samples/new', this.sample)
-        //       .then(result => {
-        //         this.$buefy.toast.open({
-        //           message: 'Sample created!',
-        //           type: 'is-success'
-        //         });
-        //         // this.$router.push({
-        //         //   path: '/projects'
-        //         // })
-        //         console.log('result', result.data);
-        //         this.$router.push({
-        //           name: 'sample',
-        //           params: {id: result.data.sample._id}
-        //         })
-        //       })
-        //       .catch(err => {
-        //         console.error(err);
-        //         this.$buefy.dialog.alert({
-        //           title: 'Error',
-        //           message: err.message,
-        //           type: 'is-danger',
-        //           hasIcon: true
-        //         })
-        //       })
-        //   }
-        // }
+    //     setInterval(()=>{
+    // console.log(this.run.libraryType,this.libraryTypeObject, this.paired)
+    //     },500)
+  },
+  asyncData({ store, route, $axios, error }) {
+    if (!route.query.sample) {
+      error({ statusCode: 500, message: "Project not found" });
     }
+
+    return $axios
+      .get("/sample", { params: { id: route.query.sample } })
+      .then(res => {
+        if (res.status === 200) {
+          return {
+            sample: res.data.sample,
+            run: {
+              sample: res.data.sample._id,
+              libraryType: null,
+              sequencingProvider: '',
+              sequencingTechnology: null,
+              librarySource: null,
+              librarySelection: null,
+              libraryStrategy: null,
+              insertSize: null,
+              additionalUploadID: uuidv4(),
+              rawUploadID: uuidv4()
+            }
+          };
+        } else {
+          return error({ statusCode: 500, message: "Project not found" });
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        error({ statusCode: 500, message: "Project not found" });
+      });
+  },
+  computed: {
+    paired() {
+      return this.libraryTypeObject ? this.libraryTypeObject.paired : false;
+    },
+    libraryTypeObject() {
+      if (this.run.libraryType) {
+        const found = this.libraryTypes.filter(
+          lt => lt.value == this.run.libraryType
+        );
+        if (found.length) {
+          return found[0];
+        } else {
+          return null;
+        }
+      } else {
+        return null;
+      }
+    },
+    libraryTypes() {
+      return JSON.parse(JSON.stringify(this.$store.state.libraryTypes));
+    },
+    sequencingProviders() {
+      return JSON.parse(JSON.stringify(this.$store.state.sequencingProviders));
+    },
+    sequencingTechnologies() {
+      return JSON.parse(
+        JSON.stringify(this.$store.state.sequencingTechnologies)
+      );
+    },
+    librarySources() {
+      return JSON.parse(JSON.stringify(this.$store.state.librarySources));
+    },
+    librarySelections() {
+      return JSON.parse(JSON.stringify(this.$store.state.librarySelections));
+    },
+    libraryStrategies() {
+      return JSON.parse(JSON.stringify(this.$store.state.libraryStrategies));
+    },
+    canSubmit() {
+      //TODO all added Addiditional files uploaded
+      //TODO all raw read uploaded
+
+      return false;
+    }
+  },
+  methods: {
+    postForm() {
+      console.log("run", this.run);
+      this.run.owner = this.$auth.user.username; //required
+      this.run.group = this.sample.group._id;
+      this.run.sample = this.sample._id; //required
+      // this.project.tags = this.tags;
+      this.$axios
+        .post("/runs/new", this.run)
+        .then(result => {
+          this.$buefy.toast.open({
+            message: "Run created!",
+            type: "is-success"
+          });
+          // this.$router.push({
+          //   path: '/projects'
+          // })
+          console.log("result", result.data);
+          this.$router.push({
+            name: "run",
+            query: { id: result.data.run._id }
+          });
+        })
+        .catch(err => {
+          console.error(err);
+          this.$buefy.dialog.alert({
+            title: "Error",
+            message: err.message,
+            type: "is-danger",
+            hasIcon: true
+          });
+        });
+    }
+  }
+};
 </script>

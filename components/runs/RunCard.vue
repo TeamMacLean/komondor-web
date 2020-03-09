@@ -1,22 +1,35 @@
 <template>
   <div class="card">
     <div class="card-content">
-      <nuxt-link :to="{ name: 'run', query: { id: run._id }}" class="title is-5">{{run.name}}
-      </nuxt-link>
-      <p>{{run.sequencingProvider}}</p>
-      <p>{{run.owner}}</p>
-      <p>{{run.ncbi}}</p>
+      <div>
+        <p class="truncate">
+          <b-icon icon="dna" class="has-text-grey"></b-icon>
+          <nuxt-link :to="{ name: 'run', query: { id: run._id }}" class="title is-5">
+            {{run.name}}
+          </nuxt-link>
+        </p>
+      </div>
+      <p>
+        <b-icon icon="account-outline" size="is-small" class="has-text-grey"></b-icon>
+        <nuxt-link :to="{ name: 'user', query: { username: run.owner }}" class="has-text-text">
+          
+          {{run.owner}}
+        </nuxt-link>
+      </p>
+      <p>
+        <b-icon icon="account-multiple-outline" size="is-small" class="has-text-grey"></b-icon>
+        {{run.group.name}}
+      </p>
+      <!-- <p>{{sample.commonName}}</p> -->
+
       <p class="truncate">{{run.conditions}}</p>
-
-
     </div>
-
   </div>
 </template>
 
 <script>
-  export default {
-    props: ['run']
-  }
+export default {
+  props: ["run"]
+};
 </script>
 
