@@ -57,9 +57,9 @@
                 <nuxt-link to="/help" class="dropdown-item">
                   <b-icon icon="help-circle-outline" size="is-small"></b-icon>Help
                 </nuxt-link>
-                <nuxt-link to="/settings" class="dropdown-item">
+                <!-- <nuxt-link to="/settings" class="dropdown-item">
                   <b-icon icon="cog-outline" size="is-small"></b-icon>Settings
-                </nuxt-link>
+                </nuxt-link> -->
                 <a class="dropdown-item" v-on:click="LogOut">
                   <b-icon icon="logout" size="is-small"></b-icon>Sign out
                 </a>

@@ -13,12 +13,12 @@
         icon="magnify"
         @select="onSelect"
       >
-        <!-- <template slot="header">
+        <template slot="header">
           <div class="truncate">
             <nuxt-link to="#">Search site for {{shortText}}</nuxt-link>
           </div>
-        </template>-->
-        <!--<template slot="empty">No results for {{name}}</template>-->
+        </template>
+        <template slot="empty">No results for {{name}}</template>
         <template slot-scope="props">
           <div class="truncate" v-if="props.option.type=='project'">
             <b-icon icon="folder-text-outline" size="is-small" class="has-text-grey"></b-icon>
