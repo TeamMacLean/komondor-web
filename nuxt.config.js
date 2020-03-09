@@ -15,18 +15,18 @@ export default {
     host: process.env.HOST || 'localhost', // default: localhost
   },
   head: {
-    title: process.env.npm_package_name || '',
+    title: 'TSL Sequence Store',
     htmlAttrs: {
       lang: 'en',
     },
     meta: [
       { charset: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { hid: 'description', name: 'description', content: process.env.npm_package_description || '' },
+      { hid: 'description', name: 'description', content: 'TSL Sequence Store' },
       { name: 'apple-mobile-web-app-capable', content: 'yes' },
       { name: 'mobile-web-app-capable', content: 'yes' }
     ],
-    link: [{ rel: 'icon', type: 'image/x-icon', href: '/icons/favicon.ico' }],
+    link: [{ rel: 'icon', type: 'image/x-icon', href: '/icons/favicon.ico?v=2' }],
   },
   // serverMiddleware: [
   //   bodyParser.json(),
