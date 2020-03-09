@@ -58,7 +58,7 @@
                   <b-icon icon="help-circle-outline" size="is-small"></b-icon>Help
                 </nuxt-link>
                 <nuxt-link to="/settings" class="dropdown-item">
-                  <b-icon icon="settings-outline" size="is-small"></b-icon>Settings
+                  <b-icon icon="cog-outline" size="is-small"></b-icon>Settings
                 </nuxt-link>
                 <a class="dropdown-item" v-on:click="LogOut">
                   <b-icon icon="logout" size="is-small"></b-icon>Sign out
@@ -68,11 +68,11 @@
           </div>
         </div>
 
-        <div class="navbar-item-custom" v-else>
+        <!-- <div class="navbar-item-custom" v-else>
           <div class="buttons">
             <nuxt-link to="/signin" class="button is-white" aria-role="menuitem">Log in</nuxt-link>
           </div>
-        </div>
+        </div> -->
       </div>
     </div>
   </div>
