@@ -26,7 +26,7 @@ export default {
       { name: 'apple-mobile-web-app-capable', content: 'yes' },
       { name: 'mobile-web-app-capable', content: 'yes' }
     ],
-    link: [{ rel: 'icon', type: 'image/x-icon', href: '/icons/favicon.ico?v=2' }],
+    link: [{ rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }]
   },
   // serverMiddleware: [
   //   bodyParser.json(),
@@ -37,17 +37,18 @@ export default {
   css: ['~/assets/main.scss'],
   plugins: [{ src: '~/plugins/v-tooltip', ssr: false }],
   modules: [
-    // '@nuxtjs/pwa',
+    '@nuxtjs/pwa',
     '@nuxtjs/axios',
     '@nuxtjs/auth',
     'nuxt-buefy',
     // 'nuxt-fontawesome', //V
   ],
   pwa: {
+    icon: {},
     manifest: {
       lang: 'en',
-      name: "Komondor - TSL Read Data",
-      short_name: "Komondor",
+      name: "TSL Sequence Store",
+      short_name: "SequenceStore",
       display: 'standalone',
       theme_color: '#8D80FA',
     },
