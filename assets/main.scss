@@ -5,7 +5,8 @@
 // $primary: #9c88ff; //purple
 // $primary:#253F56; //TSL blue
 $primary:#3C3F41; //black
-$primary-invert: findColorInvert($primary);
+// $primary-invert: findColorInvert($primary);
+$primary-invert: #ffffff;
 $twitter: #4099FF;
 $twitter-invert: findColorInvert($twitter);
 

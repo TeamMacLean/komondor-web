@@ -6,15 +6,15 @@
           <nuxt-link class="navbar-item-custom no-hover" to="/">
             <img src="/icon_28.png" alt="Logo" width="28" height="28" />
             <!-- <h1 class="title is-3 has-text-white">Sequence Store</h1> -->
-            Home
+            <!-- Home -->
           </nuxt-link>
         </div>
 
-        <!-- <nuxt-link
+        <nuxt-link
           class="navbar-item-custom has-text-weight-bold"
           to="/"
           v-if="this.$auth.loggedIn"
-        >Home</nuxt-link> -->
+        >Home</nuxt-link>
 
         <nuxt-link
           class="navbar-item-custom has-text-weight-bold"
