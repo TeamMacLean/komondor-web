@@ -26,7 +26,7 @@ export default {
       { name: 'apple-mobile-web-app-capable', content: 'yes' },
       { name: 'mobile-web-app-capable', content: 'yes' }
     ],
-    link: [{ rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }]
+    link: [{ rel: 'icon', type: 'image/x-icon', href: '/icons/favicon.ico' }],
   },
   // serverMiddleware: [
   //   bodyParser.json(),
