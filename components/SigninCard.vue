@@ -23,7 +23,7 @@
           <div class="control">
             <div class="field has-addons">
               <b-input
-                type="test"
+                type="text"
                 name="username"
                 title="username"
                 spellcheck="false"
