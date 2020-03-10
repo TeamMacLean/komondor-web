@@ -46,7 +46,7 @@
               <div v-if="!type">
                 <p class="title is-4">Select type to search</p>
               </div>
-              <div v-if="!!!results.length">
+              <div v-if="type && !!!results.length">
                 <p class="title is-4">Showing {{results.length}} {{countLingo}} for "{{query}}"</p>
                 <div v-if="type === 'project'">
                   <ProjectList :projects="results" showNewButton="false" />
