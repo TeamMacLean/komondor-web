@@ -15,7 +15,7 @@
       >
         <template slot="header">
           <div class="truncate">
-            <nuxt-link :to="{ query: 'search', query: { query: query }}">
+            <nuxt-link :to="{ name: 'search', query: { query: query }}">
               Search whole site for
               <strong>{{shortText}}</strong>
             </nuxt-link>
