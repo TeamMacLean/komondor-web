@@ -46,17 +46,17 @@
               <div v-if="!type">
                 <p class="title is-4">Select type to search</p>
               </div>
-            </div>
-            <div v-if="results.length">
-              <p class="title is-4">Showing {{results.length}} {{countLingo}} for "{{query}}"</p>
-              <div v-if="type === 'project'">
-                <ProjectList :projects="results" showNewButton="false" />
-              </div>
-              <div v-if="type === 'sample'">
-                <SampleList :samples="results" showNewButton="false" />
-              </div>
-              <div v-if="type === 'run'">
-                <RunList :runs="results" showNewButton="false" />
+              <div v-if="!!!results.length">
+                <p class="title is-4">Showing {{results.length}} {{countLingo}} for "{{query}}"</p>
+                <div v-if="type === 'project'">
+                  <ProjectList :projects="results" showNewButton="false" />
+                </div>
+                <div v-if="type === 'sample'">
+                  <SampleList :samples="results" showNewButton="false" />
+                </div>
+                <div v-if="type === 'run'">
+                  <RunList :runs="results" showNewButton="false" />
+                </div>
               </div>
             </div>
           </div>
