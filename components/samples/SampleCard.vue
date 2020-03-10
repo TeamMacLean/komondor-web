@@ -3,11 +3,10 @@
     <div class="card-content">
       <div>
         <p class="truncate">
-          <b-icon icon="flask-outline" class="has-text-grey"></b-icon>
-          <nuxt-link
-            :to="{ name: 'sample', query: { id: sample._id }}"
-            class="title is-5"
-          >{{sample.name}}</nuxt-link>
+          <b-icon icon="flask-outline" size="is-small" class="has-text-grey"></b-icon>
+          <nuxt-link :to="{ name: 'sample', query: { id: sample._id }}" class="title is-5">
+            <span class="truncate">{{sample.name}}</span>
+          </nuxt-link>
         </p>
       </div>
       <p>

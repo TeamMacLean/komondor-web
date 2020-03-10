@@ -3,7 +3,7 @@
     <div class="card-content">
       <div>
         <p class="truncate">
-          <b-icon icon="folder-text-outline" class="has-text-grey"></b-icon>
+          <b-icon icon="folder-text-outline" size="is-small" class="has-text-grey"></b-icon>
           <nuxt-link :to="{ name: 'project', query: { id: project._id }}" class="title is-5">
             <span class="truncate">{{project.name}}</span>
           </nuxt-link>

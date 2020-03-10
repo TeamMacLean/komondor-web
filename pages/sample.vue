@@ -56,7 +56,7 @@
         </b-field>
         <hr />
         <p class="title is-4">Runs</p>
-        <RunList v-if="sample.runs" :sample="sample" :runs="sample.runs"></RunList>
+        <RunList v-if="sample.runs" :sample="sample" :runs="sample.runs" showNewButton="true"/>
       </div>
     </div>
   </div>

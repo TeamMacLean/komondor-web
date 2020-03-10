@@ -29,7 +29,7 @@
         <hr />
 
         <p class="title is-4">Samples</p>
-        <SampleList v-if="project.samples" :project="project" :samples="project.samples"></SampleList>
+        <SampleList v-if="project.samples" :project="project" :samples="project.samples" showNewButton="true"/>
       </div>
     </div>
   </div>

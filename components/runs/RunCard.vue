@@ -3,9 +3,9 @@
     <div class="card-content">
       <div>
         <p class="truncate">
-          <b-icon icon="dna" class="has-text-grey"></b-icon>
+          <b-icon icon="dna" size="is-small" class="has-text-grey"></b-icon>
           <nuxt-link :to="{ name: 'run', query: { id: run._id }}" class="title is-5">
-            {{run.name}}
+            <span class="truncate">{{run.name}}</span>
           </nuxt-link>
         </p>
       </div>
