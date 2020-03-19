@@ -9,10 +9,20 @@
           <b-input type="text" placeholder="FASTQ - unpaired" v-model="name" required></b-input>
         </b-field>
 
-        <label class="checkbox">
-          <input type="checkbox" v-model="paired" />
-          Paired/Mated
-        </label>
+        <b-field>
+          <label class="checkbox">
+            <input type="checkbox" v-model="paired" />
+            Paired/Mated
+          </label>
+        </b-field>
+        <br />
+        <b-field label="File extensions" message="case insensitive">
+          <b-taginput v-model="extensions" ellipsis icon="label" placeholder=".fq.gz"></b-taginput>
+        </b-field>
+        <p class="content">
+          <b>Tags:</b>
+          {{ tags }}
+        </p>
       </section>
       <footer class="modal-card-foot">
         <button class="button" type="button" @click="$parent.close()">Cancel</button>

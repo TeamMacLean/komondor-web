@@ -117,7 +117,7 @@ export default {
       .then(res => {
         if (res.status === 200 && res.data.run) {
           // res.data.project.samples = [];
-          console.log(res.data.run);
+           
           return {
             run: res.data.run
           };

@@ -24,7 +24,7 @@
           </b-select>
         </div>
       </div>
-      <p class="control" v-if="!showNewButton">
+      <p class="control" v-if="showNewButton">
         <nuxt-link to="/projects/new" class="button is-success">New</nuxt-link>
       </p>
     </div>

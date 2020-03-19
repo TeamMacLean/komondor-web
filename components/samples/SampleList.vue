@@ -24,7 +24,7 @@
           </b-select>
         </div>
       </div>
-      <p class="control" v-if="project && !showNewButton">
+      <p class="control" v-if="project && showNewButton">
         <nuxt-link
           :to="{ name: 'samples-new', query: { project: project._id }}"
           class="button is-success"
@@ -83,7 +83,7 @@ export default {
         p => p.name.toLowerCase().indexOf(self.filterText.toLowerCase()) > -1
       );
       filteredByGroup = filteredByGroup.sort((a, b) => {
-        console.log(this.sortBy === 0, this.sortBy === 1);
+         
         if (this.sortBy === 0) {
           return new Date(b.createdAt) - new Date(a.createdAt);
         } else {

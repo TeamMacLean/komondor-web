@@ -8,7 +8,10 @@
         </p>
 
         <p class="subtitle">
-           <nuxt-link :to="{ name: 'user', query: { username: project.owner }}" class="has-text-text">
+          <nuxt-link
+            :to="{ name: 'user', query: { username: project.owner }}"
+            class="has-text-text"
+          >
             <b-icon icon="account-outline" size="is-small" class="has-text-grey"></b-icon>
             {{project.owner}}
           </nuxt-link>
@@ -21,15 +24,35 @@
         <b-field label="Long Description">{{project.longDesc}}</b-field>
 
         <b-field label="Additional Files">
-          <FileList
-            additional="true,"
-            :files="project.additionalFiles"
-          />
+          <FileList additional="true," :files="project.additionalFiles" />
         </b-field>
+
+        <!-- <div v-if="project.group.sendToEna && !project.doNotSendToEna"> -->
+        <hr />
+        <b-field label="ENA Status *DEV*">
+          <div class="control">
+            <!-- <div>project.ena</div> -->
+            <div class="buttons">
+              <b-button
+                type="is-primary"
+                outlined
+                :disabled="!canSubmitToENA"
+                @click="submitToENA"
+              >Submit to ENA</b-button>
+            </div>
+          </div>
+        </b-field>
+        <!-- </div> -->
+
         <hr />
 
         <p class="title is-4">Samples</p>
-        <SampleList v-if="project.samples" :project="project" :samples="project.samples" showNewButton="true"/>
+        <SampleList
+          v-if="project.samples"
+          :project="project"
+          :samples="project.samples"
+          showNewButton="true"
+        />
       </div>
     </div>
   </div>
@@ -62,7 +85,7 @@ export default {
       .then(res => {
         if (res.status === 200 && res.data.project) {
           // res.data.project.samples = [];
-          console.log("project", res.data.project);
+           
           return {
             project: res.data.project
           };
@@ -74,6 +97,23 @@ export default {
         console.error(err);
         error({ statusCode: 501, message: "Project not found" });
       });
+  },
+  computed: {
+    canSubmitToENA() {
+      return true;
+    }
+  },
+  methods: {
+    submitToENA() {
+      this.$axios
+        .post("/project/ena/submit", { id: this.$route.query.id })
+        .then(res => {
+           
+        })
+        .catch(err => {
+          console.error(err);
+        });
+    }
   }
 };
 </script>

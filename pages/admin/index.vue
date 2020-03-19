@@ -249,8 +249,9 @@ export default {
       let modalProps = {
         name: "",
         paried: false,
+        extensions:[],
         postForm: function() {
-          console.log("onsave!!", this.name, this.paired);
+           
 
           this.$axios
             .post("/options/librarytype", {

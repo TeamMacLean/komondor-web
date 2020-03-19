@@ -27,7 +27,14 @@
               label="Insert size"
               message="What is the average insert size covered by your read pairs? This should be in the communication with your provider."
             >
-              <b-input placeholder="Number" expanded type="number" min="0" required v-model="run.insertSize"></b-input>
+              <b-input
+                placeholder="Number"
+                expanded
+                type="number"
+                min="0"
+                required
+                v-model="run.insertSize"
+              ></b-input>
             </b-field>
           </div>
         </div>
@@ -38,7 +45,13 @@
               label="Sequencing provider"
               message="Which company/institute did your sequencing? Please provide at least the name."
             >
-              <b-input placeholder="EI" expanded type="text" required v-model="run.sequencingProvider"></b-input>
+              <b-input
+                placeholder="EI"
+                expanded
+                type="text"
+                required
+                v-model="run.sequencingProvider"
+              ></b-input>
             </b-field>
           </div>
           <div class="column">
@@ -146,19 +159,23 @@
         </div>
 
         <hr />
-        <b-field label="Raw reads"
-        message="TODO WARN USER TO USE GZIPPED IF THEY UPLOAD FASTQ" >
-          <UploadRaw :uploadID="run.rawUploadID" :paired="this.paired" />
+        <b-field label="Raw reads">
+          <UploadRaw
+            :uploadID="run.rawUploadID"
+            :paired="this.paired"
+            :onUploadStatusChange="onRawUploaderChange"
+            :onMD5Change="onMD5Change"
+          />
         </b-field>
         <hr />
         <b-field
           label="Additional files"
           message="Please upload any documentation obtained from the sequencing provider, including copies of the communication. If the documentation pertains only to a certain sample or data set, then please add it there instead."
         >
-          <Uploader :uploadID="run.additionalUploadID" />
+          <Uploader :uploadID="run.additionalUploadID" :onUploadStatusChange="onUploaderChange" />
         </b-field>
         <!--<div class="buttons is-right">-->
-        <button type="submit" class="button is-success">Create run</button>
+        <button type="submit" class="button is-success" :disabled="!canSubmit">Create run</button>
         <!--</div>-->
       </form>
     </div>
@@ -168,16 +185,12 @@
 <script>
 import Uploader from "~/components/uploads/Uploader.vue";
 import UploadRaw from "~/components/uploads/UploaderRaw.vue";
-import uuidv4 from "uuid/v4";
+import { v4 as uuidv4 } from "uuid";
 export default {
   middleware: "auth",
   components: { Uploader, UploadRaw },
   mounted() {
     this.$store.dispatch("refreshOptions");
-
-    //     setInterval(()=>{
-    // console.log(this.run.libraryType,this.libraryTypeObject, this.paired)
-    //     },500)
   },
   asyncData({ store, route, $axios, error }) {
     if (!route.query.sample) {
@@ -189,18 +202,21 @@ export default {
       .then(res => {
         if (res.status === 200) {
           return {
+            additionalUploadsComplete: true,
+            rawUploadsComplete: false,
             sample: res.data.sample,
             run: {
               sample: res.data.sample._id,
               libraryType: null,
-              sequencingProvider: '',
+              sequencingProvider: "",
               sequencingTechnology: null,
               librarySource: null,
               librarySelection: null,
               libraryStrategy: null,
               insertSize: null,
               additionalUploadID: uuidv4(),
-              rawUploadID: uuidv4()
+              rawUploadID: uuidv4(),
+              MD5s: []
             }
           };
         } else {
@@ -213,6 +229,9 @@ export default {
       });
   },
   computed: {
+    canSubmit() {
+      return this.additionalUploadsComplete;
+    },
     paired() {
       return this.libraryTypeObject ? this.libraryTypeObject.paired : false;
     },
@@ -251,19 +270,45 @@ export default {
       return JSON.parse(JSON.stringify(this.$store.state.libraryStrategies));
     },
     canSubmit() {
-      //TODO all added Addiditional files uploaded
-      //TODO all raw read uploaded
-
-      return false;
+      return this.additionalUploadsComplete && this.rawUploadsComplete;
     }
   },
   methods: {
+    onMD5Change(MD5, UUID) {
+      // this.run.MD5s[UUID] = MD5;
+      let found = false;
+      this.run.MD5s = this.run.MD5s.map(m => {
+        if (m.UUID === UUID) {
+          found = true;
+          return { UUID, MD5 };
+        } else {
+          return m;
+        }
+      });
+
+      if (!found) {
+        this.run.MD5s.push({ UUID, MD5 });
+      }
+    },
+    onUploaderChange(val) {
+      if (typeof val === "boolean") {
+        this.additionalUploadsComplete = val;
+      }
+    },
+    onRawUploaderChange(val) {
+      if (typeof val === "boolean") {
+        this.rawUploadsComplete = val;
+      }
+    },
     postForm() {
-      console.log("run", this.run);
       this.run.owner = this.$auth.user.username; //required
       this.run.group = this.sample.group._id;
       this.run.sample = this.sample._id; //required
-      // this.project.tags = this.tags;
+
+      // this.run.MD5s = Object.keys(this.run.MD5s).map(m => {
+      //   return { UUID: m, MD5: this.run.MD5s[m] };
+      // });
+
       this.$axios
         .post("/runs/new", this.run)
         .then(result => {
@@ -271,10 +316,6 @@ export default {
             message: "Run created!",
             type: "is-success"
           });
-          // this.$router.push({
-          //   path: '/projects'
-          // })
-          console.log("result", result.data);
           this.$router.push({
             name: "run",
             query: { id: result.data.run._id }

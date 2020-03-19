@@ -93,13 +93,13 @@
           label="Additional files"
           message="Please upload any documentation obtained from the sequencing provider, including copies of the communication. If the documentation pertains to the whole project or only to a certain data set, then please add it there instead."
         >
-          <Uploader :uploadID="sample.additionalUploadID" />
+          <Uploader :uploadID="sample.additionalUploadID" :onUploadStatusChange="onUploaderChange" />
         </b-field>
 
         <hr />
 
         <!--<div class="buttons is-right">-->
-        <button type="submit" class="button is-success">Create sample</button>
+        <button type="submit" class="button is-success" :disabled="!canSubmit">Create sample</button>
         <!--</div>-->
       </form>
     </div>
@@ -108,20 +108,33 @@
 
 <script>
 import Uploader from "~/components/uploads/Uploader.vue";
-import uuidv4 from "uuid/v4";
+import { v4 as uuidv4 } from "uuid";
 export default {
   middleware: "auth",
   components: { Uploader },
   asyncData({ store, route, $axios, error }) {
     if (!route.query.project) {
-      error({ statusCode: 500, message: "Project not found" });
+      return error({ statusCode: 500, message: "Project not found" });
     }
 
     return $axios
       .get("/project", { params: { id: route.query.project } })
       .then(res => {
         if (res.status === 200) {
+          if (
+            res.data.project &&
+            res.data.project.group &&
+            res.data.project.doNotSendToEna &&
+            res.data.project.group.sendToEna
+          ) {
+            return error({
+              message:
+                "You have requested that this data not go to ENA, you cannot add any samples until this is resolved."
+            });
+          }
+
           return {
+            additionalUploadsComplete: true,
             project: res.data.project,
             sample: {
               name: "",
@@ -134,16 +147,27 @@ export default {
             }
           };
         }
-        error({ statusCode: 500, message: "Project not found" });
+        return error({ statusCode: 500, message: "Project not found" });
       })
       .catch(err => {
         console.error(err);
-        error({ statusCode: 500, message: "Project not found" });
+        return error({ statusCode: 500, message: "Project not found" });
       });
   },
+  computed: {
+    canSubmit() {
+      return this.additionalUploadsComplete;
+    }
+  },
   methods: {
+    onUploaderChange(val) {
+      //  
+      if (typeof val === "boolean") {
+        this.additionalUploadsComplete = val;
+      }
+    },
     postForm() {
-      console.log("sample", this.sample);
+      //  
       this.sample.owner = this.$auth.user.username; //required
       this.sample.group = this.project.group;
       this.sample.project = this.project._id; //required
@@ -158,7 +182,7 @@ export default {
           // this.$router.push({
           //   path: '/projects'
           // })
-          console.log("result", result.data);
+          //  
           this.$router.push({
             name: "sample",
             query: { id: result.data.sample._id }

@@ -75,31 +75,37 @@
           label="Additional files"
           message="Please upload any documentation obtained from the sequencing provider, including copies of the communication. If the documentation pertains only to a certain sample or data set, then please add it there instead."
         >
-          <Uploader :uploadID="project.additionalUploadID" ref="additionalUploads" />
+          <Uploader
+            :uploadID="project.additionalUploadID"
+            ref="additionalUploads"
+            :onChange="onUploaderChange"
+          />
         </b-field>
 
         <hr />
 
         <!--<div class="buttons is-right">-->
-        <div class="field">
-          <b-checkbox v-model="doNotSendToEna">Request that this not be sent to ENA</b-checkbox>
-          <p
-            class="help"
-            v-if="!doNotSendToEna"
-          >Checking this will require you to give a reason why.</p>
-        </div>
+        <div v-if="selectedGroup && selectedGroup.sendToEna">
+          <div class="field">
+            <b-checkbox v-model="project.doNotSendToEna">Request that this not be sent to ENA</b-checkbox>
+            <p
+              class="help"
+              v-if="!project.doNotSendToEna"
+            >Checking this will require you to give a reason why.</p>
+          </div>
 
-        <div class="field" v-if="doNotSendToEna">
-          <b-input
-            v-model="doNotSendToEnaReason"
-            type="textarea"
-            minlength="50"
-            placeholder="I believe this project should not be submitted to ENA because..."
-            required
-          ></b-input>
-        </div>
+          <div class="field" v-if="project.doNotSendToEna">
+            <b-input
+              v-model="project.doNotSendToEnaReason"
+              type="textarea"
+              minlength="50"
+              placeholder="I believe this project should not be submitted to ENA because..."
+              required
+            ></b-input>
+          </div>
 
-        <hr />
+          <hr />
+        </div>
 
         <button type="submit" class="button is-success" :disabled="!canSubmit">Create project</button>
       </form>
@@ -110,28 +116,28 @@
 
 <script>
 import Uploader from "~/components/uploads/Uploader.vue";
-import uuidv4 from "uuid/v4";
+import { v4 as uuidv4 } from "uuid";
 
 export default {
   middleware: "auth",
   components: { Uploader },
   // mounted(){
   //   this.$refs.additionalUploads.on('canSubmit', function(){
-      
+
   //   })
   // },
   data() {
     return {
-      doNotSendToEna: false,
-      doNotSendToEnaReason: null,
-      dropFiles: [],
+      additionalUploadsComplete: true,
       project: {
         name: "",
         group: null,
         shortDesc: "",
         longDesc: "",
         isSelectOnly: false,
-        additionalUploadID: uuidv4()
+        additionalUploadID: uuidv4(),
+        doNotSendToEna: false,
+        doNotSendToEnaReason: null
       }
     };
   },
@@ -140,19 +146,30 @@ export default {
   },
   computed: {
     canSubmit() {
-      // console.log(this.$refs.additionalUploads)/
-      return true;
+      return this.additionalUploadsComplete;
+    },
+    selectedGroup() {
+      if (this.project.group) {
+        const found = this.$store.state.groups.filter(
+          f => f._id === this.project.group
+        );
+        if (found.length) {
+          return found[0];
+        } else {
+          return null;
+        }
+      } else {
+        return null;
+      }
     }
   },
   methods: {
-    // getFilteredTags(text) {
-    //   this.filteredTags = initTags.filter((option) => {
-    //     return option
-    //       .toString()
-    //       .toLowerCase()
-    //       .indexOf(text.toLowerCase()) >= 0
-    //   })
-    // },
+    onUploaderChange(val) {
+      //  
+      if (typeof val === "boolean") {
+        this.additionalUploadsComplete = val;
+      }
+    },
     postForm() {
       this.project.owner = this.$auth.user.username; //required
       // this.project.tags = this.tags;
@@ -169,7 +186,7 @@ export default {
           });
         })
         .catch(err => {
-          console.error(err);
+          // console.error(err);
           this.$buefy.dialog.alert({
             title: "Error",
             message: err.message,

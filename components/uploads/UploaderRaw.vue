@@ -2,44 +2,59 @@
   <div>
     <div v-if="!uploadID">ERROR! no uploadUD</div>
     <div>
-      <div v-if="paired">
-        <UploaderRawRow
-          v-for="rowID in rowIDs"
-          :rowID="rowID"
-          :uploadID="uploadID"
-          :key="rowID"
-          :deleteRow="deleteRow"
-        />
-      </div>
-      <div v-else>
-        <Uploader :uploadID="uploadID" />
-      </div>
+      <UploaderRawRow
+        :paired="paired"
+        v-for="rowID in rowIDs"
+        :rowID="rowID"
+        :uploadID="uploadID"
+        :key="rowID"
+        :deleteRow="deleteRow"
+        :onUploadStatusChange="onRowChange"
+      />
     </div>
 
     <br />
-    <b-button v-if="paired" icon-left="plus" @click="addRow">Add another</b-button>
+    <b-button icon-left="plus" @click="addRow">Add another</b-button>
   </div>
 </template>
 
 <script>
 import UploaderRawRow from "./UploaderRawRow";
-import Uploader from "./Uploader";
-import uuidv4 from "uuid/v4";
+import { v4 as uuidv4 } from "uuid";
 export default {
-  props: ["paired", "uploadID"],
-  components: { UploaderRawRow, Uploader },
+  props: ["paired", "uploadID", "onUploadStatusChange"],
+  components: { UploaderRawRow },
   data() {
     return {
       API_URL: process.env.API_URL,
-      rowIDs: [uuidv4()]
+      rowIDs: [uuidv4()],
+      rowsDone: []
     };
   },
   methods: {
     deleteRow(rowID) {
       this.rowIDs = this.rowIDs.filter(u => u != rowID);
+      this.updateStatus();
     },
     addRow() {
       this.rowIDs.push(uuidv4());
+      this.updateStatus();
+    },
+    onRowChange(val, rowID) {
+      //  
+      this.rowsDone[rowID] = val;
+      this.updateStatus();
+    },
+    updateStatus() {
+      if (this.rowIDs.length < 1) {
+        this.onUploadStatusChange(true);
+      } else {
+        const filtered = this.rowIDs.filter(rid => {
+          return !this.rowsDone[rid];
+        });
+        const status = filtered.length < 1;
+        this.onUploadStatusChange(status);
+      }
     }
   }
 };
