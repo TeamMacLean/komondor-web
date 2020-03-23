@@ -161,10 +161,9 @@
         <hr />
         <b-field label="Raw reads">
           <UploadRaw
-            :uploadID="run.rawUploadID"
             :paired="this.paired"
             :onUploadStatusChange="onRawUploaderChange"
-            :onMD5Change="onMD5Change"
+            ref="rawUploader"
           />
         </b-field>
         <hr />
@@ -172,7 +171,10 @@
           label="Additional files"
           message="Please upload any documentation obtained from the sequencing provider, including copies of the communication. If the documentation pertains only to a certain sample or data set, then please add it there instead."
         >
-          <Uploader :uploadID="run.additionalUploadID" :onUploadStatusChange="onUploaderChange" />
+          <Uploader
+            :onUploadStatusChange="onUploaderChange"
+            ref="additionalUploader"
+          />
         </b-field>
         <!--<div class="buttons is-right">-->
         <button type="submit" class="button is-success" :disabled="!canSubmit">Create run</button>
@@ -214,9 +216,10 @@ export default {
               librarySelection: null,
               libraryStrategy: null,
               insertSize: null,
-              additionalUploadID: uuidv4(),
-              rawUploadID: uuidv4(),
-              MD5s: []
+              // additionalUploadID: uuidv4(),
+              // rawUploadID: uuidv4(),
+              rawFiles: [],
+              additionalFiles: []
             }
           };
         } else {
@@ -274,31 +277,45 @@ export default {
     }
   },
   methods: {
-    onMD5Change(MD5, UUID) {
-      // this.run.MD5s[UUID] = MD5;
-      let found = false;
-      this.run.MD5s = this.run.MD5s.map(m => {
-        if (m.UUID === UUID) {
-          found = true;
-          return { UUID, MD5 };
-        } else {
-          return m;
-        }
-      });
-
-      if (!found) {
-        this.run.MD5s.push({ UUID, MD5 });
-      }
-    },
     onUploaderChange(val) {
       if (typeof val === "boolean") {
         this.additionalUploadsComplete = val;
       }
+      this.updateAdditionalFiles();
     },
     onRawUploaderChange(val) {
       if (typeof val === "boolean") {
         this.rawUploadsComplete = val;
       }
+      this.updateRawFiles();
+      // console.log('ids', uploadIDS)
+    },
+    updateAdditionalFiles() {
+      // const self = this;
+      // self.run.additionalFiles = [];
+      this.run.additionalFiles = this.$refs["additionalUploader"].getFiles();
+      // const files = self.$refs["additionalUploader"].getFiles();
+      // const uploadIDS = files.map(file => {
+      //   if (file.uploadURL) {
+      //     const uploadName = file.file.uploadURL.split("/").pop();
+      //     file.uploadName = uploadName;
+      //     self.run.additionalFiles.push(file);
+      //   }
+      // });
+    },
+    updateRawFiles() {
+      // const self = this;
+      // self.run.rawFiles = [];
+      this.run.rawFiles = this.$refs["rawUploader"].getFiles();
+      // const files = self.$refs["rawUploader"].getFiles();
+      // return files;
+      // const uploadIDS = files.map(file => {
+      // if (file.uploadURL) {
+      // const uploadName = file.file.uploadURL.split("/").pop();
+      // file.uploadName = uploadName;
+      // self.run.rawFiles.push(file);
+      // }
+      // });
     },
     postForm() {
       this.run.owner = this.$auth.user.username; //required

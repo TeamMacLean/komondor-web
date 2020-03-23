@@ -1,12 +1,11 @@
 <template>
   <div>
-    <div v-if="!uploadID">ERROR! no uploadUD</div>
     <div>
       <UploaderRawRow
         :paired="paired"
         v-for="rowID in rowIDs"
         :rowID="rowID"
-        :uploadID="uploadID"
+        :ref="rowID"
         :key="rowID"
         :deleteRow="deleteRow"
         :onUploadStatusChange="onRowChange"
@@ -22,7 +21,7 @@
 import UploaderRawRow from "./UploaderRawRow";
 import { v4 as uuidv4 } from "uuid";
 export default {
-  props: ["paired", "uploadID", "onUploadStatusChange"],
+  props: ["paired", "onUploadStatusChange"],
   components: { UploaderRawRow },
   data() {
     return {
@@ -41,7 +40,7 @@ export default {
       this.updateStatus();
     },
     onRowChange(val, rowID) {
-      //  
+      //
       this.rowsDone[rowID] = val;
       this.updateStatus();
     },
@@ -55,6 +54,18 @@ export default {
         const status = filtered.length < 1;
         this.onUploadStatusChange(status);
       }
+    },
+    getFiles() {
+      const self = this;
+      const flat = [];
+      this.rowIDs.map(rid => {
+        if (self.$refs[rid]) {
+          return self.$refs[rid][0].getFiles().map(ff => {
+            flat.push(ff);
+          });
+        }
+      });
+      return flat
     }
   }
 };

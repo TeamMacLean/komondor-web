@@ -2,7 +2,7 @@
   <div>
     <Home v-if="renderHome"></Home>
     <div v-else>
-      <section class="hero is-medium is-primary" style="height:calc(100vh - 49px);">
+      <section class="hero is-medium is-primary" style="height:calc(100vh - 46px);">
         <div class="hero-body">
           <div class="container is-large">
             <!-- <div class="columns">

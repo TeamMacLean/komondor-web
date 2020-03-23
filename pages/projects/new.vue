@@ -75,11 +75,7 @@
           label="Additional files"
           message="Please upload any documentation obtained from the sequencing provider, including copies of the communication. If the documentation pertains only to a certain sample or data set, then please add it there instead."
         >
-          <Uploader
-            :uploadID="project.additionalUploadID"
-            ref="additionalUploads"
-            :onChange="onUploaderChange"
-          />
+          <Uploader ref="additionalUploads" :onChange="onUploaderChange" />
         </b-field>
 
         <hr />
@@ -135,9 +131,9 @@ export default {
         shortDesc: "",
         longDesc: "",
         isSelectOnly: false,
-        additionalUploadID: uuidv4(),
         doNotSendToEna: false,
-        doNotSendToEnaReason: null
+        doNotSendToEnaReason: null,
+        additionalFiles: []
       }
     };
   },
@@ -165,10 +161,26 @@ export default {
   },
   methods: {
     onUploaderChange(val) {
-      //  
+      //
       if (typeof val === "boolean") {
         this.additionalUploadsComplete = val;
       }
+      this.updateAdditionalFiles();
+    },
+    updateAdditionalFiles() {
+      // const self = this;
+      // self.run.additionalFiles = [];
+      this.project.additionalFiles = this.$refs[
+        "additionalUploader"
+      ].getFiles();
+      // const files = self.$refs["additionalUploader"].getFiles();
+      // const uploadIDS = files.map(file => {
+      //   if (file.uploadURL) {
+      //     const uploadName = file.file.uploadURL.split("/").pop();
+      //     file.uploadName = uploadName;
+      //     self.run.additionalFiles.push(file);
+      //   }
+      // });
     },
     postForm() {
       this.project.owner = this.$auth.user.username; //required

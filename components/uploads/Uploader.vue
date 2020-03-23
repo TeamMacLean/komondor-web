@@ -15,17 +15,16 @@ import "@uppy/core/dist/style.css";
 import "@uppy/dashboard/dist/style.css";
 
 export default {
-  props: ["uploadID", "onUploadStatusChange"],
+  props: [ "onUploadStatusChange"],
   data() {
     return {
       API_URL: process.env.API_URL,
       uppyInstance: null,
-      uppyId: `uppy-${this.uploadID}`,
-      UUID: uuidv4()
+      uppyId: `uppy-${uuidv4()}`,
+      // UUID: uuidv4()
     };
   },
   mounted() {
-     
     this.uppyInstance = Uppy({
       debug: true,
       autoProceed: true,
@@ -71,6 +70,18 @@ export default {
         this.onUploadStatusChange(allUploadsComplete);
         // self.$emit("canSubmit", allUploadsComplete);
       });
+    }
+  },
+  methods: {
+    getFiles() {
+      return this.uppyInstance.getFiles().map(f => {
+        if (f.uploadURL) {
+          f.uploadName = f.uploadURL.split("/").pop();
+        }
+        return f;
+      });
+
+      // return this.uppyInstance.getFiles();
     }
   }
 };

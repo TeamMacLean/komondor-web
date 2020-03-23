@@ -14,7 +14,7 @@
     <div :id="uniqueID+'-progress'" class="UppyInput-Progress"></div>
     <br />
     <b-field label="MD5">
-      <b-input v-model="MD5" @change="onMD5ChangeEvent" required></b-input>
+      <b-input v-model="MD5" required></b-input>
     </b-field>
     <div v-show="fileName">
       <a v-show="!generatingMD5" @click="generateMD5">Generate MD5</a>
@@ -61,7 +61,6 @@ function GenerateMD5ForUppy(uppyInstance, progressFunction) {
       setProgress(currentChunk, chunks);
 
       fileReader.onload = function(e) {
-         
         spark.append(e.target.result); // Append array buffer
         currentChunk++;
 
@@ -70,7 +69,6 @@ function GenerateMD5ForUppy(uppyInstance, progressFunction) {
         if (currentChunk < chunks) {
           loadNext();
         } else {
-           
           resolve(spark.end());
         }
       };
@@ -93,7 +91,7 @@ function GenerateMD5ForUppy(uppyInstance, progressFunction) {
 }
 
 export default {
-  props: ["uploadID", "rowID", "onUploadStatusChange", "onMD5Change"],
+  props: [ "rowID", "onUploadStatusChange"],
   data() {
     return {
       API_URL: process.env.API_URL,
@@ -145,13 +143,13 @@ export default {
       this.fileName = fileName;
       this.showInput = false;
 
-      console.log(file, response)
+      console.log(file, response);
     });
 
     if (this.onUploadStatusChange) {
       const self = this;
       this.uppyInstance.on("*", () => {
-        console.log(self.uppyInstance.getFiles());
+        console.log("rawitem files", self.uppyInstance.getFiles());
         const allUploadsComplete =
           self.uppyInstance.getFiles().filter(file => {
             return !file.progress.uploadComplete;
@@ -170,17 +168,12 @@ export default {
     //     message: "Are you sure?",
     //     type: "is-danger",
     //     onConfirm: () => {
-    //        
+    //
     //       this.deleteRow(this.rowID);
     //     }
     //   });
     //   // }
     // },
-    onMD5ChangeEvent() {
-      if (onMD5Change) {
-        this.onMD5Change(this.MD5, this.UUID);
-      }
-    },
     showMD5Warning() {
       return new Promise((resolve, reject) => {
         this.$buefy.dialog.confirm({
@@ -226,6 +219,14 @@ export default {
             self.generatingMD5 = false;
           });
       }
+    },
+    getFiles() {
+      const f = this.uppyInstance.getFiles()[0];
+      f.md5 = this.MD5;
+      if (f.uploadURL) {
+        f.uploadName = f.uploadURL.split("/").pop();
+      }
+      return f;
     }
   }
 };
