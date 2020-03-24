@@ -22,7 +22,7 @@
                 <button type="button" class="button is-success" @click="promptForNewLibraryType">New</button>
               </div>
             </b-field>
-           
+
             <b-field label="Sequencing technologies">
               <div>
                 <ul>
@@ -103,7 +103,7 @@
           <b-tab-item label="Users">
             <ul>
               <li v-for="user in users" :key="user._id">
-                <a>{{user.name}}</a>
+                <nuxt-link :to="{ name: 'user', query: { username: user.name}}">{{user.name}}</nuxt-link>
               </li>
             </ul>
           </b-tab-item>
@@ -249,10 +249,8 @@ export default {
       let modalProps = {
         name: "",
         paried: false,
-        extensions:[],
+        extensions: [],
         postForm: function() {
-           
-
           this.$axios
             .post("/options/librarytype", {
               value: this.name,
