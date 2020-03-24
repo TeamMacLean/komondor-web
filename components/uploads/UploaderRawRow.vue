@@ -17,7 +17,7 @@
             class="help"
           >Choose the file that contains the forward reads (usually having "R1" in the filename).</p>
           <br />
-          <RawItem :onUploadStatusChange="onLeftChange"  ref="left" />
+          <RawItem :onUploadStatusChange="onLeftChange" ref="left" :allowedExtensions="allowedExtensions"/>
         </div>
         <div class="column is-6">
           <label class="label">Second read file (R2)</label>
@@ -25,13 +25,13 @@
             class="help"
           >Choose the file that contains the reverse reads (usually having "R2" in the filename).</p>
           <br />
-          <RawItem :onUploadStatusChange="onRightChange"  ref="right" />
+          <RawItem :onUploadStatusChange="onRightChange" ref="right" :allowedExtensions="allowedExtensions" />
         </div>
       </div>
     </div>
     <div v-else>
       <!-- <div class="outlined"> -->
-      <RawItem :onUploadStatusChange="onSingleChange" ref="single" />
+      <RawItem :onUploadStatusChange="onSingleChange" ref="single"  :allowedExtensions="allowedExtensions" />
       <!-- </div> -->
     </div>
   </div>
@@ -40,7 +40,7 @@
 <script>
 import RawItem from "./_RawItem";
 export default {
-  props: ["paired", "deleteRow", "rowID", "onUploadStatusChange"],
+  props: ["paired", "deleteRow", "rowID", "onUploadStatusChange", "allowedExtensions"],
   components: { RawItem },
   data() {
     return {
@@ -99,13 +99,18 @@ export default {
       if (this.paired) {
         const left = this.$refs["left"].getFiles();
         const right = this.$refs["right"].getFiles();
-        left.paired = true;
-        right.paired = true;
-        return lefts.concat(rights);
+        if (left) {
+          left.paired = true;
+        }
+        if (right) {
+          right.paired = true;
+        }
         return [left, right];
       } else {
         const single = this.$refs["single"].getFiles();
-        single.paired = false;
+        if (single) {
+          single.paired = false;
+        }
         return [single];
       }
     }

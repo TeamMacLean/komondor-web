@@ -48,6 +48,8 @@ function GenerateMD5ForUppy(uppyInstance, progressFunction) {
     } else {
       const file = uppyInstance.getFiles()[0].data;
 
+      console.log("file", file);
+
       var blobSlice =
           File.prototype.slice ||
           File.prototype.mozSlice ||
@@ -91,7 +93,7 @@ function GenerateMD5ForUppy(uppyInstance, progressFunction) {
 }
 
 export default {
-  props: [ "rowID", "onUploadStatusChange"],
+  props: ["rowID", "onUploadStatusChange", "allowedExtensions"],
   data() {
     return {
       API_URL: process.env.API_URL,
@@ -115,12 +117,15 @@ export default {
   },
   mounted() {
     // if (this.uploadID) {
+
+    console.log("this.allowedExtensions", this.allowedExtensions);
     this.uppyInstance = new Uppy({
       debug: true,
       autoProceed: true,
       restrictions: {
         maxNumberOfFiles: 1,
-        minNumberOfFiles: 1
+        minNumberOfFiles: 1,
+        allowedFileTypes: this.allowedExtensions
       },
       meta: {
         // uploadID: this.uploadID,
@@ -143,13 +148,13 @@ export default {
       this.fileName = fileName;
       this.showInput = false;
 
-      console.log(file, response);
+      // console.log(file, response);
     });
 
     if (this.onUploadStatusChange) {
       const self = this;
       this.uppyInstance.on("*", () => {
-        console.log("rawitem files", self.uppyInstance.getFiles());
+        // console.log("rawitem files", self.uppyInstance.getFiles());
         const allUploadsComplete =
           self.uppyInstance.getFiles().filter(file => {
             return !file.progress.uploadComplete;
@@ -192,6 +197,7 @@ export default {
     },
     generateMD5() {
       const self = this;
+      console.log("here", self.MD5WarningShown);
       if (!self.MD5WarningShown) {
         //show warning first
         self.showMD5Warning().then(() => {
@@ -204,27 +210,33 @@ export default {
       }
 
       function doGeneration() {
+        console.log(1);
         self.generatingMD5 = true;
-
+        console.log(2);
         const progress = function(value) {
+          console.log(3);
           self.MD5LeftProgress = value;
         };
 
-        GenerateMD5ForUppy(self.uppy, progress)
+        GenerateMD5ForUppy(self.uppyInstance, progress)
           .then(md5 => {
+            console.log(4);
             self.MD5 = md5;
             self.generatingMD5 = false;
           })
           .catch(err => {
+            console.error('error', err);
             self.generatingMD5 = false;
           });
       }
     },
     getFiles() {
       const f = this.uppyInstance.getFiles()[0];
-      f.md5 = this.MD5;
-      if (f.uploadURL) {
-        f.uploadName = f.uploadURL.split("/").pop();
+      if (f) {
+        f.md5 = this.MD5;
+        if (f.uploadURL) {
+          f.uploadName = f.uploadURL.split("/").pop();
+        }
       }
       return f;
     }

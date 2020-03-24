@@ -5,14 +5,14 @@
       <ul>
         <li v-for="file in files" :key="file._id">
           <b-icon icon="file-outline" size="is-small"></b-icon>
-          <a href="#">{{file.originalName}}</a>
+          <a href="#">{{file.file.originalName}}</a>
         </li>
       </ul>
     </div>
     <div v-else>
       <!-- TODO sort paired -->
       <div v-for="file in files" :key="file._id" class="card">
-        <div class="card-content">{{file.originalName}}</div>
+        <div class="card-content">{{file.file.originalName}}</div>
       </div>
     </div>
     <!-- if sequences cards -->

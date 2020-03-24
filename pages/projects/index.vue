@@ -4,7 +4,7 @@
 
       <h1 class="title">Your Projects</h1>
 
-      <ProjectList/>
+      <ProjectList showNewButton="true"/>
 
 
     </div>

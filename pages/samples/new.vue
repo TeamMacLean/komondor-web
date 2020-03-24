@@ -93,7 +93,7 @@
           label="Additional files"
           message="Please upload any documentation obtained from the sequencing provider, including copies of the communication. If the documentation pertains to the whole project or only to a certain data set, then please add it there instead."
         >
-          <Uploader :onUploadStatusChange="onUploaderChange" />
+          <Uploader ref="additionalUploader" :onUploadStatusChange="onUploaderChange" />
         </b-field>
 
         <hr />
@@ -143,7 +143,7 @@ export default {
               commonName: null,
               ncbi: "",
               conditions: "",
-              additionalFiles: [],
+              additionalFiles: []
             }
           };
         }
@@ -161,27 +161,24 @@ export default {
   },
   methods: {
     onUploaderChange(val) {
-      //  
+      //
       if (typeof val === "boolean") {
         this.additionalUploadsComplete = val;
       }
       this.updateAdditionalFiles();
     },
     updateAdditionalFiles() {
-      // const self = this;
-      // self.run.additionalFiles = [];
-      this.sample.additionalFiles = this.$refs["additionalUploader"].getFiles();
-      // const files = self.$refs["additionalUploader"].getFiles();
-      // const uploadIDS = files.map(file => {
-      //   if (file.uploadURL) {
-      //     const uploadName = file.file.uploadURL.split("/").pop();
-      //     file.uploadName = uploadName;
-      //     self.run.additionalFiles.push(file);
-      //   }
-      // });
+      if (this.$refs["additionalUploader"]) {
+        this.sample.additionalFiles = this.$refs[
+          "additionalUploader"
+        ].getFiles();
+      }
     },
     postForm() {
-      //  
+
+      this.updateAdditionalFiles()
+
+      //
       this.sample.owner = this.$auth.user.username; //required
       this.sample.group = this.project.group;
       this.sample.project = this.project._id; //required
@@ -196,7 +193,7 @@ export default {
           // this.$router.push({
           //   path: '/projects'
           // })
-          //  
+          //
           this.$router.push({
             name: "sample",
             query: { id: result.data.sample._id }

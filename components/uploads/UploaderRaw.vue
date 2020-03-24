@@ -9,6 +9,7 @@
         :key="rowID"
         :deleteRow="deleteRow"
         :onUploadStatusChange="onRowChange"
+        :allowedExtensions="allowedExtensions"
       />
     </div>
 
@@ -21,7 +22,7 @@
 import UploaderRawRow from "./UploaderRawRow";
 import { v4 as uuidv4 } from "uuid";
 export default {
-  props: ["paired", "onUploadStatusChange"],
+  props: ["paired", "onUploadStatusChange", "allowedExtensions"],
   components: { UploaderRawRow },
   data() {
     return {

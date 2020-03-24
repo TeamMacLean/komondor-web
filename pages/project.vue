@@ -27,23 +27,6 @@
           <FileList additional="true," :files="project.additionalFiles" />
         </b-field>
 
-        <!-- <div v-if="project.group.sendToEna && !project.doNotSendToEna"> -->
-        <hr />
-        <b-field label="ENA Status *DEV*">
-          <div class="control">
-            <!-- <div>project.ena</div> -->
-            <div class="buttons">
-              <b-button
-                type="is-primary"
-                outlined
-                :disabled="!canSubmitToENA"
-                @click="submitToENA"
-              >Submit to ENA</b-button>
-            </div>
-          </div>
-        </b-field>
-        <!-- </div> -->
-
         <hr />
 
         <p class="title is-4">Samples</p>
@@ -101,18 +84,6 @@ export default {
   computed: {
     canSubmitToENA() {
       return true;
-    }
-  },
-  methods: {
-    submitToENA() {
-      this.$axios
-        .post("/project/ena/submit", { id: this.$route.query.id })
-        .then(res => {
-           
-        })
-        .catch(err => {
-          console.error(err);
-        });
     }
   }
 };

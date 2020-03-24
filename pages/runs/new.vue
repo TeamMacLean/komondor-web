@@ -163,6 +163,7 @@
           <UploadRaw
             :paired="this.paired"
             :onUploadStatusChange="onRawUploaderChange"
+            :allowedExtensions="allowedExtensions"
             ref="rawUploader"
           />
         </b-field>
@@ -171,10 +172,7 @@
           label="Additional files"
           message="Please upload any documentation obtained from the sequencing provider, including copies of the communication. If the documentation pertains only to a certain sample or data set, then please add it there instead."
         >
-          <Uploader
-            :onUploadStatusChange="onUploaderChange"
-            ref="additionalUploader"
-          />
+          <Uploader :onUploadStatusChange="onUploaderChange" ref="additionalUploader" />
         </b-field>
         <!--<div class="buttons is-right">-->
         <button type="submit" class="button is-success" :disabled="!canSubmit">Create run</button>
@@ -238,6 +236,11 @@ export default {
     paired() {
       return this.libraryTypeObject ? this.libraryTypeObject.paired : false;
     },
+    allowedExtensions() {
+      return this.libraryTypeObject
+        ? this.libraryTypeObject.extensions.map(e=>'.'+e.split('.').pop())
+        : [".thisfileexentionshouldnotexist"];
+    },
     libraryTypeObject() {
       if (this.run.libraryType) {
         const found = this.libraryTypes.filter(
@@ -291,40 +294,22 @@ export default {
       // console.log('ids', uploadIDS)
     },
     updateAdditionalFiles() {
-      // const self = this;
-      // self.run.additionalFiles = [];
-      this.run.additionalFiles = this.$refs["additionalUploader"].getFiles();
-      // const files = self.$refs["additionalUploader"].getFiles();
-      // const uploadIDS = files.map(file => {
-      //   if (file.uploadURL) {
-      //     const uploadName = file.file.uploadURL.split("/").pop();
-      //     file.uploadName = uploadName;
-      //     self.run.additionalFiles.push(file);
-      //   }
-      // });
+      if (this.$refs["additionalUploader"]) {
+        this.run.additionalFiles = this.$refs["additionalUploader"].getFiles();
+      }
     },
     updateRawFiles() {
-      // const self = this;
-      // self.run.rawFiles = [];
-      this.run.rawFiles = this.$refs["rawUploader"].getFiles();
-      // const files = self.$refs["rawUploader"].getFiles();
-      // return files;
-      // const uploadIDS = files.map(file => {
-      // if (file.uploadURL) {
-      // const uploadName = file.file.uploadURL.split("/").pop();
-      // file.uploadName = uploadName;
-      // self.run.rawFiles.push(file);
-      // }
-      // });
+      if (this.$refs["rawUploader"]) {
+        this.run.rawFiles = this.$refs["rawUploader"].getFiles();
+      }
     },
     postForm() {
+      this.updateAdditionalFiles();
+      this.updateRawFiles();
+
       this.run.owner = this.$auth.user.username; //required
       this.run.group = this.sample.group._id;
       this.run.sample = this.sample._id; //required
-
-      // this.run.MD5s = Object.keys(this.run.MD5s).map(m => {
-      //   return { UUID: m, MD5: this.run.MD5s[m] };
-      // });
 
       this.$axios
         .post("/runs/new", this.run)
