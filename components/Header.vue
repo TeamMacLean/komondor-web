@@ -14,65 +14,64 @@
           class="navbar-item-custom has-text-weight-bold"
           to="/"
           v-if="this.$auth.loggedIn"
-        >Home</nuxt-link>
+        >
+          Home
+        </nuxt-link>
 
         <nuxt-link
           class="navbar-item-custom has-text-weight-bold"
           to="/projects"
           v-if="this.$auth.loggedIn"
-        >Projects</nuxt-link>
+        >
+          Projects
+        </nuxt-link>
       </div>
 
-      <!-- <div class="navbar-center-custom"> -->
-      <!-- <NavSearch v-if="this.$auth.loggedIn"/> -->
-      <!-- </div> -->
+      <div class="nav-search-wrapper">
+        <NavSearch class="navbar-item" v-if="this.$auth.loggedIn" />
+      </div>
+      
+      <div class="navbar-menu">
+        <div class="navbar-end">
+          <b-dropdown position="is-bottom-left" append-to-body aria-role="menu" trap-focus>
+        
+            <button class="button is-primary" slot="trigger" slot-scope="{ active }">
+              <b-icon icon="account-circle-outline" size="is-medium" class="mr-1-tablet"></b-icon>              
+              <b-icon :icon="active ? 'menu-up' : 'menu-down'"></b-icon>
+            </button>
 
-      <div class="navbar-right-custom">
-        <NavSearch v-if="this.$auth.loggedIn" />
+            <b-dropdown-item aria-role="listitem">
+              <nuxt-link
+                :to="{ name: 'user', query: { username: this.$auth.user.username }}"
+                class="dropdown-item"
+              >
+                <b-icon icon="account" size="is-small"></b-icon>
+                {{this.$auth.user.name}}
+              </nuxt-link>
+            </b-dropdown-item>
 
-        <div class="navbar-item-custom has-dropdown is-hoverable" v-if="this.$auth.loggedIn">
-          <div class="dropdown is-right">
-            <div class="dropdown-trigger">
-              <a aria-haspopup="true" aria-controls="dropdown-menu" class="with-arrow">
-                <b-icon icon="account-circle-outline" size="is-medium" class="mr-1-tablet"></b-icon>
-                <!--<font-awesome-icon :icon="['far', 'user-circle']" class="fa-2x mr-1-tablet"/>-->
-                <!--<div class="is-hidden-mobile">{{this.$auth.user.name}}</div>-->
+            <b-dropdown-item aria-role="listitem">
+              <nuxt-link to="/admin" class="dropdown-item" v-if="this.$store.getters.isAdmin">
+                <b-icon icon="shield-account-outline" size="is-small"></b-icon>Admin
+              </nuxt-link>
+              </b-dropdown-item>
+            
+            <hr class="dropdown-divider" />
+            
+            <b-dropdown-item aria-role="listitem">
+              <nuxt-link to="/help" class="dropdown-item">
+                <b-icon icon="help-circle-outline" size="is-small"></b-icon>Help
+              </nuxt-link>
+            </b-dropdown-item>
+            
+            <b-dropdown-item aria-role="listitem">
+              <a class="dropdown-item" v-on:click="LogOut">
+                <b-icon icon="logout" size="is-small"></b-icon>Sign out
               </a>
-            </div>
-            <div class="dropdown-menu" id="dropdown-menu" role="menu">
-              <div class="dropdown-content">
-                <nuxt-link
-                  :to="{ name: 'user', query: { username: this.$auth.user.username }}"
-                  class="dropdown-item"
-                >
-                  <b-icon icon="account" size="is-small"></b-icon>
-                  {{this.$auth.user.name}}
-                  <!--Your profile-->
-                </nuxt-link>
-
-                <nuxt-link to="/admin" class="dropdown-item" v-if="this.$store.getters.isAdmin">
-                  <b-icon icon="shield-account-outline" size="is-small"></b-icon>Admin
-                </nuxt-link>
-                <hr class="dropdown-divider" />
-                <nuxt-link to="/help" class="dropdown-item">
-                  <b-icon icon="help-circle-outline" size="is-small"></b-icon>Help
-                </nuxt-link>
-                <!-- <nuxt-link to="/settings" class="dropdown-item">
-                  <b-icon icon="cog-outline" size="is-small"></b-icon>Settings
-                </nuxt-link> -->
-                <a class="dropdown-item" v-on:click="LogOut">
-                  <b-icon icon="logout" size="is-small"></b-icon>Sign out
-                </a>
-              </div>
-            </div>
-          </div>
+            </b-dropdown-item>
+          
+          </b-dropdown>
         </div>
-
-        <!-- <div class="navbar-item-custom" v-else>
-          <div class="buttons">
-            <nuxt-link to="/signin" class="button is-white" aria-role="menuitem">Log in</nuxt-link>
-          </div>
-        </div> -->
       </div>
     </div>
   </div>
@@ -122,57 +121,36 @@ export default {
 };
 </script>
 
-<style>
-/*.fake-navbar-item {*/
-/*align-items: center;*/
-/*color: #fff;*/
-/*display: flex;*/
-/*flex-grow: 0;*/
-/*flex-shrink: 0;*/
-/*font-size: 16px;*/
-/*font-weight: 400;*/
-/*height: 64px;*/
-/*line-height: 24px;*/
-/*padding: 0.5rem 0.75rem;*/
-/*position: relative;*/
-/*}*/
+<style scoped>
 
-/*.navbar-right-custom {*/
-/*margin-left: auto;*/
-/*display: flex;*/
+.nav-search-wrapper {
+  display: flex;
+  flex-grow: 10;
+  justify-content: center;
+}
 
-/*}*/
+/* MEDIA QUERIES */
 
-/*@media screen and (max-width: 1023px) {*/
-/*.navbar-right-custom {*/
-/*flex-grow: 1;*/
-/*flex-shrink: 0;*/
-/*align-items: stretch;*/
-/*}*/
-/*}*/
+@media screen and (max-width: 1023px) {
 
-/*.mail-status.unread {*/
-/*position: absolute;*/
-/*top: 10px;*/
-/*left: 10px;*/
-/*z-index: 2;*/
-/*width: 14px;*/
-/*height: 14px;*/
-/*color: #fff;*/
-/*background-image: linear-gradient(#54a3ff, #006eed);*/
-/*background-clip: padding-box;*/
-/*border: 2px solid #24292e;*/
-/*border-radius: 50%;*/
-/*}*/
+  .navbar-menu {
+    display: contents;
+  }
+}
 
-/*.navbar-menu, .burger, .navbar-burger {*/
-/*display: none;*/
-/*}*/
+@media screen and (max-width: 768px) {
+  
+  .nav-search-wrapper {
+    display: none;
+  }
+}
 
 @media screen and (min-width: 769px) {
   .mr-1-tablet {
     margin-right: 8px;
   }
+  
 }
+
 </style>
 
