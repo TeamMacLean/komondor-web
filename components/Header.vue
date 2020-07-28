@@ -28,17 +28,25 @@
       </div>
 
       <div class="nav-search-wrapper">
-        <NavSearch class="navbar-item" v-if="this.$auth.loggedIn" />
+        <NavSearch v-if="this.$auth.loggedIn" />
       </div>
       
       <div class="navbar-menu">
         <div class="navbar-end">
-          <b-dropdown position="is-bottom-left" append-to-body aria-role="menu" trap-focus>
+          <b-dropdown close-on-click position="is-bottom-left" append-to-body aria-role="menu" trap-focus>
         
             <button class="button is-primary" slot="trigger" slot-scope="{ active }">
               <b-icon icon="account-circle-outline" size="is-medium" class="mr-1-tablet"></b-icon>              
               <b-icon :icon="active ? 'menu-up' : 'menu-down'"></b-icon>
             </button>
+
+            <!-- 
+              HACKY using 'close-on-click' and css to have easier modal close functionaliyt
+              TODO consider reading buefy modal docs
+            -->
+            <div class="close-mobile-modal has-text-right">
+              <b-icon icon="close" size="is-medium"></b-icon>
+            </div>
 
             <b-dropdown-item aria-role="listitem">
               <nuxt-link
@@ -128,6 +136,10 @@ export default {
   flex-grow: 10;
   justify-content: center;
 }
+.close-mobile-modal {
+    margin-right: 10px;
+  }
+
 
 /* MEDIA QUERIES */
 
@@ -149,7 +161,12 @@ export default {
   .mr-1-tablet {
     margin-right: 8px;
   }
-  
+}
+
+@media screen and (min-width: 1024px) {
+  .close-mobile-modal {
+    display: none;
+  }
 }
 
 </style>
