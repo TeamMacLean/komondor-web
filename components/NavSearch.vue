@@ -1,6 +1,6 @@
 <template>
-  <div class="navbar-item">
-    <div class="control has-addons">
+  <div class="navbar-item custom-width">
+    <div class="control has-addons custom-width">
       <b-autocomplete
         rounded
         v-model="query"
@@ -105,3 +105,11 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+.custom-width {
+  width: 100%;
+  max-width: 500px;
+}
+
+</style>
