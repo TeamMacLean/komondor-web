@@ -58,8 +58,12 @@ export default {
   },
   computed: {
     shortText() {
-      return this.query && this.query.length > 7
-        ? this.query.substring(0, 3) + "..." + this.query.slice(-3)
+
+      const trimmed = this.query && this.query.length && this.query.trimStart().trimEnd()
+      const substringed = trimmed.length && trimmed.substring(0, 8) + "..." + trimmed.slice(-8)
+
+      return this.query && this.query.length > 12
+        ? substringed
         : this.query;
     }
   },
@@ -80,8 +84,11 @@ export default {
     getAsyncData: debounce(function(query) {
       this.isFetching = true;
       this.results.length = 0;
+
+      const lowercaseQuery = query.toLowerCase()
+
       this.$axios
-        .get("/search", { params: { query: query } })
+        .get("/search", { params: { query: lowercaseQuery } })
         .then(res => {
           this.isFetching = false;
 
