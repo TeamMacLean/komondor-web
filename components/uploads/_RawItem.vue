@@ -125,7 +125,7 @@ export default {
       restrictions: {
         maxNumberOfFiles: 1,
         minNumberOfFiles: 1,
-        allowedFileTypes: this.allowedExtensions
+        // TODO allowedFileTypes: this.allowedExtensions
       },
       meta: {
         // uploadID: this.uploadID,
