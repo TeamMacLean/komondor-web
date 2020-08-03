@@ -4,8 +4,20 @@
     <div v-if="additional">
       <ul>
         <li v-for="file in files" :key="file._id">
-          <b-icon icon="file-outline" size="is-small"></b-icon>
-          <a href="#">{{file.file.originalName}}</a>
+          <div class="fileInfo">
+            <b-icon icon="file-outline" size="is-small"></b-icon>
+
+            <div class="rightPadding">{{file.file.originalName}}</div>
+
+            <b-button type="button"
+              v-clipboard:copy="file.file.path"
+              v-clipboard:success="onCopy"
+              v-clipboard:error="onError"
+            >
+                Copy filepath
+            </b-button>
+          </div>        
+          
         </li>
       </ul>
     </div>
@@ -21,6 +33,14 @@
 
 <script>
 export default {
+  methods: {
+    onCopy: function (e) {
+      alert('You just copied onto your clipboard: ' + e.text)
+    },
+    onError: function (e) {
+      alert('Failed to copy texts')
+    }
+  },
   props: ["additional", "files"]
   // computed: {
   //   sortedRaw() {
@@ -48,3 +68,17 @@ export default {
   // }
 };
 </script>
+
+<style>
+
+.fileInfo {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.rightPadding {
+  margin-right: 10px;
+}
+
+</style>

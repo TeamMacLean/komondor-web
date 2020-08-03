@@ -35,7 +35,10 @@ export default {
   // ],
   loading: { color: '#31CF65' },
   css: ['~/assets/main.scss'],
-  plugins: [{ src: '~/plugins/v-tooltip', ssr: false }],
+  plugins: [
+    { src: '~/plugins/v-tooltip', ssr: false },
+    { src: '~/plugins/v-clipboard', ssr: false },
+  ],
   modules: [
     '@nuxtjs/pwa',
     '@nuxtjs/axios',
