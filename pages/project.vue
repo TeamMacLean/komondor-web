@@ -24,7 +24,7 @@
         <b-field label="Long Description">{{project.longDesc}}</b-field>
 
         <b-field label="Additional Files">
-          <FileList additional="true," :files="project.additionalFiles" />
+          <FileList additional="true" :files="project.additionalFiles" />
         </b-field>
 
         <hr />
