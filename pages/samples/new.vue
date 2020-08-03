@@ -97,6 +97,8 @@
         </b-field>
 
         <hr />
+        <FormConsentCheckbox />
+        <hr />
 
         <!--<div class="buttons is-right">-->
         <button type="submit" class="button is-success" :disabled="!canSubmit">Create sample</button>
@@ -108,6 +110,7 @@
 
 <script>
 import Uploader from "~/components/uploads/Uploader.vue";
+import FormConsentCheckbox from "~/components/formHelpers/formConsentCheckbox"
 import { v4 as uuidv4 } from "uuid";
 export default {
   middleware: "auth",

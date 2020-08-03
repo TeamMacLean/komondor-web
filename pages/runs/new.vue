@@ -174,6 +174,11 @@
         >
           <Uploader :onUploadStatusChange="onUploaderChange" ref="additionalUploader" />
         </b-field>
+
+        <hr />
+        <FormConsentCheckbox />
+        <hr />
+
         <!--<div class="buttons is-right">-->
         <button type="submit" class="button is-success" :disabled="!canSubmit">Create run</button>
         <!--</div>-->
@@ -185,10 +190,11 @@
 <script>
 import Uploader from "~/components/uploads/Uploader.vue";
 import UploadRaw from "~/components/uploads/UploaderRaw.vue";
+import FormConsentCheckbox from "~/components/formHelpers/formConsentCheckbox"
 import { v4 as uuidv4 } from "uuid";
 export default {
   middleware: "auth",
-  components: { Uploader, UploadRaw },
+  components: { Uploader, UploadRaw, FormConsentCheckbox },
   mounted() {
     this.$store.dispatch("refreshOptions");
   },

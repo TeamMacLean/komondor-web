@@ -103,7 +103,15 @@
           <hr />
         </div>
 
-        <button type="submit" class="button is-success" :disabled="!canSubmit">Create project</button>
+        <FormConsentCheckbox />
+        
+        <hr />
+
+        <button 
+          type="submit" class="button is-success" :disabled="!canSubmit"
+        >
+          Create project
+        </button>
       </form>
     </div>
   </div>
@@ -112,11 +120,12 @@
 
 <script>
 import Uploader from "~/components/uploads/Uploader.vue";
+import FormConsentCheckbox from "~/components/formHelpers/formConsentCheckbox"
 import { v4 as uuidv4 } from "uuid";
 
 export default {
   middleware: "auth",
-  components: { Uploader },
+  components: { Uploader, FormConsentCheckbox },
   // mounted(){
   //   this.$refs.additionalUploads.on('canSubmit', function(){
 
@@ -126,15 +135,16 @@ export default {
     return {
       additionalUploadsComplete: true,
       project: {
-        name: "",
+        name: 'Well hello there travel-hare',
         group: null,
-        shortDesc: "",
-        longDesc: "",
+        /* change to empty string */ shortDesc: "Donec ullamcorper nulla non metus auctor fringilla. Donec sed odio dui. Cras justo odio, dapibus ac facilisis in, egestas eget quam. Maecenas sed diam eget risus varius blandit sit amet non magna. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus.",
+        /* change to empty string */ longDesc: "Donec ullamcorper nulla non metus auctor fringilla. Donec sed odio dui. Cras justo odio, dapibus ac facilisis in, egestas eget quam. Maecenas sed diam eget risus varius blandit sit amet non magna. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus.",
         isSelectOnly: false,
         doNotSendToEna: false,
         doNotSendToEnaReason: null,
         additionalFiles: []
-      }
+      }/*,
+      isSubmitting: false, TODO for loading style on button when applicable / i can get to work */
     };
   },
   fetch({ store }) {
@@ -142,6 +152,7 @@ export default {
   },
   computed: {
     canSubmit() {
+      console.log(this.additionalUploadsComplete)
       return this.additionalUploadsComplete;
     },
     selectedGroup() {
@@ -175,6 +186,10 @@ export default {
       }
     },
     postForm() {
+
+      // console.log('eggs are yellow')
+      // this.isSubmitting = true;
+
       this.updateAdditionalFiles();
 
       this.project.owner = this.$auth.user.username; //required
@@ -182,14 +197,23 @@ export default {
       this.$axios
         .post("/projects/new", this.project)
         .then(result => {
-          this.$buefy.toast.open({
-            message: "Project created!",
-            type: "is-success"
-          });
-          this.$router.push({
-            name: "project",
-            query: { id: result.data.project._id }
-          });
+
+          // HACK ensure additional upload file is in db before
+          // looking up for it in view project page
+          setTimeout(() => {
+            this.$buefy.toast.open({
+              message: "Project created!",
+              type: "is-success"
+            });
+
+            // unnecessary?
+            // this.isSubmitting = false;
+
+            this.$router.push({
+              name: "project",
+              query: { id: result.data.project._id }
+            });
+          }, 100)
         })
         .catch(err => {
           // console.error(err);
@@ -206,4 +230,7 @@ export default {
 </script>
 
 <style>
+.checkbox-label {
+  padding-left: .5rem;
+}
 </style>
