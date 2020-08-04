@@ -45,7 +45,8 @@
               TODO consider reading buefy modal docs
             -->
             <div class="close-mobile-modal has-text-right">
-              <b-icon icon="close" size="is-medium"></b-icon>
+              Press 'Esc' to close
+              <!-- <b-icon icon="close" size="is-medium"></b-icon> -->
             </div>
 
             <b-dropdown-item aria-role="listitem">
