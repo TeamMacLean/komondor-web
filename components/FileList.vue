@@ -23,8 +23,20 @@
     </div>
     <div v-else>
       <!-- TODO sort paired -->
-      <div v-for="file in files" :key="file._id" class="card">
-        <div class="card-content">{{file.file.originalName}}</div>
+      <div v-for="file in files" :key="file._id">
+        <div class="fileInfo">
+          <b-icon icon="file-outline" size="is-small"></b-icon>
+
+          <div class="rightPadding">{{file.file.originalName}}</div>
+
+          <b-button type="button"
+            v-clipboard:copy="file.file.path"
+            v-clipboard:success="onCopy"
+            v-clipboard:error="onError"
+          >
+              Copy filepath
+          </b-button>
+        </div> 
       </div>
     </div>
     <!-- if sequences cards -->
