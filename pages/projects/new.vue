@@ -13,7 +13,7 @@
             <!--Name-->
             <b-field
               label="Name"
-              message="Find a suitable short name for your project, something that you can memorise and  that also works reasonably well to present your study to the public"
+              message="Find a suitable short name for your project, 20-80 characters in length, something that you can memorise and that also works reasonably well to present your study to the public"
             >
               <b-input
                 name="name"
@@ -43,12 +43,13 @@
         <!--Short desc-->
         <b-field
           label="Short description"
-          message="One to three short descriptive sentences that provide information about the study."
+          message="One to three short descriptive sentences, 20-200 characters in length, that provide information about the study."
         >
           <b-input
             name="shortDesc"
             v-model="project.shortDesc"
             minlength="20"
+            maxlength="200"
             required
             id="shortDesc"
           ></b-input>
@@ -57,12 +58,13 @@
         <!--Long desc-->
         <b-field
           label="Long description"
-          message="The purpose of this field is to provide an abstract about the study. It is a required field for ENA and if you already have an abstract for a publication ready, then by all  means use it. If not, simply copy the short description and paste it here."
+          message="Provide an abstract about the study, 100-1000 characters in length. It is a required field for ENA and if you already have an abstract for a publication ready, then by all  means use it. If not, simply copy or embellish the short description and paste it here."
         >
           <b-input
             type="textarea"
             v-model="project.longDesc"
             minlength="100"
+            maxlength="1000"
             required
             name="longDesc"
             id="longDesc"
