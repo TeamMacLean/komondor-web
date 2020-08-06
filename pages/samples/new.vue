@@ -114,7 +114,7 @@ import FormConsentCheckbox from "~/components/formHelpers/formConsentCheckbox"
 import { v4 as uuidv4 } from "uuid";
 export default {
   middleware: "auth",
-  components: { Uploader },
+  components: { Uploader, FormConsentCheckbox },
   asyncData({ store, route, $axios, error }) {
     if (!route.query.project) {
       return error({ statusCode: 500, message: "Project not found" });
