@@ -28,18 +28,29 @@
 
           <div class="column">
             <!--Group-->
-            <b-field label="Group" message="The group that this project belongs to.">
-              <b-select placeholder="Select a group" v-model="project.group" required>
+            <b-field label="Group" message="The group that this project belongs to. Defaulted if only 1 group available to you.">
+              <b-select 
+                placeholder="Select a group" v-model="project.group" required
+                v-if="$store.state.groups.filter((f)=>!f.deleted).length !== 1"
+              >
                 <option
                   v-for="group in $store.state.groups.filter((f)=>!f.deleted)"
                   :value="group._id"
                   :key="group._id"
-                >{{ group.name }}</option>
+                >
+                  {{ group.name }}
+                </option>
               </b-select>
+
+              <div
+                class="onlyOneSelectOption"
+                v-else
+              >
+                {{ $store.state.groups.filter((f)=>!f.deleted)[0].name }}
+              </div>
             </b-field>
           </div>
         </div>
-
         <!--Short desc-->
         <b-field
           label="Short description"
@@ -129,9 +140,9 @@ export default {
   middleware: "auth",
   components: { Uploader, FormConsentCheckbox },
   // mounted(){
-  //   this.$refs.additionalUploads.on('canSubmit', function(){
+    // this.$refs.additionalUploads.on('canSubmit', function(){
 
-  //   })
+    // })
   // },
   data() {
     return {
@@ -150,11 +161,11 @@ export default {
     };
   },
   fetch({ store }) {
+    // NB don't need return necessarily
     return store.dispatch("refreshGroups");
   },
   computed: {
     canSubmit() {
-      console.log(this.additionalUploadsComplete)
       return this.additionalUploadsComplete;
     },
     selectedGroup() {
@@ -193,6 +204,11 @@ export default {
       // this.isSubmitting = true;
 
       this.updateAdditionalFiles();
+
+      // HACKY
+      if (this.$store.state.groups.filter((f)=>!f.deleted).length === 1){
+        this.project.group = this.$store.state.groups.filter((f)=>!f.deleted)[0]._id;
+      }
 
       this.project.owner = this.$auth.user.username; //required
       // this.project.tags = this.tags;
@@ -234,5 +250,11 @@ export default {
 <style>
 .checkbox-label {
   padding-left: .5rem;
+}
+
+.onlyOneSelectOption {
+  height: 35px;
+  display: flex;
+  align-items: center;
 }
 </style>

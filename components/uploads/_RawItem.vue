@@ -13,7 +13,7 @@
     </div>
     <div :id="uniqueID+'-progress'" class="UppyInput-Progress"></div>
     <br />
-    <b-field label="MD5">
+    <b-field label="MD5 (required)" :message="MD5Message">
       <b-input v-model="MD5" required></b-input>
     </b-field>
     <div v-show="fileName">
@@ -104,7 +104,8 @@ export default {
       showInput: true,
       uppyInstance: null,
       generatingMD5: false,
-      UUID: uuidv4()
+      UUID: uuidv4(),
+      MD5Message: '',
     };
   },
   computed: {
@@ -146,6 +147,7 @@ export default {
       const url = response.uploadURL;
       const fileName = file.name;
       this.fileName = fileName;
+      this.MD5Message = "Please enter an MD5 from the provider, or click 'Generate MD5' for this field)."
       this.showInput = false;
 
       // console.log(file, response);

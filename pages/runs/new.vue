@@ -10,7 +10,7 @@
       <form @submit.prevent="postForm">
         <div class="columns">
           <div class="column">
-            <b-field label="Name" message="A short, informative name to identify your data set.">
+            <b-field label="Name" message="A short (5-20 characters in length), informative name to identify your data set.">
               <b-input
                 expanded
                 name="name"
@@ -132,7 +132,7 @@
                   v-for="option in libraryTypes"
                   :value="option.value"
                   :key="option._id"
-                >{{ option.value }}</option>
+                >{{ computeOptionString(option) }}</option>
               </b-select>
             </b-field>
           </div>
@@ -159,7 +159,9 @@
         </div>
 
         <hr />
-        <b-field label="Raw reads">
+        <b-field 
+          label="Raw reads"
+        >
           <UploadRaw
             :paired="this.paired"
             :onUploadStatusChange="onRawUploaderChange"
@@ -180,7 +182,12 @@
         <hr />
 
         <!--<div class="buttons is-right">-->
-        <button type="submit" class="button is-success" :disabled="!canSubmit">Create run</button>
+        <button type="submit" class="button is-success" :disabled="submitButtonDisabled">
+          Create run
+        </button>
+        <div v-if="!atLeastOneRawFileUploaded" class="errorMessage">
+          Please upload at least 1 raw file.
+        </div>
         <!--</div>-->
       </form>
     </div>
@@ -193,6 +200,7 @@ import UploadRaw from "~/components/uploads/UploaderRaw.vue";
 import FormConsentCheckbox from "~/components/formHelpers/formConsentCheckbox"
 import { v4 as uuidv4 } from "uuid";
 export default {
+  name: 'New Run',
   middleware: "auth",
   components: { Uploader, UploadRaw, FormConsentCheckbox },
   mounted() {
@@ -212,14 +220,15 @@ export default {
             rawUploadsComplete: false,
             sample: res.data.sample,
             run: {
+              name: 'david', //this wasnt there originally but i think needed
               sample: res.data.sample._id,
-              libraryType: null,
-              sequencingProvider: "",
-              sequencingTechnology: null,
-              librarySource: null,
-              librarySelection: null,
-              libraryStrategy: null,
-              insertSize: null,
+              libraryType: 'BAM', // change back null,
+              sequencingProvider: 'EL', // change back "",
+              sequencingTechnology: '454 GS', // change back null,
+              librarySource: 'GENOMIC', // change back null,
+              librarySelection: 'ChIP',// change back null,
+              libraryStrategy: 'CLONE',// change back null,
+              insertSize: 123,// change back null,
               // additionalUploadID: uuidv4(),
               // rawUploadID: uuidv4(),
               rawFiles: [],
@@ -236,8 +245,12 @@ export default {
       });
   },
   computed: {
-    canSubmit() {
-      return this.additionalUploadsComplete;
+    submitButtonDisabled() {
+      return !this.atLeastOneRawFileUploaded || !this.additionalUploadsComplete || !this.rawUploadsComplete;
+    },
+    atLeastOneRawFileUploaded() {
+      const truthyRawFiles = this.run.rawFiles.filter(rawFile => !!rawFile)
+      return !!(truthyRawFiles.length);
     },
     paired() {
       return this.libraryTypeObject ? this.libraryTypeObject.paired : false;
@@ -280,12 +293,13 @@ export default {
     },
     libraryStrategies() {
       return JSON.parse(JSON.stringify(this.$store.state.libraryStrategies));
-    },
-    canSubmit() {
-      return this.additionalUploadsComplete && this.rawUploadsComplete;
     }
   },
   methods: {
+    computeOptionString(option) {
+      const typesSupported = !option.extensions.length ? ' (any file type allowed)' : ' (supported file types:' + option.extensions.map(ext => (' ' + ext)) + ')';
+      return option.value + typesSupported;
+    },
     onUploaderChange(val) {
       if (typeof val === "boolean") {
         this.additionalUploadsComplete = val;
@@ -342,3 +356,12 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+.errorMessage {
+  color: #f14668;
+  display: block;
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+}
+</style>

@@ -14,7 +14,7 @@
           <div class="column">
             <b-field
               label="Name"
-              message="A choose a short, informative name to identify your sample."
+              message="A choose a short, informative name to identify your sample, between 10 and 80 characters."
             >
               <b-input
                 name="name"
@@ -52,7 +52,7 @@
               <b-input
                 name="commonName"
                 v-model="sample.commonName"
-                minlength="5"
+                minlength="3"
                 required
                 id="commonName"
               ></b-input>
@@ -66,7 +66,6 @@
               <b-input
                 name="ncbi"
                 v-model="sample.ncbi"
-                minlength="5"
                 type="number"
                 required
                 id="ncbi"
@@ -77,7 +76,7 @@
 
         <b-field
           label="Conditions"
-          message="Information about the sample conditions (environmental conditions, is it a pathogen interaction?, what pathogen? etc.)"
+          message="Information (required, minimum 50 characters) about the sample conditions (environmental conditions, is it a pathogen interaction?, what pathogen? etc.)"
         >
           <b-input
             type="textarea"
