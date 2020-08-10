@@ -28,10 +28,12 @@
 
           <div class="column">
             <!--Group-->
-            <b-field label="Group" message="The group that this project belongs to. Defaulted if only 1 group available to you.">
+            <b-field 
+              label="Group" message="The group that this project belongs to."
+              v-if="$store.state.groups.filter((f)=>!f.deleted).length > 1"
+            >
               <b-select 
                 placeholder="Select a group" v-model="project.group" required
-                v-if="$store.state.groups.filter((f)=>!f.deleted).length !== 1"
               >
                 <option
                   v-for="group in $store.state.groups.filter((f)=>!f.deleted)"
@@ -41,13 +43,20 @@
                   {{ group.name }}
                 </option>
               </b-select>
+            </b-field>
+            <b-field 
+              v-else-if="$store.state.groups.filter((f)=>!f.deleted).length === 1"
+              label="Group" message="The group that this project belongs to. (Defaulted as only 1 group available to you.)">
 
               <div
                 class="onlyOneSelectOption"
-                v-else
+                
               >
                 {{ $store.state.groups.filter((f)=>!f.deleted)[0].name }}
               </div>
+            </b-field>
+            <b-field  v-else>
+              <div class="errorMessage">Error: no groups found. Please contact your system administrator to proceed.</div>
             </b-field>
           </div>
         </div>
@@ -256,5 +265,10 @@ export default {
   height: 35px;
   display: flex;
   align-items: center;
+}
+
+.errorMessage {
+  color: #f14668;
+  display: block;
 }
 </style>
