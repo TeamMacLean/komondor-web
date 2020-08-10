@@ -78,7 +78,7 @@
         <b-field label="Raw Files">
           <FileList :files="run.rawFiles" />
         </b-field>
-        <b-field label="Additional Files">
+        <b-field v-if="run.additionalFiles.length" label="Additional Files">
           <FileList additional="true" :files="run.additionalFiles" />
         </b-field>
         <hr />

@@ -23,7 +23,7 @@
         <b-field label="Short Description">{{project.shortDesc}}</b-field>
         <b-field label="Long Description">{{project.longDesc}}</b-field>
 
-        <b-field label="Additional Files">
+        <b-field v-if="project.additionalFiles.length" label="Additional files">
           <FileList additional="true" :files="project.additionalFiles" />
         </b-field>
 
