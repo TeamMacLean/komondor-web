@@ -7,7 +7,7 @@
           <div class="fileInfo">
             <b-icon icon="file-outline" size="is-small"></b-icon>
 
-            <div class="rightPadding">{{file.file.originalName}}</div>
+            <div class="fileNamePadding">{{file.file.originalName}}</div>
 
             <b-button type="button"
               v-clipboard:copy="file.file.path"
@@ -27,7 +27,7 @@
         <div class="fileInfo">
           <b-icon icon="file-outline" size="is-small"></b-icon>
 
-          <div class="rightPadding">{{file.file.originalName}}</div>
+          <div class="fileNamePadding">{{file.file.originalName}}</div>
 
           <b-button type="button"
             v-clipboard:copy="file.file.path"
@@ -89,8 +89,9 @@ export default {
   margin-bottom: 10px;
 }
 
-.rightPadding {
-  margin-right: 10px;
+.fileNamePadding {
+  margin-right: 15px;
+  margin-left: 5px;
 }
 
 </style>
