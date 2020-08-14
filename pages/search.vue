@@ -2,22 +2,30 @@
   <div>
     <section class="section">
       <div class="columns">
-        <div class="column is-2">
+        <div class="column is-3">
           <b-menu>
             <b-menu-list>
               <b-menu-item
                 icon="folder-text-outline"
-                label="Projects"
+                :label="getComputedLabel('projects')"
                 :active="type === 'project'"
-                @click="searchProjects"
+                @click="searchType('project')"
+                :disabled="getDisabledStatus('projects')"
               ></b-menu-item>
               <b-menu-item
                 icon="flask-outline"
-                label="Samples"
+                :label="getComputedLabel('samples')"
                 :active="type === 'sample'"
-                @click="searchSamples"
+                @click="searchType('sample')"
+                :disabled="getDisabledStatus('samples')"
               ></b-menu-item>
-              <b-menu-item icon="dna" label="Runs" :active="type === 'run'" @click="searchRuns"></b-menu-item>
+              <b-menu-item 
+                icon="dna"                 
+                :label="getComputedLabel('runs')"
+                :active="type === 'run'" 
+                @click="searchType('run')"
+                :disabled="getDisabledStatus('runs')"
+              ></b-menu-item>
               <!-- <b-menu-item
                 icon="current-dc"
                 label="Reads"
@@ -27,7 +35,7 @@
             </b-menu-list>
           </b-menu>
         </div>
-        <div class="column is-10">
+        <div class="column is-9">
           <div class="container">
             <b-notification
               v-if="this.error"
@@ -43,20 +51,20 @@
               </b-notification>
             </div>
             <div v-if="!isSearching">
-              <div v-if="!type">
-                <p v-if="results.length" class="title is-4">Select type to search</p>
+              <div v-if="!totalResultsLength">
+                <p v-if="totalResultsLength" class="title is-4">Select type to search</p>
                 <p v-else class="title is-5">No results found for "{{query}}".</p>
               </div>
-              <div v-if="type && results.length">
-                <p class="title is-4">Showing {{results.length}} {{countLingo}} for "{{query}}"</p>
+              <div v-else>
+                <p class="title is-4">Showing {{typeResultsLength}} {{type}} {{countLingo}} for "{{query}}"</p>
                 <div v-if="type === 'project'">
-                  <ProjectList :projects="results" showNewButton="false" />
+                  <ProjectList :projects="results.projects" showNewButton="false" />
                 </div>
                 <div v-if="type === 'sample'">
-                  <SampleList :samples="results" showNewButton="false" />
+                  <SampleList :samples="results.samples" showNewButton="false" />
                 </div>
                 <div v-if="type === 'run'">
-                  <RunList :runs="results" showNewButton="false" />
+                  <RunList :runs="results.runs" showNewButton="false" />
                 </div>
               </div>
             </div>
@@ -74,28 +82,42 @@ import RunList from "../components/runs/RunList";
 
 export default {
   components: { ProjectList, SampleList, RunList },
-  watchQuery: function(newQuery, oldQuery) {
-    this.type = newQuery.type;
-    this.query = newQuery.query;
-    this.search();
+  watch: {
+    '$route.query': '$fetch'
+  },
+  async fetch(){
+    this.query = this.$route.query.query
+    this.searchAndUpdateType();
   },
   data() {
     return {
       isSearching: false,
-      type: this.$route.query.type || "project",
+      type: null,
       query: this.$route.query.query,
-      results: [],
+      results: {},
       error: null
     };
   },
   mounted() {
-    this.search();
+    this.searchAndUpdateType();
   },
   computed: {
     countLingo() {
-      return this.results.length && this.results.length > 1
-        ? "results"
-        : "result";
+      if (this.type && this.results && this.results[(this.type + 's')] && this.results[(this.type + 's')].length){
+        return this.type + ' ' + (this.results[(this.type + 's')].length !== 1)
+          ? "results"
+          : "result"
+      } else {
+        return '';
+      }
+    },
+    totalResultsLength() {
+      const total = this.results.projects?.length + this.results.samples?.length + this.results.runs?.length;
+      return total || 0;
+    },
+    typeResultsLength() {
+      var result = this.results && this.results[(this.type + 's')] && this.results[(this.type + 's')].length;
+      return result;
     }
   },
   methods: {
@@ -105,13 +127,10 @@ export default {
     setType() {
       this.type = type || "project";
     },
-    search() {
+    searchAndUpdateType() {
       this.isSearching = true;
       let url = "/search";
 
-      if (this.type) {
-        url = `${url}/${this.type}`;
-      }
       this.$axios
         .get(url, {
           params: {
@@ -120,30 +139,54 @@ export default {
         })
         .then(res => {
           this.isSearching = false;
-          this.results = res.data.results;
+          // console.log('asda ', this.results)
+          var parsedObj = JSON.parse(JSON.stringify(res.data.results))
+
+          this.results = {};
+
+          this.results.projects = parsedObj.projects
+          this.results.samples = parsedObj.samples
+          this.results.runs = parsedObj.runs
+          var totalResultsLength = 
+            this.results.projects ? this.results.projects.length : 0 + 
+            this.results.samples ? this.results.samples.length : 0 + 
+            this.results.runs ? this.results.runs.length : 0
+          ;
+
+          if (this.results.projects && this.results.projects.length){
+            this.type = 'project'
+          } else if (this.results.samples && this.results.samples.length){
+            this.type = 'sample'
+          } else if (this.results.runs && this.results.runs.length){
+            this.type = 'run'
+          // } else if (!totalResultsLength) {
+          //   this.type = null;
+          } else {
+            this.type = null;
+          }
+          //console.log('lamb', this.results)
         })
         .catch(err => {
           this.isSearching = false;
           this.error = err;
         });
     },
-    searchProjects() {
-      this.$router.push({
-        name: "search",
-        query: { type: "project", query: this.query }
-      });
+    // searchProjects() {
+    //   this.$router.push({
+    //     name: "search",
+    //     query: { type: "project", query: this.query }
+    //   });
+    // },
+    searchType(type) {
+      this.type = type;
     },
-    searchSamples() {
-      this.$router.push({
-        name: "search",
-        query: { type: "sample", query: this.query }
-      });
+    getComputedLabel(type) {
+      return `${type.charAt(0).toUpperCase() + type.slice(1)} (${ this.results?.[type]?.length })`
     },
-    searchRuns() {
-      this.$router.push({
-        name: "search",
-        query: { type: "run", query: this.query }
-      });
+    getDisabledStatus(type) {
+      const result = !this.results?.[type]?.length
+      // console.log('res', this.results?.projects?.length, result ? 'disabled' : 'not disabled')
+      return result
     }
     // searchReads() {
     //   this.$router.push({
