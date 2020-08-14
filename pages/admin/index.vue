@@ -103,7 +103,7 @@
           <b-tab-item label="Users">
             <ul>
               <li v-for="user in users" :key="user._id">
-                <nuxt-link :to="{ name: 'user', query: { username: user.name}}">{{user.name}}</nuxt-link>
+                <nuxt-link :to="{ name: 'user', query: { username: user.username}}">{{user.name}}</nuxt-link>
               </li>
             </ul>
           </b-tab-item>
@@ -347,7 +347,7 @@ export default {
             .catch(err => {
               console.error(err);
               this.$buefy.toast.open({
-                message: `Failed to delete option`,
+                message: `Failed to delete option, error: ${err}`,
                 type: "is-danger"
               });
             });
@@ -485,7 +485,7 @@ export default {
         message: `Delete ${option.value}?`,
         onConfirm: () => {
           this.$axios
-            .delete("/options/librarystrategies", { data: { id: option._id } })
+            .delete("/options/librarystrategy", { data: { id: option._id } })
             .then(() => {
               this.$store.dispatch("refreshLibraryStrategies");
               this.$buefy.toast.open({
@@ -496,7 +496,7 @@ export default {
             .catch(err => {
               console.error(err);
               this.$buefy.toast.open({
-                message: `Failed to delete option`,
+                message: `Failed to delete option, error: ${err}`,
                 type: "is-danger"
               });
             });
