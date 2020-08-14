@@ -12,17 +12,18 @@
         custom-class="can-expand"
         icon="magnify"
         @select="onSelect"
+        max-height="500px"
       >
         <template slot="header">
           <div class="truncate">
-            <nuxt-link :to="{ name: 'search', query: { query: query }}" v-if="query.length">
+            <nuxt-link :to="{ name: 'search', query: { query: query }}" v-if="query && query.length">
               Search whole site for
               <strong>{{shortText}}</strong>
             </nuxt-link>
           </div>
         </template>
         <template slot="empty">
-          <div v-if="query.length">No results for {{query}}</div>
+          <div v-if="query && query.length">No results for {{query}}</div>
           <div v-else>Type in the search bar to see results</div>
         </template>
         <template slot-scope="props">
@@ -60,19 +61,24 @@ export default {
     shortText() {
 
       const trimmed = this.query && this.query.length && this.query.trimStart().trimEnd()
-      const substringed = trimmed.length && trimmed.substring(0, 8) + "..." + trimmed.slice(-8)
+      const substringed = trimmed && trimmed.length && trimmed.substring(0, 8) + "..." + trimmed.slice(-8)
 
-      return this.query && this.query.length > 12
+      return this.query && this.query.length && this.query.length > 12
         ? substringed
         : this.query;
     }
   },
   methods: {
     onSelect: function(item) {
+      this.query = "";
+      this.results = [];
+      this.selected = null;
+      this.isFetching = true;
       this.$router.push({
-        query: item.type,
+        path: item.type,
         query: { id: item._id }
       });
+      this.isFetching = false;
     },
     // TODO can't get this to work
     // @keyup.enter="searchEntireSite"
@@ -83,7 +89,7 @@ export default {
     // },
     getAsyncData: debounce(function(query) {
       this.isFetching = true;
-      this.results.length = 0;
+      this.results = [];
 
       const lowercaseQuery = query.toLowerCase()
 
@@ -116,7 +122,7 @@ export default {
         })
         .catch(err => {
           this.isFetching = false;
-          this.results.length = 0;
+          this.results = [];
           console.error(err);
         });
 
