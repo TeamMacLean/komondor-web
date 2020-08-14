@@ -246,40 +246,14 @@ export default {
       });
     },
     promptForNewLibraryType() {
-      let modalProps = {
-        name: "",
-        paried: false,
-        extensions: [],
-        postForm: function() {
-          this.$axios
-            .post("/options/librarytype", {
-              value: this.name,
-              paired: this.paired
-            })
-            .then(() => {
-              this.$parent.close();
-              this.$store.dispatch("refreshLibraryTypes");
-              this.$buefy.toast.open({
-                message: `Added: ${value}`,
-                type: "is-success"
-              });
-            })
-            .catch(err => {
-              this.$parent.close();
-              this.$buefy.toast.open({
-                message: `Failed to save option`,
-                type: "is-danger"
-              });
-            });
-        }
-      };
-
       this.$buefy.modal.open({
         parent: this,
         component: LibraryTypeModal,
         hasModalCard: true,
         trapFocus: true,
-        props: modalProps
+        props: {
+          existingNames: this.libraryTypes.map(lt => lt.value)
+        }
       });
 
       // this.$buefy.dialog.prompt({
