@@ -2,6 +2,7 @@
   <div class="section">
     <div class="container">
 
+      <!-- TODO: (COULD DO:) if admin, remove 'Your' -->
       <h1 class="title">Your Projects</h1>
 
       <ProjectList showNewButton="true"/>
