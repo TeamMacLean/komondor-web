@@ -208,8 +208,6 @@ export default {
       }
     },
     postForm() {
-
-      // console.log('eggs are yellow')
       // this.isSubmitting = true;
 
       this.updateAdditionalFiles();

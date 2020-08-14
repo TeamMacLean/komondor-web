@@ -48,8 +48,6 @@ function GenerateMD5ForUppy(uppyInstance, progressFunction) {
     } else {
       const file = uppyInstance.getFiles()[0].data;
 
-      console.log("file", file);
-
       var blobSlice =
           File.prototype.slice ||
           File.prototype.mozSlice ||
@@ -119,7 +117,7 @@ export default {
   mounted() {
     // if (this.uploadID) {
 
-    console.log("this.allowedExtensions", this.allowedExtensions);
+    // console.log("this.allowedExtensions", this.allowedExtensions);
     this.uppyInstance = new Uppy({
       debug: true,
       autoProceed: true,
@@ -199,7 +197,6 @@ export default {
     },
     generateMD5() {
       const self = this;
-      console.log("here", self.MD5WarningShown);
       if (!self.MD5WarningShown) {
         //show warning first
         self.showMD5Warning().then(() => {
@@ -212,17 +209,13 @@ export default {
       }
 
       function doGeneration() {
-        console.log(1);
         self.generatingMD5 = true;
-        console.log(2);
         const progress = function(value) {
-          console.log(3);
           self.MD5LeftProgress = value;
         };
 
         GenerateMD5ForUppy(self.uppyInstance, progress)
           .then(md5 => {
-            console.log(4);
             self.MD5 = md5;
             self.generatingMD5 = false;
           })

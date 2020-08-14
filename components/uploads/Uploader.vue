@@ -61,7 +61,7 @@ export default {
     if (this.onUploadStatusChange) {
       const self = this;
       this.uppyInstance.on("*", () => {
-        console.log(self.uppyInstance.getFiles());
+        // console.log(self.uppyInstance.getFiles());
         const allUploadsComplete =
           self.uppyInstance.getFiles().filter(file => {
             return !file.progress.uploadComplete;

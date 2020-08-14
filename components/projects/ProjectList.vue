@@ -76,7 +76,7 @@ export default {
         p => p.name.toLowerCase().indexOf(self.filterText.toLowerCase()) > -1
       );
       filteredByGroup = filteredByGroup.sort((a, b) => {
-        console.log(this.sortBy === 0, this.sortBy === 1);
+        // console.log(this.sortBy === 0, this.sortBy === 1);
         if (this.sortBy === 0) {
           return new Date(b.createdAt) - new Date(a.createdAt);
         } else {
