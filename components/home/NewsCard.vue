@@ -11,13 +11,18 @@
 
     <p style="margin-bottom:8px;">
       <nuxt-link :to="{name:'user', query:{username:news.user}}" class="has-text-black">
-        <strong>{{news.user}}</strong>
+        <strong>{{this.getAuthor(news.user)}}</strong>
       </nuxt-link>
-      {{news.title}}
+      created a new {{news.type}}
       <span
         class="has-text-grey is-size-7"
         style="margin-left:8px;"
-      >{{news.dateHuman}}</span>
+      >
+        {{news.dateHuman}}
+        {{/** TODO: if timestamp is around the time of the/a migration, then change this to
+              something like 'imported from datahog'
+         */}}
+      </span>
     </p>
     <div class="card">
       <div class="card-content">
@@ -46,6 +51,11 @@ export default {
       return this.news.body.length < maxLength
         ? this.news.body
         : this.news.body.substr(0, maxLength) + "...";
+    },
+  },
+  methods: {
+    getAuthor(user) {
+      return user === 'unknown' ? 'Anonymous' : user;
     }
   }
 };
