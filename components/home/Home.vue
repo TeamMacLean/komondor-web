@@ -54,7 +54,7 @@
       <div class="column is-9 is-10-fullhd">
         <div class="section fill-height">
           <div class="container">
-            <h2 class="title is-5">Recently added</h2>
+            <h2 class="title is-5">Most recently added</h2>
 
             <b-loading
               :is-full-page="false"

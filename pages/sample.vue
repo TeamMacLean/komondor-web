@@ -52,7 +52,7 @@
         </b-field>
 
         <b-field label="Additional Files">
-          <FileList v-if="sample.additionalFiles.length" additional="true" :files="sample.additionalFiles" />
+          <FileList additional="true" :files="sample.additionalFiles" />
         </b-field>
         <hr />
         <p class="title is-4">Runs</p>
