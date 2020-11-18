@@ -11,7 +11,7 @@
             </div>
             <div class="column is-8-mobile is-full-tablet">
               <h1 class="title">{{fullName}}</h1>
-              <h2 class="subtitle">{{username}}</h2>
+              <h2 v-if="fullName !== username" class="subtitle">{{username}}</h2>
               <p>
                 <b-icon
             icon="account-group"
@@ -24,7 +24,9 @@
             icon="domain"
             size="is-small"
             class="has-text-grey"/>
-                <a :href="'mailto:'+email" target="_blank">{{email}}</a></p>
+                <a v-if="email !== 'Unknown email'" :href="'mailto:'+email" target="_blank">{{email}}</a>
+                <span v-else>{{email}}</span>
+            </p>
             </div>
           </div>
 
@@ -59,7 +61,7 @@
     asyncData({route, $axios, error}) {
 
       function userNotFound() {
-        error({statusCode: 404, message: 'User not found'})
+        error({statusCode: 404, message: 'User not found.'})
       }
 
       if (!route.query.id && !route.query.username) {
@@ -89,7 +91,7 @@
 
       icon() {
         const placeholder = 'https://bulma.io/images/placeholders/256x256.png';
-        if (this.user) {
+        if (this.user._id) {
           try {
             var data = new Identicon(this.user.username+this.user._id, 256).toString();
             return 'data:image/png;base64,' + data;
@@ -112,31 +114,25 @@
         return 'unknown'
       },
       fullName() {
-        if (this.user) {
+        if (this.user && this.user.name) {
           return this.user.name
         }
         if (this.$route.query.username) {
           return this.$route.query.username;
         }
-        return 'unknown'
+        return 'Unknown full name'
       },
       email() {
-        if (this.user) {
+        if (this.user && this.user.email) {
           return this.user.email
         }
-        if (this.$route.query.username) {
-          return this.$route.query.username;
-        }
-        return 'unknown'
+        return 'Unknown email'
       },
       company() {
-        if (this.user) {
+        if (this.user && this.user.company) {
           return this.user.company
         }
-        if (this.$route.query.username) {
-          return this.$route.query.username;
-        }
-        return 'unknown'
+        return 'Unknown company'
       },
       projects() {
         if (this.user) {
