@@ -2,7 +2,7 @@
   "name": "komondor",
   "version": "1.0.0",
   "description": "TSL Sequence Data",
-  "author": "Martin Page",
+  "author": "George Deeks",
   "private": true,
   "scripts": {
     "dev": "nuxt",
