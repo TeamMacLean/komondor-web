@@ -71,15 +71,18 @@
           </div>
         </div>
 
-        <b-field label="Insert Size">
-          <p>{{run.insertSize}}</p>
+        <b-field  label="Insert Size">
+          <p class="bottomPadding">{{run.insertSize}}</p>
         </b-field>
 
-        <b-field label="Raw Files">
-          <FileList :files="run.rawFiles" />
-        </b-field>
         <b-field label="Additional Files">
           <FileList additional="true" :files="run.additionalFiles" />
+        </b-field>
+
+        <div class="bottomPadding" ></div>
+
+        <b-field label="Raw Files">
+          <ReadList :files="reads" :run="run" />
         </b-field>
         <hr />
         <!-- <p class="title is-4">Runs</p>
@@ -92,9 +95,11 @@
 <script>
 // import RunList from "../components/runs/RunList";
 import FileList from "../components/FileList";
+import ReadList from "../components/ReadList";
 export default {
   components: {
-    FileList
+    FileList,
+    ReadList,
   },
   middleware: ["auth"],
   asyncData({ route, $axios, error, store }) {
@@ -117,10 +122,21 @@ export default {
       .then(res => {
         if (res.status === 200 && res.data.run) {
           // res.data.project.samples = [];
+
+          const verifiedFileNames = res.data.run.rawFiles.map(rf => rf.file.originalName);
           
+          const resReads = JSON.parse(JSON.stringify(res.data.reads));
+          
+          const readsWithVerifiedField = resReads.map(readFileName => ({
+            fileName: readFileName,
+            verified: !!verifiedFileNames.includes(readFileName)
+          }));          
+
           return {
-            run: res.data.run
+            run: res.data.run,
+            reads: readsWithVerifiedField,
           };
+          
         } else {
           error({ statusCode: 501, message: "Run not found" });
         }
@@ -132,3 +148,8 @@ export default {
   }
 };
 </script>
+<style scoped>
+.bottomPadding {
+  margin-bottom: 2rem;
+}
+</style>

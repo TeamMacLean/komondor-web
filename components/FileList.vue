@@ -1,7 +1,7 @@
 <template>
   <div v-if="!files.length">
     <p>
-      No {{additional ? 'additional' : 'raw'}} files detected in database.
+      No additional files detected in database.
     </p>
     <p>
       If you think this is in error, please
@@ -11,7 +11,7 @@
   </div>
   <div v-else>
     <!-- if addiditional ul/li -->
-    <div v-if="additional">
+    <div>
       <ul>
         <li v-for="file in files" :key="file._id">
           <div class="fileInfo">
@@ -24,15 +24,15 @@
               v-clipboard:success="onCopy"
               v-clipboard:error="onError"
             >
-              Copy ISOLON/HPC filepath
+              Copy HPC filepath
             </b-button>
           </div>        
           
         </li>
       </ul>
     </div>
-    <div v-else>
-      <!-- TODO sort paired -->
+    <!-- <div v-else>
+      <-- TODO sort paired 
       <div v-for="file in files" :key="file._id">
         <div class="fileInfo">
           <b-icon icon="file-outline" size="is-small"></b-icon>
@@ -44,17 +44,29 @@
             v-clipboard:success="onCopy"
             v-clipboard:error="onError"
           >
-            Copy ISOLON/HPC filepath
+            Copy HPC filepath
           </b-button>
         </div> 
       </div>
-    </div>
-    <!-- if sequences cards -->
+    <-- if sequences cards 
+    </div> -->
   </div>
 </template>
 
 <script>
+import path from 'path'
 export default {
+  data() {
+    return {
+      datastoreRoot: ""
+    };
+  },
+  mounted() {
+    // console.log(process.env.DATASTORE_ROOT);
+    this.datastoreRoot = process.env.DATASTORE_ROOT.replace(/['"]+/g, '');
+    console.log('HOWDY', this.files);
+    
+  },
   methods: {
     onCopy: function (e) {
       alert('You just copied onto your clipboard: ' + e.text)
@@ -63,10 +75,12 @@ export default {
       alert('Failed to copy texts')
     },
     getFullFilePath: function (relativeFilePath) {
-      return `/tsl/data/reads${relativeFilePath}`; 
+      const unixDirConverter = relativeFilePath.replace(/\s/g, '\\ ');
+      //console.log('\nbefore\n', relativeFilePath, '\nafter\n', unixDirConverter);
+      return path.join(this.datastoreRoot, unixDirConverter);      
     }
   },
-  props: ["additional", "files"],
+  props: ["files"],
   computed: {
     emailLink() {
       const { path, query } = this.$route;
@@ -76,7 +90,7 @@ export default {
       const bodyTextUnformatted = 
         'I am looking at a ' + trimmedPath + ' with an ID of ' + id + '. '
         + 'I am concerned with the ' 
-        + `${this.files.length ? '' : 'lack of'} ${this.additional ? 'additional' : 'raw'} files listed. `
+        + `${this.files.length ? '' : 'lack of'} additional files listed. `
         + 'I believe the website might be out of sync with the HPC/ISOLON.'
         + ' Could you investigate this please?'
       ;
