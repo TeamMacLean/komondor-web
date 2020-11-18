@@ -8,7 +8,8 @@ export default {
   env: {
     // baseURL: process.env.HOST,
     API_URL: process.env.API_URL,
-    HOST: process.env.HOST
+    HOST: process.env.HOST,
+    DATASTORE_ROOT: process.env.DATASTORE_ROOT,
   },
   server: {
     port: process.env.PORT || 3000, // default: 3000
