@@ -110,6 +110,8 @@
           <b-tab-item label="Groups">
             <button type="button" class="button is-success" @click="showModalForNewGroup">New</button>
             <hr />
+            <p>TODO: fix: cannot edit LDAP groups using web app</p>
+            <hr />
 
             <div class="columns" v-for="i in Math.ceil(groups.length / 4)" :key="i">
               <div
