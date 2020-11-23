@@ -29,7 +29,7 @@
           <div class="fileNamePadding">{{file.fileName}}</div>
 
           <b-button type="button"
-            v-clipboard:copy="getFullFilePath(run.path, file.fileName)"
+            v-clipboard:copy="getFullFilePath(file.fileName)"
             v-clipboard:success="onCopy"
             v-clipboard:error="onError"
           >
@@ -51,7 +51,6 @@ export default {
     };
   },
   mounted() {
-    // console.log(process.env.DATASTORE_ROOT);
     this.datastoreRoot = process.env.DATASTORE_ROOT.replace(/['"]+/g, '');
   },
   methods: {
@@ -61,13 +60,12 @@ export default {
     onError: function (e) {
       alert('Failed to copy texts')
     },
-    getFullFilePath: function (runPath, fileName) {
+    getFullFilePath: function (fileName) {
       const unixDirConverter = fileName.replace(/\s/g, '\\ ');
-      
-      return path.join(this.datastoreRoot, runPath, unixDirConverter);      
+      return path.join(this.datastoreRoot, this.parentPath, 'raw', unixDirConverter);      
     }
   },
-  props: ["run", "files"],
+  props: ["parentPath", "files"],
   computed: {
     emailLink() {
       const { path, query } = this.$route;

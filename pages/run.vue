@@ -75,14 +75,16 @@
           <p class="bottomPadding">{{run.insertSize}}</p>
         </b-field>
 
+        <!-- TODO additioanlfilelist and readlist could be recombined again -->
+
         <b-field label="Additional Files">
-          <FileList additional="true" :files="run.additionalFiles" />
+          <AdditionalFileList :files="additionalFiles" :parentPath="run.path" />
         </b-field>
 
         <div class="bottomPadding" ></div>
 
         <b-field label="Raw Files">
-          <ReadList :files="reads" :run="run" />
+          <ReadList :files="reads" :parentPath="run.path" />
         </b-field>
         <hr />
         <!-- <p class="title is-4">Runs</p>
@@ -94,11 +96,12 @@
 
 <script>
 // import RunList from "../components/runs/RunList";
-import FileList from "../components/FileList";
+import AdditionalFileList from "../components/AdditionalFileList";
 import ReadList from "../components/ReadList";
+import path from 'path';
 export default {
   components: {
-    FileList,
+    AdditionalFileList,
     ReadList,
   },
   middleware: ["auth"],
@@ -121,20 +124,33 @@ export default {
       .get("/run", { params: { id: route.query.id } })
       .then(res => {
         if (res.status === 200 && res.data.run) {
-          // res.data.project.samples = [];
 
-          const verifiedFileNames = res.data.run.rawFiles.map(rf => rf.file.originalName);
+          const verifiedRawFileNames = res.data.run.rawFiles.map(rf => rf.file.originalName);
+          const verifiedAdditionalFileNames = res.data.run.additionalFiles.map(rf => rf.file.originalName);
+          // TODO check this works with empty addFiles and empty raw files
+
+          const actualReadFileNames = res.data.actualReads ? 
+            JSON.parse(JSON.stringify(res.data.actualReads)) : 
+            []
+          ;          
+          const actualAdditionalFileNames = res.data.actualAdditionalFiles ? 
+            JSON.parse(JSON.stringify(res.data.actualAdditionalFiles)) : 
+            []
+          ;         
           
-          const resReads = JSON.parse(JSON.stringify(res.data.reads));
-          
-          const readsWithVerifiedField = resReads.map(readFileName => ({
+          const readsWithVerifiedField = actualReadFileNames.map(readFileName => ({
             fileName: readFileName,
-            verified: !!verifiedFileNames.includes(readFileName)
-          }));          
-
+            verified: !!verifiedRawFileNames.includes(readFileName)
+          }));
+          const additionalFilesWithVerifiedField = actualAdditionalFileNames.map(additionalFileName => ({
+            fileName: additionalFileName,
+            verified: !!verifiedAdditionalFileNames.includes(additionalFileName)
+          }));       
+          
           return {
             run: res.data.run,
             reads: readsWithVerifiedField,
+            additionalFiles: additionalFilesWithVerifiedField,
           };
           
         } else {

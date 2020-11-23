@@ -24,7 +24,7 @@
         <b-field label="Long Description">{{project.longDesc}}</b-field>
 
         <b-field label="Additional files">
-          <FileList additional="true" :files="project.additionalFiles" />
+          <AdditionalFileList :files="additionalFiles" :parentPath="project.path" />
         </b-field>
 
         <hr />
@@ -43,9 +43,9 @@
 
 <script>
 import SampleList from "../components/samples/SampleList";
-import FileList from "../components/FileList";
+import AdditionalFileList from "../components/AdditionalFileList";
 export default {
-  components: { SampleList, FileList },
+  components: { SampleList, AdditionalFileList },
   middleware: ["auth"],
 
   asyncData({ route, $axios, error, store }) {
@@ -67,11 +67,22 @@ export default {
       .get("/project", { params: { id: route.query.id } })
       .then(res => {
         if (res.status === 200 && res.data.project) {
-          // res.data.project.samples = [];
-           
+
+          const verifiedAdditionalFileNames = res.data.project.additionalFiles.map(rf => rf.file.originalName);     
+          const actualAdditionalFileNames = res.data.actualAdditionalFiles ? 
+            JSON.parse(JSON.stringify(res.data.actualAdditionalFiles)) : 
+            []
+          ;         
+          const additionalFilesWithVerifiedField = actualAdditionalFileNames.map(additionalFileName => ({
+            fileName: additionalFileName,
+            verified: !!verifiedAdditionalFileNames.includes(additionalFileName)
+          }));       
+          
           return {
-            project: res.data.project
+            project: res.data.project,
+            additionalFiles: additionalFilesWithVerifiedField,
           };
+
         } else {
           error({ statusCode: 501, message: "Project not found" });
         }

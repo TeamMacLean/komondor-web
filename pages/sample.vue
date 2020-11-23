@@ -52,7 +52,7 @@
         </b-field>
 
         <b-field label="Additional Files">
-          <FileList additional="true" :files="sample.additionalFiles" />
+          <AdditionalFileList :files="additionalFiles" :parentPath="sample.path" />
         </b-field>
         <hr />
         <p class="title is-4">Runs</p>
@@ -64,9 +64,9 @@
 
 <script>
 import RunList from "../components/runs/RunList";
-import FileList from "../components/FileList";
+import AdditionalFileList from "../components/AdditionalFileList";
 export default {
-  components: { RunList, FileList },
+  components: { RunList, AdditionalFileList },
   middleware: ["auth"],
   asyncData({ route, $axios, error, store }) {
     //TODO check if can view
@@ -86,11 +86,21 @@ export default {
     return $axios
       .get("/sample", { params: { id: route.query.id } })
       .then(res => {
+        
         if (res.status === 200 && res.data.sample) {
-          // res.data.project.samples = [];
-
+          const verifiedAdditionalFileNames = res.data.sample.additionalFiles.map(rf => rf.file.originalName);     
+          const actualAdditionalFileNames = res.data.actualAdditionalFiles ? 
+            JSON.parse(JSON.stringify(res.data.actualAdditionalFiles)) : 
+            []
+          ;         
+          const additionalFilesWithVerifiedField = actualAdditionalFileNames.map(additionalFileName => ({
+            fileName: additionalFileName,
+            verified: !!verifiedAdditionalFileNames.includes(additionalFileName)
+          }));       
+          
           return {
-            sample: res.data.sample
+            sample: res.data.sample,
+            additionalFiles: additionalFilesWithVerifiedField,
           };
         } else {
           error({ statusCode: 501, message: "Sample not found" });

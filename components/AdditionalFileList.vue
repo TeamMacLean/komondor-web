@@ -1,7 +1,7 @@
 <template>
   <div v-if="!files.length">
     <p>
-      No additional files detected in database.
+      No additional files detected in HPC.
     </p>
     <p>
       If you think this is in error, please
@@ -10,17 +10,23 @@
     </p>
   </div>
   <div v-else>
-    <!-- if addiditional ul/li -->
     <div>
       <ul>
         <li v-for="file in files" :key="file._id">
           <div class="fileInfo">
+            <b-tooltip v-if="file.verified" position="is-right" label='Raw read file verified in database'>
+              <b-icon type="is-success" icon="check" size="is-small"></b-icon>
+            </b-tooltip>
+            <!-- <b-tooltip v-else label='File unver'>
+              <b-icon icon="close" type="is-danger" size="is-small"></b-icon>
+            </b-tooltip> -->
+            <b-icon v-else icon="close" type="is-white" size="is-small"></b-icon>
             <b-icon icon="file-outline" size="is-small"></b-icon>
 
-            <div class="fileNamePadding">{{file.file.originalName}}</div>
+            <div class="fileNamePadding">{{file.fileName}}</div>
 
             <b-button type="button"
-              v-clipboard:copy="getFullFilePath(file.file.path)"
+              v-clipboard:copy="getFullFilePath(file.fileName)"
               v-clipboard:success="onCopy"
               v-clipboard:error="onError"
             >
@@ -62,10 +68,7 @@ export default {
     };
   },
   mounted() {
-    // console.log(process.env.DATASTORE_ROOT);
-    this.datastoreRoot = process.env.DATASTORE_ROOT.replace(/['"]+/g, '');
-    console.log('HOWDY', this.files);
-    
+    this.datastoreRoot = process.env.DATASTORE_ROOT.replace(/['"]+/g, '');    
   },
   methods: {
     onCopy: function (e) {
@@ -74,13 +77,12 @@ export default {
     onError: function (e) {
       alert('Failed to copy texts')
     },
-    getFullFilePath: function (relativeFilePath) {
-      const unixDirConverter = relativeFilePath.replace(/\s/g, '\\ ');
-      //console.log('\nbefore\n', relativeFilePath, '\nafter\n', unixDirConverter);
-      return path.join(this.datastoreRoot, unixDirConverter);      
+    getFullFilePath: function (fileName) {
+      const unixDirConverter = fileName.replace(/\s/g, '\\ ');
+      return path.join(this.datastoreRoot, this.parentPath, 'additional', unixDirConverter);      
     }
   },
-  props: ["files"],
+  props: ["files", "parentPath"],
   computed: {
     emailLink() {
       const { path, query } = this.$route;
