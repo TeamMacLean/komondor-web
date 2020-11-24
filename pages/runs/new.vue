@@ -185,8 +185,8 @@
         <button type="submit" class="button is-success" :disabled="submitButtonDisabled">
           Create run
         </button>
-        <div v-if="!atLeastOneRawFileUploaded" class="errorMessage">
-          Please upload at least 1 raw file.
+        <div v-if="isAnyRawReadFileFieldIncomplete" class="errorMessage">
+          Please complete all upload raw files fields.
         </div>
         <!--</div>-->
       </form>
@@ -233,7 +233,8 @@ export default {
               // rawUploadID: uuidv4(),
               rawFiles: [],
               additionalFiles: []
-            }
+            },
+            isAnyRawReadFileFieldIncomplete: true,
           };
         } else {
           return error({ statusCode: 500, message: "Project not found" });
@@ -247,11 +248,8 @@ export default {
   computed: {
     submitButtonDisabled() {
       return false; // TEMP
-      //return !this.atLeastOneRawFileUploaded || !this.additionalUploadsComplete || !this.rawUploadsComplete;
-    },
-    atLeastOneRawFileUploaded() {
-      const truthyRawFiles = this.run.rawFiles.filter(rawFile => !!rawFile)
-      return !!(truthyRawFiles.length);
+
+      //return this.isAnyRawReadFileFieldIncomplete || !this.additionalUploadsComplete || !this.rawUploadsComplete;
     },
     paired() {
       return this.libraryTypeObject ? this.libraryTypeObject.paired : false;
@@ -312,7 +310,18 @@ export default {
         this.rawUploadsComplete = val;
       }
       this.updateRawFiles();
-      // console.log('ids', uploadIDS)
+    },
+    calculateIsAnyRawReadFileFieldIncomplete() {
+      var incompleteFieldDetected = this.run.rawFiles.some(rawFile => {
+        // must have md5 and more than md5+rowId; md5 already handled by UI
+        var thisRawFileIsIncomplete = /**!rawFile.md5 || */Object.keys(rawFile).length < 3
+        //console.log('this rawFile is empty:', thisRawFileIsIncomplete);
+        return thisRawFileIsIncomplete        
+      })
+      //console.log('isAnyRawReadFileFieldIncomplete', incompleteFieldDetected);      
+      this.isAnyRawReadFileFieldIncomplete = incompleteFieldDetected;
+      //console.log('calculating is there is any raw read file field incomplete:', incompleteFieldDetected );
+      
     },
     updateAdditionalFiles() {
       if (this.$refs["additionalUploader"]) {
@@ -323,6 +332,7 @@ export default {
       if (this.$refs["rawUploader"]) {
         this.run.rawFiles = this.$refs["rawUploader"].getFiles();
       }
+      this.calculateIsAnyRawReadFileFieldIncomplete();
     },
     postForm() {
       this.updateAdditionalFiles();

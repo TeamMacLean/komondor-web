@@ -61,11 +61,24 @@ export default {
       const flat = [];
       this.rowIDs.map(rid => {
         if (self.$refs[rid]) {
-          return self.$refs[rid][0].getFiles().map(ff => {
-            flat.push(ff);
+          const result = self.$refs[rid][0].getFiles().map(ff => {
+            //console.log('ff', ff);
+            //console.log('fftypeof', typeof(ff));
+            
+            const ffWithRowID = {
+              ...ff,
+              rowID: rid,
+            }
+            
+            flat.push(ffWithRowID);
           });
+          //console.log('result', result);
+          return result
+          
         }
       });
+      console.log('flat', flat);
+      
       return flat
     }
   }

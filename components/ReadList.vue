@@ -1,5 +1,5 @@
 <template>
-  <div v-if="!files.length">
+  <div v-if="!reads.length">
     <p>
       No read files detected in HPC.
     </p>
@@ -12,10 +12,10 @@
   <div v-else>
     <div>
       <!-- TODO sort paired -->
-      <div v-for="file in sortedFiles" :key="file._id">
+      <div v-for="read in sortedReads" :key="read._id">
         <div class="fileInfo">
 
-          <b-tooltip v-if="file.verified" position="is-right" label='Raw read file verified in database'>
+          <b-tooltip v-if="read.verified" position="is-right" label='Raw read file verified in database'>
             <b-icon type="is-success" icon="check" size="is-small"></b-icon>
           </b-tooltip>
           <!-- <b-tooltip v-else label='File unver'>
@@ -26,10 +26,19 @@
 
           <b-icon icon="file-outline" size="is-small"></b-icon>
 
-          <div class="fileNamePadding">{{file.fileName}}</div>
+          <div class="fileNamePadding">{{read.fileName}}</div>
+          <div v-if="read.readInfo.paired" class="fileNamePadding">
+            <div v-if="read.readInfo.sibling">
+              (PAIRED with {{getSiblingFileName(read.readInfo.sibling)}})
+            </div>
+            <div v-else>
+              (PAIRED)
+            </div>
+            
+          </div>
 
           <b-button type="button"
-            v-clipboard:copy="getFullFilePath(file.fileName)"
+            v-clipboard:copy="getFullFilePath(read.fileName)"
             v-clipboard:success="onCopy"
             v-clipboard:error="onError"
           >
@@ -52,6 +61,9 @@ export default {
   },
   mounted() {
     this.datastoreRoot = process.env.DATASTORE_ROOT.replace(/['"]+/g, '');
+
+    console.log('what we receive', this.reads);
+    
   },
   methods: {
     onCopy: function (e) {
@@ -62,15 +74,20 @@ export default {
     },
     getFullFilePath: function (fileName) {
       const unixDirConverter = fileName.replace(/\s/g, '\\ ');
-      return path.join(this.datastoreRoot, this.parentPath, 'raw', unixDirConverter);      
+      return path.join(this.datastoreRoot, this.runPath, 'raw', unixDirConverter);      
+    },
+    getSiblingFileName(siblingId){
+      return this.reads.find(read => read.readInfo._id === siblingId).fileName
     }
   },
-  props: ["parentPath", "files"],
+  props: ["runPath", "reads"],
   computed: {
-    sortedFiles() {
-      console.log('this.file', this.files);
+    sortedReads() {
+      // console.log('this.file', this.reads);
       
-      return this.files;
+      // TODO pair based on sibling ID (this however will work 90% of the time)
+      
+      return this.reads.sort((a, b) => (a.fileName > b.fileName) ? 1 : -1 );
     },
     emailLink() {
       const { path, query } = this.$route;
@@ -80,7 +97,7 @@ export default {
       const bodyTextUnformatted = 
         'I am looking at a ' + trimmedPath + ' with an ID of ' + id + '. '
         + 'I am concerned with the ' 
-        + `${this.files.length ? '' : 'lack of'} read files listed. `
+        + `${this.reads.length ? '' : 'lack of'} read files listed. `
         + ' Could you investigate this please?'
       ;
 

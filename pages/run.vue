@@ -84,7 +84,7 @@
         <div class="bottomPadding" ></div>
 
         <b-field label="Raw Files">
-          <ReadList :files="reads" :parentPath="run.path" />
+          <ReadList :reads="reads" :runPath="run.path" />
         </b-field>
         <hr />
         <!-- <p class="title is-4">Runs</p>
@@ -125,7 +125,10 @@ export default {
       .then(res => {
         if (res.status === 200 && res.data.run) {
 
-          const verifiedRawFileNames = res.data.run.rawFiles.map(rf => rf.file.originalName);
+          const dbReadFileEntries = res.data.run.rawFiles;
+          console.log('rawFiles', dbReadFileEntries);
+          
+          const verifiedRawFileNames = dbReadFileEntries.map(rf => rf.file.originalName);
           const verifiedAdditionalFileNames = res.data.run.additionalFiles.map(rf => rf.file.originalName);
           // TODO check this works with empty addFiles and empty raw files
 
@@ -138,19 +141,29 @@ export default {
             []
           ;         
           
-          const readsWithVerifiedField = actualReadFileNames.map(readFileName => ({
-            fileName: readFileName,
-            verified: !!verifiedRawFileNames.includes(readFileName)
-          }));
-          const additionalFilesWithVerifiedField = actualAdditionalFileNames.map(additionalFileName => ({
+          const verifiedReads = actualReadFileNames.map(readFileName => {
+
+            const res = {
+              fileName: readFileName,
+              readInfo: dbReadFileEntries.find(entry => entry.file.originalName === readFileName),
+              verified: !!verifiedRawFileNames.includes(readFileName),
+            };
+            // console.log('res', res);
+            return res;
+            
+          });
+
+          
+          
+          const addFileRes = actualAdditionalFileNames.map(additionalFileName => ({
             fileName: additionalFileName,
             verified: !!verifiedAdditionalFileNames.includes(additionalFileName)
           }));       
           
           return {
             run: res.data.run,
-            reads: readsWithVerifiedField,
-            additionalFiles: additionalFilesWithVerifiedField,
+            reads: verifiedReads,
+            additionalFiles: addFileRes,
           };
           
         } else {
