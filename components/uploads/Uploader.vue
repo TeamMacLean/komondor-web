@@ -28,6 +28,7 @@ export default {
     this.uppyInstance = Uppy({
       debug: true,
       autoProceed: true,
+      allowMultipleUploads: false,
       id: `uppy-${this.uppyId}`,
       meta: {
         // uploadID: this.uploadID,
@@ -35,7 +36,7 @@ export default {
       },
       restrictions: {
         maxFileSize: 30000 * 1000000, //30g
-        maxNumberOfFiles: 999,
+        maxNumberOfFiles: 20,
         minNumberOfFiles: 0
         // allowedFileTypes: ['image/*', 'video/*', '.lif']
       }
@@ -56,21 +57,30 @@ export default {
         height: 400,
         width: 400
       })
-      .use(Tus, { endpoint: this.API_URL + "/uploads" });
-
-    if (this.onUploadStatusChange) {
-      const self = this;
-      this.uppyInstance.on("*", () => {
-        // console.log(self.uppyInstance.getFiles());
-        const allUploadsComplete =
-          self.uppyInstance.getFiles().filter(file => {
-            return !file.progress.uploadComplete;
-          }).length < 1;
-
-        this.onUploadStatusChange(allUploadsComplete);
-        // self.$emit("canSubmit", allUploadsComplete);
+      .use(Tus, { 
+        endpoint: this.API_URL + "/uploads",
+        resume: true,
+        limit: 10,
       });
-    }
+
+    this.uppyInstance.on('file-added', (file) => {
+      console.log('new file added by uppy', file.name)
+      this.onUploadStatusChange();
+    })
+
+    // if (this.onUploadStatusChange) {
+    //   const self = this;
+    //   this.uppyInstance.on("*", () => {
+    //     // console.log(self.uppyInstance.getFiles());
+    //     const allUploadsComplete =
+    //       self.uppyInstance.getFiles().filter(file => {
+    //         return !file.progress.uploadComplete;
+    //       }).length < 1;
+
+    //     this.onUploadStatusChange(allUploadsComplete);
+    //     // self.$emit("canSubmit", allUploadsComplete);
+    //   });
+    // }
   },
   methods: {
     getFiles() {

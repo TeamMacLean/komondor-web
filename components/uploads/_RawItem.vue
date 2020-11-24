@@ -135,7 +135,11 @@ export default {
     this.uppyInstance
       .use(DragDrop, { target: `#${this.uniqueID}` })
       // .use(FileInput, { target: `#${this.uniqueID}`, pretty: true })
-      .use(Tus, { endpoint: this.API_URL + "/uploads" })
+      .use(Tus, { 
+        endpoint: this.API_URL + "/uploads",
+        resume: true,
+        limit: 10,
+      })
       .use(StatusBar, {
         target: `#${this.uniqueID}-progress`,
         hideUploadButton: true,
