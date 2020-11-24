@@ -12,7 +12,7 @@
   <div v-else>
     <div>
       <!-- TODO sort paired -->
-      <div v-for="file in files" :key="file._id">
+      <div v-for="file in sortedFiles" :key="file._id">
         <div class="fileInfo">
 
           <b-tooltip v-if="file.verified" position="is-right" label='Raw read file verified in database'>
@@ -67,6 +67,11 @@ export default {
   },
   props: ["parentPath", "files"],
   computed: {
+    sortedFiles() {
+      console.log('this.file', this.files);
+      
+      return this.files;
+    },
     emailLink() {
       const { path, query } = this.$route;
       const { id } = query;

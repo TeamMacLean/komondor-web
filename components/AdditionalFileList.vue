@@ -14,7 +14,7 @@
       <ul>
         <li v-for="file in files" :key="file._id">
           <div class="fileInfo">
-            <b-tooltip v-if="file.verified" position="is-right" label='Raw read file verified in database'>
+            <b-tooltip v-if="file.verified" position="is-right" label='Additional file verified in database'>
               <b-icon type="is-success" icon="check" size="is-small"></b-icon>
             </b-tooltip>
             <!-- <b-tooltip v-else label='File unver'>
