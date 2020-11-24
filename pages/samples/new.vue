@@ -139,12 +139,13 @@ export default {
             additionalUploadsComplete: true,
             project: res.data.project,
             sample: {
-              name: "",
+              /* TODO switch back */
+              name: Math.random().toString(16).substr(2, 6),
               project: res.data.project.id,
-              scientificName: "",
-              commonName: null,
-              ncbi: "",
-              conditions: "",
+              scientificName: "Bulbasaur",
+              commonName: 'Venusaur',
+              ncbi: 23,
+              conditions: "Vestibulum id ligula porta felis euismod semper. Curabitur blandit tempus porttitor. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus.",
               additionalFiles: []
             }
           };
@@ -185,29 +186,34 @@ export default {
       this.sample.group = this.project.group;
       this.sample.project = this.project._id; //required
       // this.project.tags = this.tags;
+      //console.log('sampleaddfiles', this.sample.additionalFiles);
+      
       this.$axios
         .post("/samples/new", this.sample)
         .then(result => {
-          this.$buefy.toast.open({
-            message: "Sample created!",
-            type: "is-success"
-          });
-          // this.$router.push({
-          //   path: '/projects'
-          // })
-          //
-          this.$router.push({
-            name: "sample",
-            query: { id: result.data.sample._id }
-          });
+          // give additionalFile time to enter DB
+          setTimeout(() => {
+            this.$buefy.toast.open({
+              message: "Sample created!",
+              type: "is-success"
+            });
+            this.$router.push({
+              name: "sample",
+              query: { id: result.data.sample._id }
+            });
+          }, 200);          
         })
         .catch(err => {
           console.error(err);
+          var errorMessage = err.message;
+          if (err.message.includes('500')){
+            errorMessage = 'Unknown 500 error from server. Sample info may be lost. Uploads may have persisted. Please contact george.deeks@tsl.ac.uk with current time (' + Date.now().format('DD-MM-YYYY HH:MM:SS') + ') to resolve data.'
+          }
           this.$buefy.dialog.alert({
             title: "Error",
-            message: err.message,
+            message: errorMessage,
             type: "is-danger",
-            hasIcon: true
+            hasIcon: false
           });
         });
     }

@@ -220,7 +220,7 @@ export default {
             rawUploadsComplete: false,
             sample: res.data.sample,
             run: {
-              name: 'david', //this wasnt there originally but i think needed
+              name: Math.random().toString(16).substr(2, 6), // not originally there but i think needed
               sample: res.data.sample._id,
               libraryType: 'BAM', // change back null,
               sequencingProvider: 'EL', // change back "",
@@ -246,7 +246,8 @@ export default {
   },
   computed: {
     submitButtonDisabled() {
-      return !this.atLeastOneRawFileUploaded || !this.additionalUploadsComplete || !this.rawUploadsComplete;
+      return false; // TEMP
+      //return !this.atLeastOneRawFileUploaded || !this.additionalUploadsComplete || !this.rawUploadsComplete;
     },
     atLeastOneRawFileUploaded() {
       const truthyRawFiles = this.run.rawFiles.filter(rawFile => !!rawFile)
@@ -297,7 +298,7 @@ export default {
   },
   methods: {
     computeOptionString(option) {
-      const typesSupported = !option.extensions.length ? ' (any file type allowed)' : ' (supported file types:' + option.extensions.map(ext => (' ' + ext)) + ')';
+      const typesSupported = !option.extensions.length ? ' (any file type allowed)' : ' (suggested file types:' + option.extensions.map(ext => (' ' + ext)) + ')';
       return option.value + typesSupported;
     },
     onUploaderChange(val) {
@@ -345,11 +346,15 @@ export default {
         })
         .catch(err => {
           console.error(err);
+          var errorMessage = err.message;
+          if (err.message.includes('500')){
+            errorMessage = 'Unknown 500 error from server. Run info may be lost. Uploads may have persisted. Please contact george.deeks@tsl.ac.uk with current time (' + Date.now().format('DD-MM-YYYY HH:MM:SS') + ') to resolve data.'
+          }
           this.$buefy.dialog.alert({
             title: "Error",
-            message: err.message,
+            message: errorMessage,
             type: "is-danger",
-            hasIcon: true
+            hasIcon: false
           });
         });
     }

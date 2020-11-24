@@ -144,6 +144,7 @@
 import Uploader from "~/components/uploads/Uploader.vue";
 import FormConsentCheckbox from "~/components/formHelpers/formConsentCheckbox"
 import { v4 as uuidv4 } from "uuid";
+import path from 'path'
 
 export default {
   middleware: "auth",
@@ -157,8 +158,8 @@ export default {
     return {
       additionalUploadsComplete: true,
       project: {
-        name: 'Well hello there travel-hare',
-        group: null,
+        name: Math.random().toString(16).substr(2, 6),
+        group: '5fb2ded5420a11402b030234',
         /* change to empty string */ shortDesc: "Donec ullamcorper nulla non metus auctor fringilla. Donec sed odio dui. Cras justo odio, dapibus ac facilisis in, egestas eget quam. Maecenas sed diam eget risus varius blandit sit amet non magna. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus.",
         /* change to empty string */ longDesc: "Donec ullamcorper nulla non metus auctor fringilla. Donec sed odio dui. Cras justo odio, dapibus ac facilisis in, egestas eget quam. Maecenas sed diam eget risus varius blandit sit amet non magna. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus.",
         isSelectOnly: false,
@@ -195,9 +196,9 @@ export default {
   methods: {
     onUploaderChange(val) {
       //
-      if (typeof val === "boolean") {
-        this.additionalUploadsComplete = val;
-      }
+      // if (typeof val === "boolean") {
+      //   this.additionalUploadsComplete = val;
+      // }
       this.updateAdditionalFiles();
     },
     updateAdditionalFiles() {
@@ -218,21 +219,17 @@ export default {
       }
 
       this.project.owner = this.$auth.user.username; //required
-      // this.project.tags = this.tags;
+
       this.$axios
         .post("/projects/new", this.project)
         .then(result => {
 
-          // HACK ensure additional upload file is in db before
-          // looking up for it in view project page
+          // HACK ensure file uploads in db/hpc before reading
           setTimeout(() => {
             this.$buefy.toast.open({
               message: "Project created!",
               type: "is-success"
             });
-
-            // unnecessary?
-            // this.isSubmitting = false;
 
             this.$router.push({
               name: "project",
@@ -241,10 +238,14 @@ export default {
           }, 100)
         })
         .catch(err => {
-          // console.error(err);
+          console.error(err)
+          var errorMessage = err.message;
+          if (err.message.includes('500')){
+            errorMessage = 'Unknown 500 error from server. Project info may be lost. Uploads may have persisted. Please contact george.deeks@tsl.ac.uk with current time (' + Date.now().format('DD-MM-YYYY HH:MM:SS') + ') to resolve data.'
+          }
           this.$buefy.dialog.alert({
             title: "Error",
-            message: err.message,
+            message: errorMessage,
             type: "is-danger",
             hasIcon: false
           });
