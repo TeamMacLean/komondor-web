@@ -2,6 +2,7 @@
   <div class="section">
     <div class="container">
       <h1 class="title">New Run</h1>
+      <h5>If any options that you need are not listed, please contact system adminstrator.</h5>
       <!-- <h2 class="subtitle">
         Aenean eu leo quam. Pellentesque ornare sem lacinia quam venenatis vestibulum. Morbi leo
         risus, porta ac consectetur ac, vestibulum at eros.
@@ -10,10 +11,14 @@
       <form @submit.prevent="postForm">
         <div class="columns">
           <div class="column">
-            <b-field label="Name" message="A short (5-20 characters in length), informative name to identify your data set.">
+            <b-field 
+              :type="this.isWarningStyleForNameInput"
+              label="Name" 
+              message="A short (5-20 characters in length), informative name to identify your data set."
+            >
               <b-input
                 expanded
-                name="name"
+                name="name"                              
                 v-model="run.name"
                 minlength="5"
                 maxlength="20"
@@ -182,7 +187,7 @@
         <hr />
 
         <!--<div class="buttons is-right">-->
-        <button type="submit" class="button is-success" :disabled="submitButtonDisabled">
+        <button type="submit" class="button is-success" :disabled="!canSubmit">
           Create run
         </button>
         <div v-if="isAnyRawReadFileFieldIncomplete" class="errorMessage">
@@ -215,20 +220,24 @@ export default {
       .get("/sample", { params: { id: route.query.sample } })
       .then(res => {
         if (res.status === 200) {
+
+          const existingRunNamesForThisSample = res.data.sample.runs.map(r => r.name)
+
           return {
             additionalUploadsComplete: true,
             rawUploadsComplete: false,
             sample: res.data.sample,
+            invalidRunNames: existingRunNamesForThisSample,
             run: {
-              name: Math.random().toString(16).substr(2, 6), // not originally there but i think needed
+              name: "",
               sample: res.data.sample._id,
-              libraryType: 'BAM', // change back null,
-              sequencingProvider: 'EL', // change back "",
-              sequencingTechnology: '454 GS', // change back null,
-              librarySource: 'GENOMIC', // change back null,
-              librarySelection: 'ChIP',// change back null,
-              libraryStrategy: 'CLONE',// change back null,
-              insertSize: 123,// change back null,
+              libraryType: null, // e.g. 'BAM',
+              sequencingProvider: '', // e.g. 'EL'
+              sequencingTechnology: null, // e.g. '454 GS' 
+              librarySource: null, // e.g. 'GENOMIC' 
+              librarySelection: null,// e.g. 'ChIP'
+              libraryStrategy: null,// e.g. 'CLONE' 
+              insertSize: null,// e.g. 123 
               // additionalUploadID: uuidv4(),
               // rawUploadID: uuidv4(),
               rawFiles: [],
@@ -237,19 +246,29 @@ export default {
             isAnyRawReadFileFieldIncomplete: true,
           };
         } else {
-          return error({ statusCode: 500, message: "Project not found" });
+          return error({ statusCode: 500, message: "Parent sample not found" });
         }
       })
       .catch(err => {
         console.error(err);
-        error({ statusCode: 500, message: "Project not found" });
+        error({ statusCode: 500, message: "Parent sample not found" });
       });
   },
   computed: {
-    submitButtonDisabled() {
-      return false; // TEMP
-
-      //return this.isAnyRawReadFileFieldIncomplete || !this.additionalUploadsComplete || !this.rawUploadsComplete;
+    isWarningStyleForNameInput() {
+      return this.invalidRunNames.includes(this.run.name) ? 'is-danger' : '';
+    },
+    canSubmit() {
+      if (
+        this.additionalUploadsComplete &&
+        this.rawUploadsComplete &&
+        !this.isAnyRawReadFileFieldIncomplete &&
+        !this.isWarningStyleForNameInput
+      ){
+        return true
+      } else {
+        return false
+      }
     },
     paired() {
       return this.libraryTypeObject ? this.libraryTypeObject.paired : false;
@@ -358,8 +377,12 @@ export default {
           console.error(err);
           var errorMessage = err.message;
           if (err.message.includes('500')){
-            errorMessage = 'Unknown 500 error from server. Run info may be lost. Uploads may have persisted. Please contact george.deeks@tsl.ac.uk with current time (' + Date.now().format('DD-MM-YYYY HH:MM:SS') + ') to resolve data.'
-          }
+            const type = 'Run';
+            errorMessage = 'Unknown 500 error from server. Sorry about that.' + 
+              '\n' + type + ' info may have registered in database.' + 
+              '\nUploads are on remote server, but may not have been registered in database and/or moved to HPC.'  
+              '\nPlease check all this using this website, and notify system admin of when this happened, and which data you need cleaning up.';
+          }  
           this.$buefy.dialog.alert({
             title: "Error",
             message: errorMessage,

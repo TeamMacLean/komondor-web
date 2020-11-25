@@ -13,6 +13,7 @@
             <!--Name-->
             <b-field
               label="Name"
+              :type="this.isWarningStyleForNameInput"
               message="Find a suitable short name for your project, 20-80 characters in length, something that you can memorise and that also works reasonably well to present your study to the public"
             >
               <b-input
@@ -46,7 +47,7 @@
             </b-field>
             <b-field 
               v-else-if="$store.state.groups.filter((f)=>!f.deleted).length === 1"
-              label="Group" message="The group that this project belongs to. (Defaulted as only 1 group available to you.)">
+              label="Group" message="The group that this project belongs to. (Defaulted as the only group available to you. Contact system admin to create new groups if required.)">
 
               <div
                 class="onlyOneSelectOption"
@@ -154,29 +155,55 @@ export default {
 
     // })
   // },
-  data() {
-    return {
-      additionalUploadsComplete: true,
-      project: {
-        name: Math.random().toString(16).substr(2, 6),
-        group: '5fb2ded5420a11402b030234',
-        /* change to empty string */ shortDesc: "Donec ullamcorper nulla non metus auctor fringilla. Donec sed odio dui. Cras justo odio, dapibus ac facilisis in, egestas eget quam. Maecenas sed diam eget risus varius blandit sit amet non magna. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus.",
-        /* change to empty string */ longDesc: "Donec ullamcorper nulla non metus auctor fringilla. Donec sed odio dui. Cras justo odio, dapibus ac facilisis in, egestas eget quam. Maecenas sed diam eget risus varius blandit sit amet non magna. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus.",
-        isSelectOnly: false,
-        doNotSendToEna: false,
-        doNotSendToEnaReason: null,
-        additionalFiles: []
-      }/*,
-      isSubmitting: false, TODO for loading style on button when applicable / i can get to work */
-    };
+  asyncData({ route, $axios, error, store }) {    
+    return $axios
+      .get("/projects/names")
+      .then(res => {
+        if (res.status === 200 && res.data.projectsNames) {          
+          return {
+            additionalUploadsComplete: true,
+            bad: {
+              nameList: res.data.projectsNames,
+            },
+            project: {
+              name: "",
+              group: '',
+              shortDesc: "",
+              longDesc: "",
+              isSelectOnly: false,
+              doNotSendToEna: false,
+              doNotSendToEnaReason: null,
+              additionalFiles: []
+            }/*,
+            isSubmitting: false, TODO for loading style on button when applicable / i can get to work */
+          };
+
+        } else {
+          error({ statusCode: 501, message: "Unknown error" });
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        error({ statusCode: 501, message: "Unknown error" });
+      });
   },
   fetch({ store }) {
     // NB don't need return necessarily
     return store.dispatch("refreshGroups");
   },
   computed: {
+    isWarningStyleForNameInput() {
+      return this.bad.nameList.includes(this.project.name) ? 'is-danger' : '';
+    },
     canSubmit() {
-      return this.additionalUploadsComplete;
+      if (
+        this.additionalUploadsComplete &&
+        !this.isWarningStyleForNameInput
+      ){
+        return true
+      } else {
+        return false
+      }
     },
     selectedGroup() {
       if (this.project.group) {
@@ -208,8 +235,19 @@ export default {
         ].getFiles();
       }
     },
+    // processInvalidFormFieldError(errorMessage, badListKey, newBadItem){
+    //   this.bad[badListKey].push(newBadItem);
+    //   this.$buefy.dialog.alert({
+    // },
+    // isFormValid() {
+    //   const wrongNameLength = false;
+    //   if (wrongNameLength){
+    //     this.processInvalidFormFieldError('Project name not the correct length', 'nameList', this.project.name)
+    //     return false;
+    //   }
+    //   return true;
+    // },
     postForm() {
-      // this.isSubmitting = true;
 
       this.updateAdditionalFiles();
 
@@ -241,8 +279,12 @@ export default {
           console.error(err)
           var errorMessage = err.message;
           if (err.message.includes('500')){
-            errorMessage = 'Unknown 500 error from server. Project info may be lost. Uploads may have persisted. Please contact george.deeks@tsl.ac.uk with current time (' + Date.now().format('DD-MM-YYYY HH:MM:SS') + ') to resolve data.'
-          }
+            const type = 'Project';
+            errorMessage = 'Unknown 500 error from server. Sorry about that.' + 
+              '\n' + type + ' info may have registered in database.' + 
+              '\nUploads are on remote server, but may not have been registered in database and/or moved to HPC.'  
+              '\nPlease check all this using this website, and notify system admin of when this happened, and which data you need cleaning up.';
+          }          
           this.$buefy.dialog.alert({
             title: "Error",
             message: errorMessage,

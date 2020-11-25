@@ -14,6 +14,7 @@
           <div class="column">
             <b-field
               label="Name"
+              :type="this.isWarningStyleForNameInput"
               message="A choose a short, informative name to identify your sample, between 10 and 80 characters."
             >
               <b-input
@@ -134,18 +135,20 @@ export default {
                 "You have requested that this data not go to ENA, you cannot add any samples until this is resolved."
             });
           }
-
+          
+          const existingSampleNamesForThisProject = res.data.project.samples.map(s => s.name)
           return {
             additionalUploadsComplete: true,
             project: res.data.project,
+            invalidSampleNames: existingSampleNamesForThisProject,
             sample: {
               /* TODO switch back */
-              name: Math.random().toString(16).substr(2, 6),
+              name: "",
               project: res.data.project.id,
-              scientificName: "Bulbasaur",
-              commonName: 'Venusaur',
-              ncbi: 23,
-              conditions: "Vestibulum id ligula porta felis euismod semper. Curabitur blandit tempus porttitor. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus.",
+              scientificName: "",
+              commonName: '',
+              ncbi: null,
+              conditions: "",
               additionalFiles: []
             }
           };
@@ -158,9 +161,19 @@ export default {
       });
   },
   computed: {
+    isWarningStyleForNameInput() {
+      return this.invalidSampleNames.includes(this.sample.name) ? 'is-danger' : '';
+    },
     canSubmit() {
-      return this.additionalUploadsComplete;
-    }
+      if (
+        this.additionalUploadsComplete &&
+        !this.isWarningStyleForNameInput
+      ){
+        return true
+      } else {
+        return false
+      }
+    },
   },
   methods: {
     onUploaderChange(val) {
@@ -207,8 +220,12 @@ export default {
           console.error(err);
           var errorMessage = err.message;
           if (err.message.includes('500')){
-            errorMessage = 'Unknown 500 error from server. Sample info may be lost. Uploads may have persisted. Please contact george.deeks@tsl.ac.uk with current time (' + Date.now().format('DD-MM-YYYY HH:MM:SS') + ') to resolve data.'
-          }
+            const type = 'Sample';
+            errorMessage = 'Unknown 500 error from server. Sorry about that.' + 
+              '\n' + type + ' info may have registered in database.' + 
+              '\nUploads are on remote server, but may not have been registered in database and/or moved to HPC.'  
+              '\nPlease check all this using this website, and notify system admin of when this happened, and which data you need cleaning up.';
+          }  
           this.$buefy.dialog.alert({
             title: "Error",
             message: errorMessage,
