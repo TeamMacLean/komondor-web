@@ -202,7 +202,7 @@
 <script>
 import Uploader from "~/components/uploads/Uploader.vue";
 import UploadRaw from "~/components/uploads/UploaderRaw.vue";
-import FormConsentCheckbox from "~/components/formHelpers/formConsentCheckbox"
+import FormConsentCheckbox from "~/components/formHelpers/FormConsentCheckbox"
 import { v4 as uuidv4 } from "uuid";
 export default {
   name: 'New Run',
