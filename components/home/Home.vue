@@ -23,10 +23,10 @@
                 v-for="(project,index) in filteredProjects"
                 :key="index"
                 v-tooltip="{
-                  content:`<div><p>{project.name}</p></div>`,
+                  content:`<div><p>Project name</p></div>`,
                   delay: {
-                    show: 500,
-                    hide: 300,
+                    show: 1500,
+                    hide: 1500,
                   },
                   placement: 'top-center',
                 }"
@@ -53,7 +53,8 @@
       </div>
       <div class="column is-9 is-10-fullhd">
         <div class="section fill-height">
-          <div class="container">
+
+          <div class="container" v-if="$store.state.news.length">
             <h2 class="title is-5">Most recently added</h2>
 
             <b-loading
@@ -63,6 +64,19 @@
             ></b-loading>
             <NewsCard v-for="(news, index) in $store.state.news" :news="news" :key="index"></NewsCard>
           </div>
+          <!-- lazy v-else. use slots TODO -->
+          <div v-else class="container">
+            <h2 class="title is-5">Most recently added</h2>
+
+            <b-loading
+              :is-full-page="false"
+              :active="$store.state.refreshingNews"
+              :can-cancel="false"
+            ></b-loading>
+            <div>No new projects from your group(s) added using this website recently!</div>
+          </div>   
+                    
+
         </div>
       </div>
     </div>
