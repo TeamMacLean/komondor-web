@@ -60,10 +60,7 @@ export default {
     };
   },
   mounted() {
-    this.datastoreRoot = process.env.DATASTORE_ROOT.replace(/['"]+/g, '');
-
-    console.log('what we receive', this.reads);
-    
+    this.datastoreRoot = process.env.DATASTORE_ROOT.replace(/['"]+/g, '');    
   },
   methods: {
     onCopy: function (e) {

@@ -76,9 +76,7 @@ export default {
           return result
           
         }
-      });
-      console.log('flat', flat);
-      
+      });      
       return flat
     }
   }
