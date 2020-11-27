@@ -9,7 +9,7 @@ export default {
     // baseURL: process.env.HOST,
     API_URL: process.env.API_URL,
     HOST: process.env.HOST,
-    DATASTORE_ROOT: process.env.DATASTORE_ROOT,
+    HPC_DATASTORE_ROOT: process.env.HPC_DATASTORE_ROOT,
     DATAHOG_DEATH: process.env.DATAHOG_DEATH,
   },
   server: {

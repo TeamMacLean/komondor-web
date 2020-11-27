@@ -370,7 +370,7 @@ export default {
           });
           this.$router.push({
             name: "run",
-            query: { id: result.data.run._id }
+            query: { id: result.data.run._id/**, justCreated: true SO WE CAN TELL THEM UPLOADS TAKE A WHILE IF LARGE */ }
           });
         })
         .catch(err => {

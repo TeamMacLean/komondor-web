@@ -150,7 +150,7 @@ export default {
             const readInfo = dbReadFileEntries.find(entry => entry.file.originalName === readFileName);
             
             if (!readInfo){
-              console.log('no db read info found for: ', readInfo);              
+              console.log('no db read info found for: ', readFileName);              
             }
 
             const res = {

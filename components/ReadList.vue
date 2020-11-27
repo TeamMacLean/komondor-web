@@ -60,7 +60,7 @@ export default {
     };
   },
   mounted() {
-    this.datastoreRoot = process.env.DATASTORE_ROOT.replace(/['"]+/g, '');    
+    this.datastoreRoot = process.env.HPC_DATASTORE_ROOT.replace(/['"]+/g, '');    
   },
   methods: {
     onCopy: function (e) {
