@@ -225,6 +225,7 @@ export default {
 
           return {
             additionalUploadsComplete: true,
+            isSubmitting: false,
             rawUploadsComplete: false,
             sample: res.data.sample,
             invalidRunNames: existingRunNamesForThisSample,
@@ -376,6 +377,7 @@ export default {
               name: "run",
               query: { id: result.data.run._id/**, justCreated: true SO WE CAN TELL THEM UPLOADS TAKE A WHILE IF LARGE */ }
             });
+            this.isSubmitting = false;
           }, 2500);
         })
         .catch(err => {

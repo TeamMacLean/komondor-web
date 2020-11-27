@@ -217,25 +217,28 @@ export default {
               name: "sample",
               query: { id: result.data.sample._id }
             });
-          }, 1500);          
+            this.isSubmitting = false;
+          }, 2000);          
         })
         .catch(err => {
-          console.error(err);
-          var errorMessage = err.message;
-          if (err.message.includes('500')){
-            const type = 'Sample';
-            errorMessage = 'Unknown 500 error from server. Sorry about that.' + 
-              '\n' + type + ' info may have registered in database.' + 
-              '\nUploads are on remote server, but may not have been registered in database and/or moved to HPC.'  
-              '\nPlease check all this using this website, and notify system admin of when this happened, and which data you need cleaning up.';
-          }  
-          this.$buefy.dialog.alert({
-            title: "Error",
-            message: errorMessage,
-            type: "is-danger",
-            hasIcon: false
-          });
-          this.isSubmitting = false;
+          setTimeout(() => {
+            console.error(err);
+            var errorMessage = err.message;
+            if (err.message.includes('500')){
+              const type = 'Sample';
+              errorMessage = 'Unknown 500 error from server. Sorry about that.' + 
+                '\n' + type + ' info may have registered in database.' + 
+                '\nUploads are on remote server, but may not have been registered in database and/or moved to HPC.'  
+                '\nPlease check all this using this website, and notify system admin of when this happened, and which data you need cleaning up.';
+            }  
+            this.$buefy.dialog.alert({
+              title: "Error",
+              message: errorMessage,
+              type: "is-danger",
+              hasIcon: false
+            });
+            this.isSubmitting = false;
+          }, 2000)
         });
     }
   }

@@ -151,9 +151,7 @@ export default {
   middleware: "auth",
   components: { Uploader, FormConsentCheckbox },
   // mounted(){
-    // this.$refs.additionalUploads.on('canSubmit', function(){
-
-    // })
+  //   console.log('mounted, this.isSubmitting:', this.isSubmitting, 'canSubmit:', this.canSubmit);
   // },
   asyncData({ route, $axios, error, store }) {    
     return $axios
@@ -161,6 +159,7 @@ export default {
       .then(res => {
         if (res.status === 200 && res.data.projectsNames) {          
           return {
+            isSubmitting: false,
             additionalUploadsComplete: true,
             bad: {
               nameList: res.data.projectsNames,
@@ -249,7 +248,10 @@ export default {
     //   return true;
     // },
     postForm() {
+      
       this.isSubmitting = true;
+          console.log('posting form, this.isSubmitting:', this.isSubmitting, 'canSubmit:', this.canSubmit);
+
 
       this.updateAdditionalFiles();
 
@@ -275,25 +277,32 @@ export default {
               name: "project",
               query: { id: result.data.project._id }
             });
-          }, 1500)
+
+            this.isSubmitting = false;
+            console.log('succesful form, this.isSubmitting:', this.isSubmitting, 'canSubmit:', this.canSubmit);
+
+          }, 2000)
         })
         .catch(err => {
-          console.error(err)
-          var errorMessage = err.message;
-          if (err.message.includes('500')){
-            const type = 'Project';
-            errorMessage = 'Unknown 500 error from server. Sorry about that.' + 
-              '\n' + type + ' info may have registered in database.' + 
-              '\nUploads are on remote server, but may not have been registered in database and/or moved to HPC.'  
-              '\nPlease check all this using this website, and notify system admin of when this happened, and which data you need cleaning up.';
-          }          
-          this.$buefy.dialog.alert({
-            title: "Error",
-            message: errorMessage,
-            type: "is-danger",
-            hasIcon: false
-          });
-          this.isSubmitting = false;
+          setTimeout(() => {
+            console.error(err)
+            var errorMessage = err.message;
+            if (err.message.includes('500')){
+              const type = 'Project';
+              errorMessage = 'Unknown 500 error from server. Sorry about that.' + 
+                '\n' + type + ' info may have registered in database.' + 
+                '\nUploads are on remote server, but may not have been registered in database and/or moved to HPC.'  
+                '\nPlease check all this using this website, and notify system admin of when this happened, and which data you need cleaning up.';
+            }          
+            this.$buefy.dialog.alert({
+              title: "Error",
+              message: errorMessage,
+              type: "is-danger",
+              hasIcon: false
+            });
+            this.isSubmitting = false;
+            console.log('error submitting, this.isSubmitting:', this.isSubmitting, 'canSubmit:', this.canSubmit);
+          }, 2000)
         });
     }
   }
