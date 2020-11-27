@@ -1,7 +1,7 @@
 <template>
   <div v-if="!files.length">
     <p>
-      No additional files detected in HPC.
+      No additional files detected in HPC. (Try refreshing if recently uploaded.)
     </p>
     <p>
       If you think this is in error, please

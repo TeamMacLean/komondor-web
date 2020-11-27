@@ -263,7 +263,8 @@ export default {
         this.additionalUploadsComplete &&
         this.rawUploadsComplete &&
         !this.isAnyRawReadFileFieldIncomplete &&
-        !this.isWarningStyleForNameInput
+        !this.isWarningStyleForNameInput && 
+        !this.isSubmitting
       ){
         return true
       } else {
@@ -354,6 +355,8 @@ export default {
       this.calculateIsAnyRawReadFileFieldIncomplete();
     },
     postForm() {
+      this.isSubmitting = true;
+
       this.updateAdditionalFiles();
       this.updateRawFiles();
 
@@ -364,14 +367,16 @@ export default {
       this.$axios
         .post("/runs/new", this.run)
         .then(result => {
-          this.$buefy.toast.open({
-            message: "Run created!",
-            type: "is-success"
-          });
-          this.$router.push({
-            name: "run",
-            query: { id: result.data.run._id/**, justCreated: true SO WE CAN TELL THEM UPLOADS TAKE A WHILE IF LARGE */ }
-          });
+          setTimeout(() => {
+            this.$buefy.toast.open({
+              message: "Run created!",
+              type: "is-success"
+            });
+            this.$router.push({
+              name: "run",
+              query: { id: result.data.run._id/**, justCreated: true SO WE CAN TELL THEM UPLOADS TAKE A WHILE IF LARGE */ }
+            });
+          }, 2500);
         })
         .catch(err => {
           console.error(err);
@@ -389,6 +394,7 @@ export default {
             type: "is-danger",
             hasIcon: false
           });
+          this.isSubmitting = false;
         });
     }
   }

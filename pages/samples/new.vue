@@ -12,6 +12,7 @@
 
         <div class="columns">
           <div class="column">
+            <!-- TODO this field isnt counting its characters, same for run -->
             <b-field
               label="Name"
               :type="this.isWarningStyleForNameInput"
@@ -138,6 +139,7 @@ export default {
           
           const existingSampleNamesForThisProject = res.data.project.samples.map(s => s.name)
           return {
+            isSubmitting: false,
             additionalUploadsComplete: true,
             project: res.data.project,
             invalidSampleNames: existingSampleNamesForThisProject,
@@ -167,7 +169,8 @@ export default {
     canSubmit() {
       if (
         this.additionalUploadsComplete &&
-        !this.isWarningStyleForNameInput
+        !this.isWarningStyleForNameInput &&
+        !this.isSubmitting
       ){
         return true
       } else {
@@ -191,7 +194,7 @@ export default {
       }
     },
     postForm() {
-
+      this.isSubmitting = true;
       this.updateAdditionalFiles()
 
       //
@@ -214,7 +217,7 @@ export default {
               name: "sample",
               query: { id: result.data.sample._id }
             });
-          }, 200);          
+          }, 1500);          
         })
         .catch(err => {
           console.error(err);
@@ -232,6 +235,7 @@ export default {
             type: "is-danger",
             hasIcon: false
           });
+          this.isSubmitting = false;
         });
     }
   }

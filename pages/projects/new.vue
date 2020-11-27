@@ -198,7 +198,8 @@ export default {
     canSubmit() {
       if (
         this.additionalUploadsComplete &&
-        !this.isWarningStyleForNameInput
+        !this.isWarningStyleForNameInput &&
+        !this.isSubmitting
       ){
         return true
       } else {
@@ -248,6 +249,7 @@ export default {
     //   return true;
     // },
     postForm() {
+      this.isSubmitting = true;
 
       this.updateAdditionalFiles();
 
@@ -273,7 +275,7 @@ export default {
               name: "project",
               query: { id: result.data.project._id }
             });
-          }, 100)
+          }, 1500)
         })
         .catch(err => {
           console.error(err)
@@ -291,6 +293,7 @@ export default {
             type: "is-danger",
             hasIcon: false
           });
+          this.isSubmitting = false;
         });
     }
   }

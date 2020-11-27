@@ -1,7 +1,7 @@
 <template>
   <div v-if="!reads.length">
     <p>
-      No read files detected in HPC.
+      No read files detected in HPC. (Try refreshing after a while if recently uploaded.)
     </p>
     <p>
       If you think this is in error, please
