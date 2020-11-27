@@ -27,8 +27,8 @@
           <b-icon icon="file-outline" size="is-small"></b-icon>
 
           <div class="fileNamePadding">{{read.fileName}}</div>
-          <div v-if="read.readInfo.paired" class="fileNamePadding">
-            <div v-if="read.readInfo.sibling">
+          <div v-if="read && read.readInfo && read.readInfo.paired" class="fileNamePadding">
+            <div v-if="read && read.readInfo && read.readInfo.sibling">
               (PAIRED with {{getSiblingFileName(read.readInfo.sibling)}})
             </div>
             <div v-else>
@@ -74,7 +74,7 @@ export default {
       return path.join(this.datastoreRoot, this.runPath, 'raw', unixDirConverter);      
     },
     getSiblingFileName(siblingId){
-      return this.reads.find(read => read.readInfo._id === siblingId).fileName
+      return this.reads.find(read => read && read.readInfo && read.readInfo._id === siblingId).fileName
     }
   },
   props: ["runPath", "reads"],

@@ -126,12 +126,16 @@ export default {
         if (res.status === 200 && res.data.run) {
 
           const dbReadFileEntries = res.data.run.rawFiles;
-          console.log('rawFiles', dbReadFileEntries);
-          
+
+          console.log('db reads', dbReadFileEntries);
+
           const verifiedRawFileNames = dbReadFileEntries.map(rf => rf.file.originalName);
+
           const verifiedAdditionalFileNames = res.data.run.additionalFiles.map(rf => rf.file.originalName);
           // TODO check this works with empty addFiles and empty raw files
 
+          console.log('hpc reads', res.data.actualReads);
+          
           const actualReadFileNames = res.data.actualReads ? 
             JSON.parse(JSON.stringify(res.data.actualReads)) : 
             []
@@ -140,21 +144,27 @@ export default {
             JSON.parse(JSON.stringify(res.data.actualAdditionalFiles)) : 
             []
           ;         
-          
+
           const verifiedReads = actualReadFileNames.map(readFileName => {
 
+            const readInfo = dbReadFileEntries.find(entry => entry.file.originalName === readFileName);
+            
+            if (!readInfo){
+              console.log('no db read info found for: ', readInfo);              
+            }
+
             const res = {
+              _id: (readInfo && readInfo._id) || Math.random().toString(16).substr(2, 12),
               fileName: readFileName,
-              readInfo: dbReadFileEntries.find(entry => entry.file.originalName === readFileName),
+              paired: (readInfo && readInfo.paired)  || false,
+              sibling: (readInfo && readInfo.sibling)  || false,
               verified: !!verifiedRawFileNames.includes(readFileName),
             };
             // console.log('res', res);
             return res;
             
           });
-
-          
-          
+                      
           const addFileRes = actualAdditionalFileNames.map(additionalFileName => ({
             fileName: additionalFileName,
             verified: !!verifiedAdditionalFileNames.includes(additionalFileName)
