@@ -27,9 +27,16 @@ export default {
   mounted() {
     this.uppyInstance = Uppy({
       debug: true,
+      //store: new DefaultStore(),
       autoProceed: true,
       allowMultipleUploads: false,
       id: `uppy-${this.uppyId}`,
+      onBeforeUpload: (currentFile, files) => {
+        console.log('onBeforeUpload, currentFileInfo:', currentFile, 'currentFiles', files);        
+      },
+      onBeforeFileAdded: (currentFile, files) => {
+        console.log('onBeforeFileAdded, currentFile', currentFile.name, 'other files count:', files && files.length);        
+      },
       meta: {
         // uploadID: this.uploadID,
         // UUID: this.UUID
@@ -64,8 +71,8 @@ export default {
         headers: {
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Methods': 'GET, HEAD, POST, OPTIONS, PUT, PATCH, DELETE',
-          'Access-Control-Allow-Headers': 'X-Requested-With, Content-Type, Authorization, Origin, Accept',
-          'Access-Control-Allow-Credentials': false, // false cos of line 61
+          'Access-Control-Allow-Headers': 'Authorization,Accept,Origin,DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modif',
+          'Access-Control-Allow-Credentials': false, // false cos of line 65
         },
         // I THINK THIS IS THE KING
         overridePatchMethod: true,
@@ -73,9 +80,55 @@ export default {
       });
 
     this.uppyInstance.on('file-added', (file) => {
-      console.log('new file added by uppy', file.name)
-      this.onUploadStatusChange();
+      console.log('file-added event for:', file.name)
+      // this.onUploadStatusChange();
     })
+    this.uppyInstance.on('file-removed', (file, reason) => {
+      console.log('file-removed event for:', file.name, 'reason:', reason)
+    })
+    this.uppyInstance.on('upload', (data) => {
+      const { id, fileIDs } = data;
+      console.log(`Starting upload ${id} for files ${fileIDs}`)
+    })
+    this.uppyInstance.on('progress', (progress) => {
+      console.log('progress update:', progress)
+    })
+    this.uppyInstance.on('upload-progress', (file, progress) => {
+      const { name } = file;
+      const { uploader, bytesUploaded, bytesTotal } = progress;
+      console.log(
+        'upload progress: fileName', /*file.name, 'uploader object:'
+      )
+      console.log(uploader);
+      console.log(*/`${bytesTotal}/${bytesTotal} bytes uploaded`);
+    })
+    this.uppyInstance.on('upload-success', (file, response) => {
+      console.log('upload-success for:', file && file.name, 'response URL:', response && response.uploadURL)
+    })
+    this.uppyInstance.on('complete', (result) => {
+      console.log('completed event, success and fails:')
+      console.log('successful files:', result.successful.map(f => `${f.name}`))
+      
+      console.log('failed files:', result.failed.map(f => 
+        `\n${f.name}: \n\tf.uploadURL=${f.uploadURL} \n\tf.response.uploadURL=${f.response && f.response.uploadURL} \n\tf.tus.uploadURL=${f.tus && f.tus.uploadURL}`
+      ))
+    })
+    this.uppyInstance.on('error', (error) => {
+      console.log(error.stack)
+
+      console.error(error.stack)
+    })
+    this.uppyInstance.on('upload-error', (file, error, response) => {
+      console.log('upload error event! with file:', file.id)
+      console.log('error message for this:', error)
+      console.log('response obj', response);
+      if (error.isNetworkError){
+        console.log('we know its a network error, George');
+      }      
+    })
+    this.uppyInstance.on('upload-retry', (fileID) => {
+    console.log('upload retried event:', fileID)
+  })
 
     // if (this.onUploadStatusChange) {
     //   const self = this;
