@@ -61,6 +61,15 @@ export default {
         endpoint: this.API_URL + "/uploads",
         resume: true,
         limit: 10,
+        // headers: {
+        //   'Access-Control-Allow-Origin': '*',
+        //   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS, PUT, PATCH, DELETE',
+        //   'Access-Control-Allow-Headers': 'X-Requested-With, Content-Type, Authorization, Origin, Accept',
+        //   'Access-Control-Allow-Credentials': true,
+        // },
+        // I THINK THIS IS THE KING
+        overridePatchMethod: true,
+        // removeFingerprintOnSuccess: true; means a new upload if same file is uploaded again
       });
 
     this.uppyInstance.on('file-added', (file) => {
