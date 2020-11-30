@@ -68,7 +68,7 @@ export default {
           'Access-Control-Allow-Credentials': false, // false cos of line 61
         },
         // I THINK THIS IS THE KING
-        overridePatchMethod: true,
+        //overridePatchMethod: true,
         // removeFingerprintOnSuccess: true; means a new upload if same file is uploaded again
       });
 
