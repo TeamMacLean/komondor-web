@@ -75,7 +75,7 @@ export default {
           //'Access-Control-Allow-Credentials': false, // false cos of line 65
           // 'X-HTTP-Method-Override': 'PATCH',
         },
-        overridePatchMethod: true,
+        //overridePatchMethod: true,
         // removeFingerprintOnSuccess: true; means a new upload if same file is uploaded again
       });
 
@@ -97,7 +97,7 @@ export default {
       const { name } = file;
       const { uploader, bytesUploaded, bytesTotal } = progress;
       console.log(
-        'upload-progress event:' + `${bytesUploaded}/${bytesTotal} bytes uploaded for ${name}`
+        'upload-progress event:' + `${Math.round((bytesUploaded / bytesTotal) * 100)}% uploaded (${bytesUploaded}/${bytesTotal} bytes)`
       );
     })
     this.uppyInstance.on('upload-success', (file, response) => {

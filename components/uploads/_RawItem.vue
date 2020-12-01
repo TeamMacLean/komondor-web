@@ -157,7 +157,9 @@ export default {
     });
     this.uppyInstance.on('upload-progress', (file, progress) => {
       const { bytesUploaded, bytesTotal } = progress;
-      console.log(`upload-progress event: ${bytesUploaded}/${bytesTotal} bytes uploaded`);
+      console.log(
+        'upload-progress event:' + `${Math.round((bytesUploaded / bytesTotal) * 100)}% uploaded (${bytesUploaded}/${bytesTotal} bytes)`
+      );
     })
 
     if (this.onUploadStatusChange) {
