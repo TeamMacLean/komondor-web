@@ -76,7 +76,7 @@ export default {
           // 'X-HTTP-Method-Override': 'PATCH',
         },
         // I THINK THIS IS THE KING
-        // overridePatchMethod: true,
+        overridePatchMethod: true,
         // removeFingerprintOnSuccess: true; means a new upload if same file is uploaded again
       });
 
