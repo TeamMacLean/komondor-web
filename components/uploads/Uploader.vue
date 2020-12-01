@@ -73,6 +73,7 @@ export default {
           'Access-Control-Allow-Methods': 'GET, HEAD, POST, OPTIONS, PUT, PATCH, DELETE',
           'Access-Control-Allow-Headers': 'Authorization,Accept,Origin,DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modif',
           'Access-Control-Allow-Credentials': false, // false cos of line 65
+          'X-HTTP-Method-Override': 'PATCH',
         },
         // I THINK THIS IS THE KING
         overridePatchMethod: true,
@@ -109,9 +110,7 @@ export default {
       console.log('completed event, success and fails:')
       console.log('successful files:', result.successful.map(f => `${f.name}`))
       
-      console.log('failed files:', result.failed.map(f => 
-        `\n${f.name}: \n\tf.uploadURL=${f.uploadURL} \n\tf.response.uploadURL=${f.response && f.response.uploadURL} \n\tf.tus.uploadURL=${f.tus && f.tus.uploadURL}`
-      ))
+      console.log('failed files:', result.failed)
     })
     this.uppyInstance.on('error', (error) => {
       console.log(error.stack)
@@ -119,16 +118,16 @@ export default {
       console.error(error.stack)
     })
     this.uppyInstance.on('upload-error', (file, error, response) => {
-      console.log('upload error event! with file:', file.id)
+      console.log('upload error event! with file:', file)
       console.log('error message for this:', error)
-      console.log('response obj', response);
+      response && console.log('response obj', response);
       if (error.isNetworkError){
         console.log('we know its a network error, George');
       }      
     })
     this.uppyInstance.on('upload-retry', (fileID) => {
-    console.log('upload retried event:', fileID)
-  })
+      console.log('upload retried event:', fileID)
+    })
 
     // if (this.onUploadStatusChange) {
     //   const self = this;
