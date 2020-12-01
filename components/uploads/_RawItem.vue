@@ -104,6 +104,7 @@ export default {
       generatingMD5: false,
       UUID: uuidv4(),
       MD5Message: '',
+      uniqueID: `uppy-${uuidv4()}`,
     };
   },
   computed: {
@@ -122,15 +123,12 @@ export default {
       debug: true,
       autoProceed: true,
       restrictions: {
+        maxFileSize: 30000 * 1000000, //30g
         maxNumberOfFiles: 1,
         minNumberOfFiles: 1,
         // TODO allowedFileTypes: this.allowedExtensions
       },
-      meta: {
-        // uploadID: this.uploadID,
-        // rowID: this.rowID,
-        // UUID: this.UUID
-      }
+      id: `uppy-${this.uniqueID}`,
     });
     this.uppyInstance
       .use(DragDrop, { target: `#${this.uniqueID}` })
@@ -139,6 +137,11 @@ export default {
         endpoint: this.API_URL + "/uploads",
         resume: true,
         limit: 10,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          // see Uploader.vue
+        },
+        // see Uploader.vue
       })
       .use(StatusBar, {
         target: `#${this.uniqueID}-progress`,
@@ -151,9 +154,11 @@ export default {
       this.fileName = fileName;
       this.MD5Message = "Please enter an MD5 from the provider, or click 'Generate MD5' for this field)."
       this.showInput = false;
-
-      // console.log(file, response);
     });
+    this.uppyInstance.on('upload-progress', (file, progress) => {
+      const { bytesUploaded, bytesTotal } = progress;
+      console.log(`upload-progress event: ${bytesUploaded}/${bytesTotal} bytes uploaded`);
+    })
 
     if (this.onUploadStatusChange) {
       const self = this;

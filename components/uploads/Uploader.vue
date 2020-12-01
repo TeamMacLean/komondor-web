@@ -31,16 +31,16 @@ export default {
       autoProceed: true,
       allowMultipleUploads: false,
       id: `uppy-${this.uppyId}`,
-      onBeforeUpload: (currentFile, files) => {
-        console.log('onBeforeUpload, currentFileInfo:', currentFile, 'currentFiles', files);        
-      },
-      onBeforeFileAdded: (currentFile, files) => {
-        console.log('onBeforeFileAdded, currentFile', currentFile.name, 'other files count:', files && files.length);        
-      },
-      meta: {
+      // onBeforeUpload: (currentFile, files) => {
+      //   console.log('onBeforeUpload, currentFileInfo:', currentFile, 'currentFiles', files);        
+      // },
+      // onBeforeFileAdded: (currentFile, files) => {
+      //   console.log('onBeforeFileAdded, currentFile', currentFile.name, 'other files count:', files && files.length);        
+      // },
+      // meta: {
         // uploadID: this.uploadID,
         // UUID: this.UUID
-      },
+      // },
       restrictions: {
         maxFileSize: 30000 * 1000000, //30g
         maxNumberOfFiles: 20,
@@ -75,7 +75,6 @@ export default {
           //'Access-Control-Allow-Credentials': false, // false cos of line 65
           // 'X-HTTP-Method-Override': 'PATCH',
         },
-        // I THINK THIS IS THE KING
         overridePatchMethod: true,
         // removeFingerprintOnSuccess: true; means a new upload if same file is uploaded again
       });
@@ -98,10 +97,8 @@ export default {
       const { name } = file;
       const { uploader, bytesUploaded, bytesTotal } = progress;
       console.log(
-        'upload progress: fileName', /*file.name, 'uploader object:'
-      )
-      console.log(uploader);
-      console.log(*/`${bytesTotal}/${bytesTotal} bytes uploaded`);
+        'upload-progress event:' + `${bytesUploaded}/${bytesTotal} bytes uploaded for ${name}`
+      );
     })
     this.uppyInstance.on('upload-success', (file, response) => {
       console.log('upload-success for:', file && file.name, 'response URL:', response && response.uploadURL)
