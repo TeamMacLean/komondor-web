@@ -218,7 +218,7 @@ export default {
               query: { id: result.data.sample._id }
             });
             this.isSubmitting = false;
-          }, 2000);          
+          }, 3000);          
         })
         .catch(err => {
           setTimeout(() => {

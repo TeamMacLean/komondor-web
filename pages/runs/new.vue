@@ -378,7 +378,7 @@ export default {
               query: { id: result.data.run._id/**, justCreated: true SO WE CAN TELL THEM UPLOADS TAKE A WHILE IF LARGE */ }
             });
             this.isSubmitting = false;
-          }, 2500);
+          }, 4000);
         })
         .catch(err => {
           console.error(err);
@@ -390,13 +390,16 @@ export default {
               '\nUploads are on remote server, but may not have been registered in database and/or moved to HPC.'  
               '\nPlease check all this using this website, and notify system admin of when this happened, and which data you need cleaning up.';
           }  
-          this.$buefy.dialog.alert({
-            title: "Error",
-            message: errorMessage,
-            type: "is-danger",
-            hasIcon: false
-          });
-          this.isSubmitting = false;
+          setTimeout(() => {
+            this.$buefy.dialog.alert({
+              title: "Error",
+              message: errorMessage,
+              type: "is-danger",
+              hasIcon: false
+            });
+            this.isSubmitting = false;
+          }, 3000);
+
         });
     }
   }

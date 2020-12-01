@@ -281,7 +281,7 @@ export default {
             this.isSubmitting = false;
             console.log('succesful form, this.isSubmitting:', this.isSubmitting, 'canSubmit:', this.canSubmit);
 
-          }, 2000)
+          }, 3000)
         })
         .catch(err => {
           setTimeout(() => {
