@@ -73,10 +73,10 @@ export default {
           'Access-Control-Allow-Methods': 'GET, HEAD, POST, OPTIONS, PUT, PATCH, DELETE',
           'Access-Control-Allow-Headers': 'Authorization,Accept,Origin,DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modif',
           'Access-Control-Allow-Credentials': false, // false cos of line 65
-          'X-HTTP-Method-Override': 'PATCH',
+          // 'X-HTTP-Method-Override': 'PATCH',
         },
         // I THINK THIS IS THE KING
-        overridePatchMethod: true,
+        //overridePatchMethod: true,
         // removeFingerprintOnSuccess: true; means a new upload if same file is uploaded again
       });
 
