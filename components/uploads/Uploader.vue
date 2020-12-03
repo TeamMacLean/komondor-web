@@ -68,7 +68,7 @@ export default {
         endpoint: this.API_URL + "/uploads",
         resume: true,
         limit: 10,
-        retryDelays: [0, 1000, 3000, 5000],
+        retryDelays: [0, 1000, 3000, 5000], // default [0, 1000, 3000, 5000]
         headers: {
           'Access-Control-Allow-Origin': '*',
           // 'Access-Control-Allow-Methods': 'GET, HEAD, POST, OPTIONS, PUT, PATCH, DELETE',
@@ -155,3 +155,6 @@ export default {
   }
 };
 </script>
+<style scoped>
+</style>
+

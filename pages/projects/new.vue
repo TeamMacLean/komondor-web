@@ -100,7 +100,7 @@
         >
           <Uploader ref="additionalUploader" :onUploadStatusChange="onUploaderChange" />
         </b-field>
-
+        <CollapsibleUploaderHelp />       
         <hr />
 
         <!--<div class="buttons is-right">-->
@@ -144,12 +144,13 @@
 <script>
 import Uploader from "~/components/uploads/Uploader.vue";
 import FormConsentCheckbox from "~/components/formHelpers/FormConsentCheckbox"
+import CollapsibleUploaderHelp from '~/components/formHelpers/CollapsibleUploaderHelp'
 import { v4 as uuidv4 } from "uuid";
 import path from 'path'
 
 export default {
   middleware: "auth",
-  components: { Uploader, FormConsentCheckbox },
+  components: { Uploader, FormConsentCheckbox, CollapsibleUploaderHelp },
   // mounted(){
   //   console.log('mounted, this.isSubmitting:', this.isSubmitting, 'canSubmit:', this.canSubmit);
   // },

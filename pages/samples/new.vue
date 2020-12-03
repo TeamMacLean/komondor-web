@@ -96,7 +96,7 @@
         >
           <Uploader ref="additionalUploader" :onUploadStatusChange="onUploaderChange" />
         </b-field>
-
+        <CollapsibleUploaderHelp />       
         <hr />
         <FormConsentCheckbox />
         <hr />

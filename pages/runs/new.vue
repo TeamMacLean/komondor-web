@@ -174,6 +174,8 @@
             ref="rawUploader"
           />
         </b-field>
+        <CollapsibleUploaderHelp />       
+
         <hr />
         <b-field
           label="Additional files"
@@ -181,7 +183,16 @@
         >
           <Uploader :onUploadStatusChange="onUploaderChange" ref="additionalUploader" />
         </b-field>
-
+        <div class="upload-add-files-instructions">
+            <div class="card">
+                <div
+                >
+                    <p class="card-header-title">
+                        Having problems uploading? See above!
+                    </p>
+                </div>
+            </div>
+        </div> 
         <hr />
         <FormConsentCheckbox />
         <hr />
