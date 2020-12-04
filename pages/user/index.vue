@@ -91,9 +91,9 @@
 
       icon() {
         const placeholder = 'https://bulma.io/images/placeholders/256x256.png';
-        if (this.user._id) {
+        if (this.user.username && this.user._doc && this.user._doc._id) {
           try {
-            var data = new Identicon(this.user.username+this.user._id, 256).toString();
+            var data = new Identicon(this.user.username+this.user._doc._id, 256).toString();
             return 'data:image/png;base64,' + data;
           } catch (err) {
             console.error(err);
@@ -105,7 +105,7 @@
       },
 
       username() {
-        if (this.user) {
+        if (this.user && this.user.username) {
           return this.user.username
         }
         if (this.$route.query.username) {
@@ -114,8 +114,8 @@
         return 'unknown'
       },
       fullName() {
-        if (this.user && this.user.name) {
-          return this.user.name
+        if (this.user && this.user._doc && this.user._doc.name) {
+          return this.user._doc.name
         }
         if (this.$route.query.username) {
           return this.$route.query.username;
@@ -123,19 +123,19 @@
         return 'Unknown full name'
       },
       email() {
-        if (this.user && this.user.email) {
-          return this.user.email
+        if (this.user && this.user._doc && this.user._doc.email) {
+          return this.user._doc.email
         }
         return 'Unknown email'
       },
       company() {
-        if (this.user && this.user.company) {
-          return this.user.company
+        if (this.user && this.user._doc && this.user._doc.company) {
+          return this.user._doc.company
         }
         return 'Unknown company'
       },
       projects() {
-        if (this.user) {
+        if (this.user && this.user.projects && this.user.projects.length) {
           return this.user.projects
         } else {
           return []
