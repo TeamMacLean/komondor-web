@@ -104,7 +104,7 @@ export default {
       generatingMD5: false,
       UUID: uuidv4(),
       MD5Message: '',
-      uniqueID: `uppy-${uuidv4()}`,
+      errorMsg: '',
     };
   },
   computed: {
@@ -116,9 +116,9 @@ export default {
     }
   },
   mounted() {
-    // if (this.uploadID) {
+    // TODO get all possible uploadable file types here
+    // const uppyAllowedFileTypes = ['*.fastq.gz'];
 
-    // console.log("this.allowedExtensions", this.allowedExtensions);
     this.uppyInstance = new Uppy({
       debug: true,
       autoProceed: true,
@@ -126,9 +126,52 @@ export default {
         maxFileSize: 30000 * 1000000, //30g
         maxNumberOfFiles: 1,
         minNumberOfFiles: 1,
-        // TODO allowedFileTypes: this.allowedExtensions
+        //allowedFileTypes: uppyAllowedFileTypes, //this.allowedExtensions
       },
-      id: `uppy-${this.uniqueID}`,
+      id: this.uniqueID,
+      onBeforeFileAdded: (currentFile, files) => {
+        const currentFileName = currentFile.name
+        const extensionStartIndex = currentFileName.indexOf('.');
+
+        // check for errors #1
+        if (!this.allowedExtensions || !this.allowedExtensions.length){
+          this.errorMsg = 'Upload cancelled - you have not specified a library type.'
+        }
+
+        // check for errors #2
+        if (!this.errorMsg){
+          if (extensionStartIndex === 0 || extensionStartIndex === -1){          
+            this.errorMsg = 'Upload cancelled - no extension found for uploaded file. File must explicitly have allowed extension type.';
+          } 
+        }
+
+        // check for errors #3
+        if (!this.errorMsg){
+          const extension = currentFileName.substring(extensionStartIndex, currentFileName.length)
+
+          const extensionRegexMatchesAllowedExtensions = this.allowedExtensions.some(allowedExt => {
+            return extension.includes(allowedExt);
+          });
+
+          if (!extensionRegexMatchesAllowedExtensions){
+            this.errorMsg = 'Upload cancelled - file extension does not match permitted types: ' + this.allowedExtensions.toString().replace(/,+/g, ', ');
+          }
+        }
+
+        // if errors, cancel with alert
+        if (this.errorMsg){
+          this.$buefy.dialog.alert({
+            title: "Error",
+            message: this.errorMsg,
+            type: "is-danger",
+            hasIcon: false
+          });
+          this.errorMsg = '';
+          return false;
+        }
+
+        return true;       
+      },
     });
     this.uppyInstance
       .use(DragDrop, { target: `#${this.uniqueID}` })
@@ -147,7 +190,9 @@ export default {
         target: `#${this.uniqueID}-progress`,
         hideUploadButton: true,
         hideAfterFinish: false
-      });
+      })
+    ;
+
     this.uppyInstance.on("upload-success", (file, response) => {
       const url = response.uploadURL;
       const fileName = file.name;
