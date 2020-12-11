@@ -58,6 +58,8 @@
   margin-bottom: 1rem;
 }
 .subtitle-override {
-  margin-top: 1rem;
+  margin-top: 2rem;
+  margin-bottom: 1.5rem;
+  font-weight: 700;
 }
 </style>
