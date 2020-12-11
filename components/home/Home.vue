@@ -23,12 +23,12 @@
                 v-for="(project,index) in filteredProjects"
                 :key="index"
                 v-tooltip="{
-                  content:`<div><p>Project name</p></div>`,
+                  content:`<div><p>${/*getMultilinedName(*/project.name/*)*/}</p></div>`,
                   delay: {
-                    show: 1500,
-                    hide: 1500,
+                    show: 750,
+                    hide: 2500,
                   },
-                  placement: 'top-center',
+                  placement: 'bottom-center',
                 }"
               >
                 <div class="truncate mb-2">
@@ -105,7 +105,25 @@ export default {
   methods: {
     showAll() {
       this.showingAll = true;
-    }
+    },
+    // getMultilinedName(name){
+    //   if (!/\s/.test(name)){
+    //     //break it up
+    //     var newName = name
+    //     var totalLength = name.length
+    //     var addSpaceTargetIndex = 21;
+    //     for (var i = 0; i < totalLength; i++){
+    //       if (i === addSpaceTargetIndex){
+    //         newName = newName.slice(0, addSpaceTargetIndex) + "-" + newName.slice(addSpaceTargetIndex);
+    //         addSpaceTargetIndex = (addSpaceTargetIndex + addSpaceTargetIndex + 1)
+    //         totalLength++
+    //       }
+    //     }
+    //     return newName;
+    //   } else {
+    //     return name
+    //   }
+    // }
   },
   computed: {
     renderHome() {
