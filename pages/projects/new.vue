@@ -96,7 +96,7 @@
 
         <b-field
           label="Additional files"
-          message="Please upload any documentation obtained from the sequencing provider, including copies of the communication. If the documentation pertains only to a certain sample or data set, then please add it there instead."
+          message="Please upload any documentation obtained from the sequencing provider, including copies of the communication. If the documentation pertains only to a certain sample or data set, then please add it there instead. Note: this is NOT the place to upload raw sequence files."
         >
           <Uploader ref="additionalUploader" :onUploadStatusChange="onUploaderChange" />
         </b-field>
@@ -149,6 +149,7 @@ import { v4 as uuidv4 } from "uuid";
 import path from 'path'
 
 export default {
+  name: 'NewProject',
   middleware: "auth",
   components: { Uploader, FormConsentCheckbox, CollapsibleUploaderHelp },
   // mounted(){

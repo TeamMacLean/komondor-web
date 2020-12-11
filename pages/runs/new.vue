@@ -125,7 +125,7 @@
           <div class="column">
             <b-field
               label="Library type"
-              message="Do you have unpaired, paired, or mate-pair reads?"
+              message="Do you have unpaired, paired, or mate-pair reads? Please upload compressed files where possible - ENA only accepts these in some cases (e.g. use .fq.gz, not .fastq)"
             >
               <b-select
                 placeholder="Select a library type"
@@ -166,6 +166,7 @@
         <hr />
         <b-field 
           label="Raw reads"
+          message="Please select a library type before uploading files. Only upload files that match the file extensions permitted by the library type."
         >
           <UploadRaw
             :paired="this.paired"
@@ -179,11 +180,12 @@
         <hr />
         <b-field
           label="Additional files"
-          message="Please upload any documentation obtained from the sequencing provider, including copies of the communication. If the documentation pertains only to a certain sample or data set, then please add it there instead."
+          message="Please upload any documentation obtained from the sequencing provider, including copies of the communication. If the documentation pertains only to a certain sample or data set, then please add it there instead. Note: this is NOT the place to upload raw sequence files."
         >
           <Uploader :onUploadStatusChange="onUploaderChange" ref="additionalUploader" />
         </b-field>
-        <div class="upload-add-files-instructions">
+        <CollapsibleUploaderHelp />       
+        <!-- <div class="upload-add-files-instructions">
             <div class="card">
                 <div
                 >
@@ -192,7 +194,7 @@
                     </p>
                 </div>
             </div>
-        </div> 
+        </div>  -->
         <hr />
         <FormConsentCheckbox />
         <hr />
@@ -214,11 +216,12 @@
 import Uploader from "~/components/uploads/Uploader.vue";
 import UploadRaw from "~/components/uploads/UploaderRaw.vue";
 import FormConsentCheckbox from "~/components/formHelpers/FormConsentCheckbox"
+import CollapsibleUploaderHelp from "~/components/formHelpers/CollapsibleUploaderHelp"
 import { v4 as uuidv4 } from "uuid";
 export default {
-  name: 'New Run',
+  name: 'NewRun',
   middleware: "auth",
-  components: { Uploader, UploadRaw, FormConsentCheckbox },
+  components: { Uploader, UploadRaw, FormConsentCheckbox, CollapsibleUploaderHelp },
   mounted() {
     this.$store.dispatch("refreshOptions");
   },
@@ -287,9 +290,10 @@ export default {
       return this.libraryTypeObject ? this.libraryTypeObject.paired : false;
     },
     allowedExtensions() {
-      return this.libraryTypeObject
-        ? this.libraryTypeObject.extensions.map(e=>'.'+e.split('.').pop())
-        : [".thisfileexentionshouldnotexist"];
+      if (!this.libraryTypeObject || !this.libraryTypeObject.extensions || !this.libraryTypeObject.extensions.length){
+        return [];
+      }
+      return this.libraryTypeObject.extensions;
     },
     libraryTypeObject() {
       if (this.run.libraryType) {
@@ -328,7 +332,7 @@ export default {
   },
   methods: {
     computeOptionString(option) {
-      const typesSupported = !option.extensions.length ? ' (any file type allowed)' : ' (suggested file types:' + option.extensions.map(ext => (' ' + ext)) + ')';
+      const typesSupported = !option.extensions.length ? ' (any file type allowed)' : ' (permitted file types:' + option.extensions.map(ext => (' ' + ext)) + ')';
       return option.value + typesSupported;
     },
     onUploaderChange(val) {

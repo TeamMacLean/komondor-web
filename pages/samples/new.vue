@@ -92,7 +92,7 @@
 
         <b-field
           label="Additional files"
-          message="Please upload any documentation obtained from the sequencing provider, including copies of the communication. If the documentation pertains to the whole project or only to a certain data set, then please add it there instead."
+          message="Please upload any documentation obtained from the sequencing provider, including copies of the communication. If the documentation pertains to the whole project or only to a certain data set, then please add it there instead. Note: this is NOT the place to upload raw sequence files."
         >
           <Uploader ref="additionalUploader" :onUploadStatusChange="onUploaderChange" />
         </b-field>
@@ -112,10 +112,12 @@
 <script>
 import Uploader from "~/components/uploads/Uploader.vue";
 import FormConsentCheckbox from "~/components/formHelpers/FormConsentCheckbox"
+import CollapsibleUploaderHelp from "~/components/formHelpers/CollapsibleUploaderHelp"
 import { v4 as uuidv4 } from "uuid";
 export default {
+  name: 'NewSample',
   middleware: "auth",
-  components: { Uploader, FormConsentCheckbox },
+  components: { Uploader, FormConsentCheckbox, CollapsibleUploaderHelp },
   asyncData({ store, route, $axios, error }) {
     if (!route.query.project) {
       return error({ statusCode: 500, message: "Project not found" });
