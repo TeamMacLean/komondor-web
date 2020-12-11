@@ -14,7 +14,9 @@
     </div>
 
     <br />
-    <b-button icon-left="plus" @click="addRow">Add another</b-button>
+    <div class='bottomPadding'>
+      <b-button icon-left="plus" @click="addRow">Add another</b-button>
+    </div>
   </div>
 </template>
 
@@ -82,3 +84,8 @@ export default {
   }
 };
 </script>
+<style>
+.bottomPadding {
+  padding-bottom: 1.5rem;
+}
+</style>
