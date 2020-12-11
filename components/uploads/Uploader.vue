@@ -16,27 +16,75 @@ import "@uppy/dashboard/dist/style.css";
 
 export default {
   props: [ "onUploadStatusChange"],
-  data() {
+  data() {       
     return {
       API_URL: process.env.API_URL,
       uppyInstance: null,
       uppyId: `uppy-${uuidv4()}`,
-      // UUID: uuidv4()
     };
   },
-  mounted() {
+  computed: {
+    readExtensions() {
+      // console.log('computed store', this.$nuxt.context.store.state.libraryTypes, 'arrayed', JSON.parse(JSON.stringify(this.$nuxt.context.store.state.libraryTypes)))
+
+      const libraryTypes = JSON.parse(JSON.stringify(this.$nuxt.context.store.state.libraryTypes))
+      const mappedExtensions = libraryTypes.map(t => t.extensions)
+      function flatten(arr) {
+        return arr.reduce(function (flat, toFlatten) {
+          return flat.concat(Array.isArray(toFlatten) ? flatten(toFlatten) : toFlatten);
+        }, []);
+      }
+      const flatExtensions = flatten(mappedExtensions)
+      console.log('Read extensions', flatExtensions);
+      
+      return flatExtensions;
+    },
+  },
+  mounted() {    
     this.uppyInstance = Uppy({
       debug: true,
       //store: new DefaultStore(),
       autoProceed: true,
-      allowMultipleUploads: false,
+      allowMultipleUploads: true,
       id: `uppy-${this.uppyId}`,
       // onBeforeUpload: (currentFile, files) => {
       //   console.log('onBeforeUpload, currentFileInfo:', currentFile, 'currentFiles', files);        
       // },
-      // onBeforeFileAdded: (currentFile, files) => {
-      //   console.log('onBeforeFileAdded, currentFile', currentFile.name, 'other files count:', files && files.length);        
-      // },
+      onBeforeFileAdded: (currentFile, files) => {
+        var errorMsg = '';
+        
+        if (!this.readExtensions.length){
+          return true;
+        }
+                
+        const currentFileName = currentFile.name
+        const extensionStartIndex = currentFileName.indexOf('.');
+
+        if (extensionStartIndex === -1){
+          return true
+        }
+        const extension = currentFileName.substring(extensionStartIndex, currentFileName.length)
+        
+        const extensionProbablyAReadFile = this.readExtensions.some(readExt => {
+          return extension.includes(readExt);
+        });        
+
+        if (extensionProbablyAReadFile){
+          errorMsg = 'Upload cancelled - we detect you are trying to add a read file to additional files uploader'
+        }
+        
+        if (errorMsg){
+          this.$buefy.dialog.alert({
+            title: "Error",
+            message: errorMsg,
+            type: "is-danger",
+            hasIcon: false
+          });
+          return false;
+        }
+
+        return true;       
+      },
       // meta: {
         // uploadID: this.uploadID,
         // UUID: this.UUID
