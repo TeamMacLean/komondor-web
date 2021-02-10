@@ -1,24 +1,31 @@
 <template>
     <div class="wrapper">
-        <!-- default main collapsible to false; use <script></script> to bind value programmatically -->
-        <b-collapse class="card" :open="false" animation="slide" aria-id="collapsible-component-wrapper">
-            <div
-                slot="trigger" 
-                slot-scope="props"
-                class="card-header"
-                role="button"
-                aria-controls="collapsible-component-wrapper"
-            >
-                <p class="card-header-title">
-                    Having problems uploading?
-                </p>
-                <a class="card-header-icon">
-                    <!-- NB b-icon receives props.open from b-collapse open bound prop + trigger slot -->
-                    <b-icon
-                        :icon="props.open ? 'menu-up' : 'menu-down'">
-                    </b-icon>
-                </a>
-            </div>
+        <b-collapse class="card" :open="true" animation="slide" aria-id="collapsible-component-wrapper">
+        <!-- 
+            https://buefy.org/documentation/collapse/
+            https://vuejs.org/v2/guide/components-slots.html 
+            
+            b-collapse has a <slot></slot> called 'trigger' as its first child that will trigger parent collapse toggle 
+            let's fill this with a <template></template> that will have access to this b-collapse's props 
+            (where we have a bound prop 'open' defauled to a value of false)
+        -->
+            <template #trigger="props">
+                <div
+                    class="card-header"
+                    role="button"
+                    aria-controls="collapsible-component-wrapper"
+                >
+                    <p class="card-header-title">
+                        Having problems uploading?
+                    </p>
+                    <a class="card-header-icon">
+                        <!-- NB b-icon receives props.open from b-collapse open bound prop + trigger slot -->
+                        <b-icon
+                            :icon="props.open ? 'menu-up' : 'menu-down'">
+                        </b-icon>
+                    </a>
+                </div>
+            </template>
             <div class="card-content">
                 <ul>
                     <li>
@@ -28,16 +35,17 @@
                         Remote site downloading is not advised.
 
                         <div class="subcontent-indent-small">
-                            <!-- default subcontent collapsible to false -->
-                            <b-collapse 
-                                :open="false" 
-                                position="is-bottom" 
-                                aria-id="remote-download-faq"
-                            >
-                                <a slot="trigger" slot-scope="props" aria-controls="remote-download-faq">
-                                    <b-icon :icon="props.open ? 'menu-up' : 'menu-down'"></b-icon>
-                                    {{ !props.open ? 'Show me how to optimise remote site downloading anyway' : 'OK, got it!' }}
-                                </a>
+                            <!-- 
+                                in this use of b-collapse, we have 2nd child, which is content displayed based on parent collapse status
+                                (which we control with first child <a></a>)
+                            -->
+                            <b-collapse :open="false" position="is-bottom" aria-id="remote-download-faq">
+                                <template #trigger="props">                                        
+                                    <a aria-controls="remote-download-faq">
+                                        <b-icon :icon="props.open ? 'menu-up' : 'menu-down'"></b-icon>
+                                        {{ !props.open ? 'Show me how to optimise remote site downloading anyway' : 'OK, got it!' }}
+                                    </a>
+                                </template>
                                 <div class="subcontent-indent-large">
                                     <ol type="1">
                                         <li>Upload files to your OneDrive account (without a VPN connection)</li>

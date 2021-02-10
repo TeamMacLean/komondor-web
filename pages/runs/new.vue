@@ -4,8 +4,7 @@
       <h1 class="title">New Run</h1>
       <h5>If any options that you need are not listed, please contact system adminstrator.</h5>
       <!-- <h2 class="subtitle">
-        Aenean eu leo quam. Pellentesque ornare sem lacinia quam venenatis vestibulum. Morbi leo
-        risus, porta ac consectetur ac, vestibulum at eros.
+        Vestibulum at eros.
       </h2>-->
       <hr />
       <form @submit.prevent="postForm">
