@@ -1,10 +1,10 @@
 <template>
     <div class="wrapper">
-        <b-collapse class="card" :open="true" animation="slide" aria-id="collapsible-component-wrapper">
+        <b-collapse class="card" :open="false" animation="slide" aria-id="collapsible-component-wrapper">
         <!-- 
             https://buefy.org/documentation/collapse/
             https://vuejs.org/v2/guide/components-slots.html 
-            
+
             b-collapse has a <slot></slot> called 'trigger' as its first child that will trigger parent collapse toggle 
             let's fill this with a <template></template> that will have access to this b-collapse's props 
             (where we have a bound prop 'open' defauled to a value of false)
@@ -43,7 +43,7 @@
                                 <template #trigger="props">                                        
                                     <a aria-controls="remote-download-faq">
                                         <b-icon :icon="props.open ? 'menu-up' : 'menu-down'"></b-icon>
-                                        {{ !props.open ? 'Show me how to optimise remote site downloading anyway' : 'OK, got it!' }}
+                                        {{ props.open ? 'OK, got it!' : 'Show me how to optimise remote site downloading anyway' }}
                                     </a>
                                 </template>
                                 <div class="subcontent-indent-large">
