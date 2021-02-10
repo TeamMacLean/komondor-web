@@ -1,17 +1,19 @@
 <template>
-    <div class="upload-add-files-instructions">
-        <b-collapse class="card" :open="collapseOpen" animation="slide" aria-id="contentIdForA11y3">
+    <div class="wrapper">
+        <!-- default main collapsible to false; use <script></script> to bind value programmatically -->
+        <b-collapse class="card" :open="false" animation="slide" aria-id="collapsible-component-wrapper">
             <div
                 slot="trigger" 
                 slot-scope="props"
                 class="card-header"
                 role="button"
-                aria-controls="contentIdForA11y3"
+                aria-controls="collapsible-component-wrapper"
             >
                 <p class="card-header-title">
                     Having problems uploading?
                 </p>
                 <a class="card-header-icon">
+                    <!-- NB b-icon receives props.open from b-collapse open bound prop + trigger slot -->
                     <b-icon
                         :icon="props.open ? 'menu-up' : 'menu-down'">
                     </b-icon>
@@ -25,13 +27,18 @@
                     <li>
                         Remote site downloading is not advised.
 
-                        <div class="indent">
-                            <b-collapse :open="false" position="is-bottom" aria-id="contentIdForA11y1">
-                                <a slot="trigger" slot-scope="props" aria-controls="contentIdForA11y1">
+                        <div class="subcontent-indent-small">
+                            <!-- default subcontent collapsible to false -->
+                            <b-collapse 
+                                :open="false" 
+                                position="is-bottom" 
+                                aria-id="remote-download-faq"
+                            >
+                                <a slot="trigger" slot-scope="props" aria-controls="remote-download-faq">
                                     <b-icon :icon="props.open ? 'menu-up' : 'menu-down'"></b-icon>
                                     {{ !props.open ? 'Show me how to optimise remote site downloading anyway' : 'OK, got it!' }}
                                 </a>
-                                <div class="mega-indent">
+                                <div class="subcontent-indent-large">
                                     <ol type="1">
                                         <li>Upload files to your OneDrive account (without a VPN connection)</li>
                                         <li>
@@ -64,39 +71,27 @@
     </div> 
 </template>
 
-<script>
-export default {
-    data() {
-        return {
-            collapseOpen: false,
-        };
-    }
-};
-</script>
+<!-- no <script></script> needed -->
 
 <style>
-.upload-add-files-instructions {
+.wrapper {
     padding-top: 0.75rem;
 }
-
 .content {
+    /* ensures collapsible body expands absolutely down */
     margin-bottom: 0 !important;
 }
-
 ul {
     padding-left: 1rem;
     list-style-type: square;
 }
-
 ol {
-    list-style-type: decimal;
-    
+    list-style-type: decimal;   
 }
-
-.indent {
+.subcontent-indent-small {
     margin-left: 0.25rem;
 }
-.mega-indent {
+.subcontent-indent-large {
     margin-left: 1.5rem;
 }
 </style>

@@ -164,10 +164,10 @@
         </div>
 
         <hr />
-        <b-field 
-          label="Raw reads"
-          message="Please select a library type before uploading files. Only upload files that match the file extensions permitted by the library type."
-        >
+        <label class="b-field-label-proxy">Raw reads </label>
+        <!-- TODO <div><b-icon icon="icon-warning-sign" size="is-small"></b-icon></div> -->
+        <UploadRawInfo />
+        <b-field>
           <UploadRaw
             :paired="this.paired"
             :onUploadStatusChange="onRawUploaderChange"
@@ -184,17 +184,7 @@
         >
           <Uploader :onUploadStatusChange="onUploaderChange" ref="additionalUploader" />
         </b-field>
-        <CollapsibleUploaderHelp />       
-        <!-- <div class="upload-add-files-instructions">
-            <div class="card">
-                <div
-                >
-                    <p class="card-header-title">
-                        Having problems uploading? See above!
-                    </p>
-                </div>
-            </div>
-        </div>  -->
+
         <hr />
         <FormConsentCheckbox />
         <hr />
@@ -215,13 +205,13 @@
 <script>
 import Uploader from "~/components/uploads/Uploader.vue";
 import UploadRaw from "~/components/uploads/UploaderRaw.vue";
+import UploadRawInfo from "~/components/uploads/UploadRawInfo.vue";
 import FormConsentCheckbox from "~/components/formHelpers/FormConsentCheckbox"
-import CollapsibleUploaderHelp from "~/components/formHelpers/CollapsibleUploaderHelp"
 import { v4 as uuidv4 } from "uuid";
 export default {
   name: 'NewRun',
   middleware: "auth",
-  components: { Uploader, UploadRaw, FormConsentCheckbox, CollapsibleUploaderHelp },
+  components: { Uploader, UploadRaw, FormConsentCheckbox, UploadRawInfo },
   mounted() {
     this.$store.dispatch("refreshOptions");
   },
@@ -351,12 +341,9 @@ export default {
       var incompleteFieldDetected = this.run.rawFiles.some(rawFile => {
         // must have md5 and more than md5+rowId; md5 already handled by UI
         var thisRawFileIsIncomplete = /**!rawFile.md5 || */Object.keys(rawFile).length < 3
-        //console.log('this rawFile is empty:', thisRawFileIsIncomplete);
         return thisRawFileIsIncomplete        
       })
-      //console.log('isAnyRawReadFileFieldIncomplete', incompleteFieldDetected);      
       this.isAnyRawReadFileFieldIncomplete = incompleteFieldDetected;
-      //console.log('calculating is there is any raw read file field incomplete:', incompleteFieldDetected );
       
     },
     updateAdditionalFiles() {
@@ -390,7 +377,10 @@ export default {
             });
             this.$router.push({
               name: "run",
-              query: { id: result.data.run._id/**, justCreated: true SO WE CAN TELL THEM UPLOADS TAKE A WHILE IF LARGE */ }
+              query: { 
+                id: result.data.run._id
+                /**, justCreated: true // in case we want to tell user large uploads will take time */ 
+              }
             });
             this.isSubmitting = false;
           }, 4000);
@@ -427,5 +417,18 @@ export default {
   display: block;
   font-size: 0.75rem;
   margin-top: 0.25rem;
+}
+.b-field-label-proxy {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  text-size-adjust: 100%;
+  font-family: BlinkMacSystemFont, -apple-system, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", "Helvetica", "Arial", sans-serif;
+  line-height: 1.5;
+  box-sizing: inherit;
+  color: #363636;
+  display: block;
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 0.5em;
 }
 </style>
