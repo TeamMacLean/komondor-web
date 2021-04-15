@@ -64,9 +64,6 @@ export default {
       this.rowIDs.map(rid => {
         if (self.$refs[rid]) {
           const result = self.$refs[rid][0].getFiles().map(ff => {
-            //console.log('ff', ff);
-            //console.log('fftypeof', typeof(ff));
-            
             const ffWithRowID = {
               ...ff,
               rowID: rid,
@@ -74,9 +71,7 @@ export default {
             
             flat.push(ffWithRowID);
           });
-          //console.log('result', result);
-          return result
-          
+          return result;          
         }
       });      
       return flat
