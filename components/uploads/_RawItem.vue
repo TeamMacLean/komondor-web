@@ -123,7 +123,7 @@ export default {
       debug: true,
       autoProceed: true,
       restrictions: {
-        maxFileSize: 60000 * 1000000, // 60GB - was originally 30GB, but some files are larger
+        maxFileSize: 100000 * 1000000, // 100GB - was originally 30GB, but some files are larger
         maxNumberOfFiles: 1,
         minNumberOfFiles: 1,
         //allowedFileTypes: uppyAllowedFileTypes, //this.allowedExtensions

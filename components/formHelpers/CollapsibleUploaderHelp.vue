@@ -71,6 +71,12 @@
 
                     </li>
                     <li>
+                        Please use a modern browser, i.e. a recent version of: Chrome, Firefox, Edge, Safari. (Not for example Internet Explorer 11!)
+                    </li>
+                    <li>
+                        Max file upload size is 100GB. Please <a href="mailto:george.deeks@tsl.ac.uk">contact the system administrator</a> if your file size is going to be larger than this.
+                    </li>
+                    <li>
                         Any further questions or problems, then please <a href="mailto:george.deeks@tsl.ac.uk">contact the system administrator</a>.
                     </li>
                 </ul>
