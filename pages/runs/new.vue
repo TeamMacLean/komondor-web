@@ -2,27 +2,27 @@
   <div class="section">
     <div class="container">
       <h1 class="title">New Run</h1>
-      <h5>If any options that you need are not listed, please contact system adminstrator.</h5>
-      <!-- <h2 class="subtitle">
-        Vestibulum at eros.
-      </h2>-->
+      <h5>
+        If any options that you need are not listed, please contact system
+        adminstrator.
+      </h5>
       <hr />
-      <form @submit.prevent="postForm">
+      <form novalidate @submit.prevent="postForm">
         <div class="columns">
           <div class="column">
-            <b-field 
-              :type="this.isWarningStyleForNameInput"
-              label="Name" 
+            <b-field
+              :type="isWarningStyleForNameInput"
+              label="Name"
               message="A short (5-20 characters in length), informative name to identify your data set."
             >
               <b-input
-                expanded
-                name="name"                              
+                id="name"
                 v-model="run.name"
+                expanded
+                name="name"
                 minlength="5"
                 maxlength="20"
                 required
-                id="name"
               ></b-input>
             </b-field>
           </div>
@@ -32,12 +32,12 @@
               message="What is the average insert size covered by your read pairs? This should be in the communication with your provider."
             >
               <b-input
+                v-model="run.insertSize"
                 placeholder="Number"
                 expanded
                 type="number"
                 min="0"
                 required
-                v-model="run.insertSize"
               ></b-input>
             </b-field>
           </div>
@@ -50,11 +50,11 @@
               message="Which company/institute did your sequencing? Please provide at least the name."
             >
               <b-input
+                v-model="run.sequencingProvider"
                 placeholder="EI"
                 expanded
                 type="text"
                 required
-                v-model="run.sequencingProvider"
               ></b-input>
             </b-field>
           </div>
@@ -64,16 +64,18 @@
               message="What was the technology used for sequencing? This should be in the communication with your provider."
             >
               <b-select
+                v-model="run.sequencingTechnology"
                 placeholder="Select a sequencing technology"
                 required
                 expanded
-                v-model="run.sequencingTechnology"
               >
                 <option
                   v-for="option in sequencingTechnologies"
-                  :value="option.value"
                   :key="option._id"
-                >{{ option.value }}</option>
+                  :value="option.value"
+                >
+                  {{ option.value }}
+                </option>
               </b-select>
             </b-field>
           </div>
@@ -86,16 +88,18 @@
               message="From what kind of material was your library prepared?"
             >
               <b-select
+                v-model="run.librarySource"
                 placeholder="Select a library source"
                 required
                 expanded
-                v-model="run.librarySource"
               >
                 <option
                   v-for="option in librarySources"
-                  :value="option.value"
                   :key="option._id"
-                >{{ option.value }}</option>
+                  :value="option.value"
+                >
+                  {{ option.value }}
+                </option>
               </b-select>
             </b-field>
           </div>
@@ -106,16 +110,18 @@
               message="Which protocol was used when creating the library?"
             >
               <b-select
+                v-model="run.librarySelection"
                 placeholder="Select a library selection"
                 required
                 expanded
-                v-model="run.librarySelection"
               >
                 <option
                   v-for="option in librarySelections"
-                  :value="option.value"
                   :key="option._id"
-                >{{ option.value }}</option>
+                  :value="option.value"
+                >
+                  {{ option.value }}
+                </option>
               </b-select>
             </b-field>
           </div>
@@ -127,16 +133,18 @@
               message="Do you have unpaired, paired, or mate-pair reads? Please upload compressed files where possible - ENA only accepts these in some cases (e.g. use .fq.gz, not .fastq)"
             >
               <b-select
+                v-model="run.libraryType"
                 placeholder="Select a library type"
                 required
                 expanded
-                v-model="run.libraryType"
               >
                 <option
                   v-for="option in libraryTypes"
-                  :value="option.value"
                   :key="option._id"
-                >{{ computeOptionString(option) }}</option>
+                  :value="option.value"
+                >
+                  {{ computeOptionString(option) }}
+                </option>
               </b-select>
             </b-field>
           </div>
@@ -147,55 +155,85 @@
               message="What kind of sequencing experiment was performed?"
             >
               <b-select
+                v-model="run.libraryStrategy"
                 placeholder="Select a library strategy"
                 required
                 expanded
-                v-model="run.libraryStrategy"
               >
                 <option
                   v-for="option in libraryStrategies"
-                  :value="option.value"
                   :key="option._id"
-                >{{ option.value }}</option>
+                  :value="option.value"
+                >
+                  {{ option.value }}
+                </option>
               </b-select>
             </b-field>
           </div>
         </div>
-
         <hr />
         <label class="b-field-label-proxy">Raw reads </label>
         <!-- TODO <div><b-icon icon="icon-warning-sign" size="is-small"></b-icon></div> -->
-        <UploadRawInfo />
-        <b-field>
-          <UploadRaw
-            :paired="this.paired"
-            :onUploadStatusChange="onRawUploaderChange"
-            :allowedExtensions="allowedExtensions"
-            ref="rawUploader"
-          />
-        </b-field>
-        <CollapsibleUploaderHelp />       
+
+        <b-tabs v-model="activeTab">
+          <b-tab-item key="hpc-mv-tab" value="hpc-mv" label="HPC upload">
+            <SpecifiedLocationFileSelector
+              :paired="paired"
+              :allowed-extensions="allowedExtensions"
+              :on-validation-change-status="onHpcUploadValidationChangeStatus"
+            >
+              <!-- TODO: 
+              - if paired = true, ALL selections should be paired
+              - limit based on allowed extensions (plus .md5)
+              -->
+            </SpecifiedLocationFileSelector>
+          </b-tab-item>
+          <b-tab-item
+            key="local-filesystem-tab"
+            value="local-filesystem"
+            label="Local filesystem upload"
+          >
+            <UploadRawInfo :paired="paired" />
+            <b-field>
+              <UploadRaw
+                v-if="paired !== null"
+                ref="rawUploader"
+                :paired="paired"
+                :on-upload-status-change="onRawUploaderChange"
+                :allowed-extensions="allowedExtensions"
+              />
+            </b-field>
+          </b-tab-item>
+        </b-tabs>
 
         <hr />
         <b-field
           label="Additional files"
           message="Please upload any documentation obtained from the sequencing provider, including copies of the communication. If the documentation pertains only to a certain sample or data set, then please add it there instead. Note: this is NOT the place to upload raw sequence files."
         >
-          <Uploader :onUploadStatusChange="onUploaderChange" ref="additionalUploader" />
+          <Uploader
+            ref="additionalUploader"
+            :on-upload-status-change="onUploaderChange"
+          />
         </b-field>
 
         <hr />
-        <FormConsentCheckbox />
+        <FormConsentCheckbox :on-toggle="onToggleFormConsentCheckbox" />
+
+        <b-checkbox v-model="checkFiles" type="checkbox">
+          I confirm that I will check my raw read files have moved successfully
+          to their correct location on the HPC, and keep a backup copy of these
+          files until I confirm.
+        </b-checkbox>
+
         <hr />
 
-        <!--<div class="buttons is-right">-->
         <button type="submit" class="button is-success" :disabled="!canSubmit">
           Create run
         </button>
-        <div v-if="isAnyRawReadFileFieldIncomplete" class="errorMessage">
+        <div v-if="shouldShowAllUploadRawMsg" class="errorMessage">
           Please complete all upload raw files fields.
         </div>
-        <!--</div>-->
       </form>
     </div>
   </div>
@@ -205,26 +243,30 @@
 import Uploader from "~/components/uploads/Uploader.vue";
 import UploadRaw from "~/components/uploads/UploaderRaw.vue";
 import UploadRawInfo from "~/components/uploads/UploadRawInfo.vue";
-import FormConsentCheckbox from "~/components/formHelpers/FormConsentCheckbox"
-import { v4 as uuidv4 } from "uuid";
+import FormConsentCheckbox from "~/components/formHelpers/FormConsentCheckbox";
+import SpecifiedLocationFileSelector from "~/components/uploads/SpecifiedLocationFileSelector.vue";
 export default {
-  name: 'NewRun',
-  middleware: "auth",
-  components: { Uploader, UploadRaw, FormConsentCheckbox, UploadRawInfo },
-  mounted() {
-    this.$store.dispatch("refreshOptions");
+  name: "NewRun",
+  components: {
+    Uploader,
+    UploadRaw,
+    FormConsentCheckbox,
+    UploadRawInfo,
+    SpecifiedLocationFileSelector,
   },
-  asyncData({ store, route, $axios, error }) {
+  middleware: "auth",
+  asyncData({ route, $axios, error }) {
     if (!route.query.sample) {
       error({ statusCode: 500, message: "Project not found" });
     }
 
     return $axios
       .get("/sample", { params: { id: route.query.sample } })
-      .then(res => {
+      .then((res) => {
         if (res.status === 200) {
-
-          const existingRunNamesForThisSample = res.data.sample.runs.map(r => r.name)
+          const existingRunNamesForThisSample = res.data.sample.runs.map(
+            (r) => r.name
+          );
 
           return {
             additionalUploadsComplete: true,
@@ -232,54 +274,91 @@ export default {
             rawUploadsComplete: false,
             sample: res.data.sample,
             invalidRunNames: existingRunNamesForThisSample,
+            checkFiles: false,
             run: {
-              name: "",
+              name: "Gary Monk" + Math.floor(Math.random() * 200),
+              //name: "",
               sample: res.data.sample._id,
-              libraryType: null, // e.g. 'BAM',
-              sequencingProvider: '', // e.g. 'EL'
-              sequencingTechnology: null, // e.g. '454 GS' 
-              librarySource: null, // e.g. 'GENOMIC' 
-              librarySelection: null,// e.g. 'ChIP'
-              libraryStrategy: null,// e.g. 'CLONE' 
-              insertSize: null,// e.g. 123 
+              libraryType: "BAM", // e.g. 'BAM',
+              //libraryType: null, // e.g. 'BAM',
+              sequencingProvider: "EL", // e.g. 'EL'
+              //sequencingProvider: "", // e.g. 'EL'
+              sequencingTechnology: "454 GS", // e.g. '454 GS'
+              //sequencingTechnology: null, // e.g. '454 GS'
+              librarySource: "GENOMIC", // e.g. 'GENOMIC'
+              //librarySource: null, // e.g. 'GENOMIC'
+              librarySelection: "ChIP", // e.g. 'ChIP'
+              //librarySelection: null, // e.g. 'ChIP'
+              libraryStrategy: "CLONE", // e.g. 'CLONE'
+              //libraryStrategy: null, // e.g. 'CLONE'
+              insertSize: 1232, // e.g. 123
+              //insertSize: null, // e.g. 123
               // additionalUploadID: uuidv4(),
               // rawUploadID: uuidv4(),
               rawFiles: [],
-              additionalFiles: []
+              additionalFiles: [],
             },
             isAnyRawReadFileFieldIncomplete: true,
+            activeTab: "hpc-mv",
+            tabs: ["hpc-mv", "local-filesystem"],
+            validatedHpcUploads: false,
+            formConsentCheckbox: false,
           };
         } else {
           return error({ statusCode: 500, message: "Parent sample not found" });
         }
       })
-      .catch(err => {
+      .catch((err) => {
         console.error(err);
         error({ statusCode: 500, message: "Parent sample not found" });
       });
   },
   computed: {
+    shouldShowAllUploadRawMsg() {
+      return (
+        this.activeTab !== "hpc-mv" && this.isAnyRawReadFileFieldIncomplete
+      );
+    },
+    getSpecifiedLocation() {
+      return "hello";
+    },
     isWarningStyleForNameInput() {
-      return this.invalidRunNames.includes(this.run.name) ? 'is-danger' : '';
+      return this.invalidRunNames &&
+        this.invalidRunNames.length &&
+        this.invalidRunNames.includes(this.run.name)
+        ? "is-danger"
+        : "";
+    },
+    rawReadsValidated() {
+      if (this.activeTab === "hpc-mv") {
+        return this.validatedHpcUploads;
+      } else {
+        return this.rawUploadsComplete && !this.isAnyRawReadFileFieldIncomplete;
+      }
     },
     canSubmit() {
       if (
         this.additionalUploadsComplete &&
-        this.rawUploadsComplete &&
-        !this.isAnyRawReadFileFieldIncomplete &&
-        !this.isWarningStyleForNameInput && 
-        !this.isSubmitting
-      ){
-        return true
+        this.rawReadsValidated &&
+        !this.isWarningStyleForNameInput &&
+        this.formConsentCheckbox &&
+        !this.isSubmitting &&
+        this.checkFiles
+      ) {
+        return true;
       } else {
-        return false
+        return false;
       }
     },
     paired() {
-      return this.libraryTypeObject ? this.libraryTypeObject.paired : false;
+      return this.libraryTypeObject ? this.libraryTypeObject.paired : null;
     },
     allowedExtensions() {
-      if (!this.libraryTypeObject || !this.libraryTypeObject.extensions || !this.libraryTypeObject.extensions.length){
+      if (
+        !this.libraryTypeObject ||
+        !this.libraryTypeObject.extensions ||
+        !this.libraryTypeObject.extensions.length
+      ) {
         return [];
       }
       return this.libraryTypeObject.extensions;
@@ -287,7 +366,7 @@ export default {
     libraryTypeObject() {
       if (this.run.libraryType) {
         const found = this.libraryTypes.filter(
-          lt => lt.value == this.run.libraryType
+          (lt) => lt.value == this.run.libraryType
         );
         if (found.length) {
           return found[0];
@@ -317,11 +396,30 @@ export default {
     },
     libraryStrategies() {
       return JSON.parse(JSON.stringify(this.$store.state.libraryStrategies));
-    }
+    },
+  },
+  mounted() {
+    this.$store.dispatch("refreshOptions");
   },
   methods: {
+    onToggleFormConsentCheckbox(newVal) {
+      this.formConsentCheckbox = newVal;
+    },
+    onHpcUploadValidationChangeStatus(newValue) {
+      if (newValue) {
+        // truthy results
+        this.validatedHpcUploads = true;
+        this.run.hpcRawFiles = newValue;
+      } else {
+        this.validatedHpcUploads = false;
+      }
+    },
     computeOptionString(option) {
-      const typesSupported = !option.extensions.length ? ' (any file type allowed)' : ' (permitted file types:' + option.extensions.map(ext => (' ' + ext)) + ')';
+      const typesSupported = !option.extensions.length
+        ? " (any file type allowed)"
+        : " (permitted file types:" +
+          option.extensions.map((ext) => " " + ext) +
+          ")";
       return option.value + typesSupported;
     },
     onUploaderChange(val) {
@@ -337,13 +435,13 @@ export default {
       this.updateRawFiles();
     },
     calculateIsAnyRawReadFileFieldIncomplete() {
-      var incompleteFieldDetected = this.run.rawFiles.some(rawFile => {
+      var incompleteFieldDetected = this.run.rawFiles.some((rawFile) => {
         // must have md5 and more than md5+rowId; md5 already handled by UI
-        var thisRawFileIsIncomplete = /**!rawFile.md5 || */Object.keys(rawFile).length < 3
-        return thisRawFileIsIncomplete        
-      })
+        var thisRawFileIsIncomplete =
+          /**!rawFile.md5 || */ Object.keys(rawFile).length < 3;
+        return thisRawFileIsIncomplete;
+      });
       this.isAnyRawReadFileFieldIncomplete = incompleteFieldDetected;
-      
     },
     updateAdditionalFiles() {
       if (this.$refs["additionalUploader"]) {
@@ -366,47 +464,68 @@ export default {
       this.run.group = this.sample.group._id;
       this.run.sample = this.sample._id; //required
 
+      this.run.paired = this.paired;
+
+      if (this.activeTab === "hpc-mv") {
+        this.run.rawFiles = this.run.hpcRawFiles.files;
+      }
+
+      // conditionally add info about hpc mv if applicable
+      // otherwise just the method of transfer
+      const hpcMvInfo =
+        this.activeTab === "hpc-mv"
+          ? {
+              relativePath: this.run.hpcRawFiles.relativePath,
+            }
+          : {};
+      this.run.rawFilesUploadInfo = {
+        method: this.activeTab,
+        ...hpcMvInfo,
+      };
+
       this.$axios
         .post("/runs/new", this.run)
-        .then(result => {
+        .then((result) => {
           setTimeout(() => {
             this.$buefy.toast.open({
               message: "Run created!",
-              type: "is-success"
+              type: "is-success",
             });
             this.$router.push({
               name: "run",
-              query: { 
-                id: result.data.run._id
-                /**, justCreated: true // in case we want to tell user large uploads will take time */ 
-              }
+              query: {
+                id: result.data.run._id,
+                /**, justCreated: true // in case we want to tell user large uploads will take time */
+              },
             });
             this.isSubmitting = false;
           }, 4000);
         })
-        .catch(err => {
+        .catch((err) => {
           console.error(err);
           var errorMessage = err.message;
-          if (err.message.includes('500')){
-            const type = 'Run';
-            errorMessage = 'Unknown 500 error from server. Sorry about that.' + 
-              '\n' + type + ' info may have registered in database.' + 
-              '\nUploads are on remote server, but may not have been registered in database and/or moved to HPC.'  
-              '\nPlease check all this using this website, and notify system admin of when this happened, and which data you need cleaning up.';
-          }  
+          if (err.message.includes("500")) {
+            const type = "Run";
+            errorMessage =
+              "Unknown 500 error from server. Sorry about that." +
+              "\n" +
+              type +
+              " info may have registered in database." +
+              "\nUploads are on remote server, but may not have been registered in database and/or moved to HPC.";
+            ("\nPlease check all this using this website, and notify system admin of when this happened, and which data you need cleaning up.");
+          }
           setTimeout(() => {
             this.$buefy.dialog.alert({
               title: "Error",
               message: errorMessage,
               type: "is-danger",
-              hasIcon: false
+              hasIcon: false,
             });
             this.isSubmitting = false;
           }, 3000);
-
         });
-    }
-  }
+    },
+  },
 };
 </script>
 
@@ -421,7 +540,9 @@ export default {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   text-size-adjust: 100%;
-  font-family: BlinkMacSystemFont, -apple-system, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", "Helvetica", "Arial", sans-serif;
+  font-family: BlinkMacSystemFont, -apple-system, "Segoe UI", "Roboto", "Oxygen",
+    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
+    "Helvetica", "Arial", sans-serif;
   line-height: 1.5;
   box-sizing: inherit;
   color: #363636;

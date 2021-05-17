@@ -17,47 +17,53 @@
               message="Find a suitable short name for your project, 20-80 characters in length, something that you can memorise and that also works reasonably well to present your study to the public"
             >
               <b-input
-                name="name"
+                id="name"
                 v-model="project.name"
+                name="name"
                 minlength="20"
                 maxlength="80"
                 required
-                id="name"
               ></b-input>
             </b-field>
           </div>
 
           <div class="column">
             <!--Group-->
-            <b-field 
-              label="Group" message="The group that this project belongs to."
-              v-if="$store.state.groups.filter((f)=>!f.deleted).length > 1"
+            <b-field
+              v-if="$store.state.groups.filter((f) => !f.deleted).length > 1"
+              label="Group"
+              message="The group that this project belongs to."
             >
-              <b-select 
-                placeholder="Select a group" v-model="project.group" required
+              <b-select
+                v-model="project.group"
+                placeholder="Select a group"
+                required
               >
                 <option
-                  v-for="group in $store.state.groups.filter((f)=>!f.deleted)"
-                  :value="group._id"
+                  v-for="group in $store.state.groups.filter((f) => !f.deleted)"
                   :key="group._id"
+                  :value="group._id"
                 >
                   {{ group.name }}
                 </option>
               </b-select>
             </b-field>
-            <b-field 
-              v-else-if="$store.state.groups.filter((f)=>!f.deleted).length === 1"
-              label="Group" message="The group that this project belongs to. (Defaulted as the only group available to you. Contact system admin to create new groups if required.)">
-
-              <div
-                class="onlyOneSelectOption"
-                
-              >
-                {{ $store.state.groups.filter((f)=>!f.deleted)[0].name }}
+            <b-field
+              v-else-if="
+                $store.state.groups.filter((f) => !f.deleted).length === 1
+              "
+              label="Group"
+              message="The group that this project belongs to. (Defaulted as the only group available to you. Contact system admin to create new groups if required.)"
+            >
+              <div class="onlyOneSelectOption">
+                {{ $store.state.groups.filter((f) => !f.deleted)[0].name }}
               </div>
             </b-field>
-            <b-field  v-else>
-              <div class="errorMessage">Error: no groups found. Please contact your system administrator to proceed.</div>
+            <b-field v-else>
+              <div class="errorMessage">
+                Error: no groups found. Please contact your system administrator
+                to proceed.
+              </div>
             </b-field>
           </div>
         </div>
@@ -67,12 +73,12 @@
           message="One to three short descriptive sentences, 20-200 characters in length, that provide information about the study."
         >
           <b-input
-            name="shortDesc"
+            id="shortDesc"
             v-model="project.shortDesc"
+            name="shortDesc"
             minlength="20"
             maxlength="200"
             required
-            id="shortDesc"
           ></b-input>
         </b-field>
 
@@ -82,13 +88,13 @@
           message="Provide an abstract about the study, 100-1000 characters in length. It is a required field for ENA and if you already have an abstract for a publication ready, then by all  means use it. If not, simply copy or embellish the short description and paste it here."
         >
           <b-input
-            type="textarea"
+            id="longDesc"
             v-model="project.longDesc"
+            type="textarea"
             minlength="100"
             maxlength="1000"
             required
             name="longDesc"
-            id="longDesc"
           ></b-input>
         </b-field>
 
@@ -98,22 +104,26 @@
           label="Additional files"
           message="Please upload any documentation obtained from the sequencing provider, including copies of the communication. If the documentation pertains only to a certain sample or data set, then please add it there instead. Note: this is NOT the place to upload raw sequence files."
         >
-          <Uploader ref="additionalUploader" :onUploadStatusChange="onUploaderChange" />
+          <Uploader
+            ref="additionalUploader"
+            :on-upload-status-change="onUploaderChange"
+          />
         </b-field>
-        <CollapsibleUploaderHelp />       
+        <CollapsibleUploaderHelp />
         <hr />
 
         <!--<div class="buttons is-right">-->
         <div v-if="selectedGroup && selectedGroup.sendToEna">
           <div class="field">
-            <b-checkbox v-model="project.doNotSendToEna">Request that this not be sent to ENA</b-checkbox>
-            <p
-              class="help"
-              v-if="!project.doNotSendToEna"
-            >Checking this will require you to give a reason why.</p>
+            <b-checkbox v-model="project.doNotSendToEna"
+              >Request that this not be sent to ENA</b-checkbox
+            >
+            <p v-if="!project.doNotSendToEna" class="help">
+              Checking this will require you to give a reason why.
+            </p>
           </div>
 
-          <div class="field" v-if="project.doNotSendToEna">
+          <div v-if="project.doNotSendToEna" class="field">
             <b-input
               v-model="project.doNotSendToEnaReason"
               type="textarea"
@@ -127,12 +137,10 @@
         </div>
 
         <FormConsentCheckbox />
-        
+
         <hr />
 
-        <button 
-          type="submit" class="button is-success" :disabled="!canSubmit"
-        >
+        <button type="submit" class="button is-success" :disabled="!canSubmit">
           Create project
         </button>
       </form>
@@ -140,26 +148,25 @@
   </div>
 </template>
 
-
 <script>
 import Uploader from "~/components/uploads/Uploader.vue";
-import FormConsentCheckbox from "~/components/formHelpers/FormConsentCheckbox"
-import CollapsibleUploaderHelp from '~/components/formHelpers/CollapsibleUploaderHelp'
+import FormConsentCheckbox from "~/components/formHelpers/FormConsentCheckbox";
+import CollapsibleUploaderHelp from "~/components/formHelpers/CollapsibleUploaderHelp";
 import { v4 as uuidv4 } from "uuid";
-import path from 'path'
+import path from "path";
 
 export default {
-  name: 'NewProject',
-  middleware: "auth",
+  name: "NewProject",
   components: { Uploader, FormConsentCheckbox, CollapsibleUploaderHelp },
+  middleware: "auth",
   // mounted(){
   //   console.log('mounted, this.isSubmitting:', this.isSubmitting, 'canSubmit:', this.canSubmit);
   // },
-  asyncData({ route, $axios, error, store }) {    
+  asyncData({ $axios, error }) {
     return $axios
       .get("/projects/names")
-      .then(res => {
-        if (res.status === 200 && res.data.projectsNames) {          
+      .then((res) => {
+        if (res.status === 200 && res.data.projectsNames) {
           return {
             isSubmitting: false,
             additionalUploadsComplete: true,
@@ -168,22 +175,21 @@ export default {
             },
             project: {
               name: "",
-              group: '',
+              group: "",
               shortDesc: "",
               longDesc: "",
               isSelectOnly: false,
               doNotSendToEna: false,
               doNotSendToEnaReason: null,
-              additionalFiles: []
-            }/*,
-            isSubmitting: false, TODO for loading style on button when applicable / i can get to work */
+              additionalFiles: [],
+            } /*,
+            isSubmitting: false, TODO for loading style on button when applicable / i can get to work */,
           };
-
         } else {
           error({ statusCode: 501, message: "Unknown error" });
         }
       })
-      .catch(err => {
+      .catch((err) => {
         console.error(err);
         error({ statusCode: 501, message: "Unknown error" });
       });
@@ -194,23 +200,23 @@ export default {
   },
   computed: {
     isWarningStyleForNameInput() {
-      return this.bad.nameList.includes(this.project.name) ? 'is-danger' : '';
+      return this.bad.nameList.includes(this.project.name) ? "is-danger" : "";
     },
     canSubmit() {
       if (
         this.additionalUploadsComplete &&
         !this.isWarningStyleForNameInput &&
         !this.isSubmitting
-      ){
-        return true
+      ) {
+        return true;
       } else {
-        return false
+        return false;
       }
     },
     selectedGroup() {
       if (this.project.group) {
         const found = this.$store.state.groups.filter(
-          f => f._id === this.project.group
+          (f) => f._id === this.project.group
         );
         if (found.length) {
           return found[0];
@@ -220,10 +226,10 @@ export default {
       } else {
         return null;
       }
-    }
+    },
   },
   methods: {
-    onUploaderChange(val) {
+    onUploaderChange() {
       //
       // if (typeof val === "boolean") {
       //   this.additionalUploadsComplete = val;
@@ -250,70 +256,94 @@ export default {
     //   return true;
     // },
     postForm() {
-      
-      this.isSubmitting = true;
-          console.log('posting form, this.isSubmitting:', this.isSubmitting, 'canSubmit:', this.canSubmit);
+      const targetUsername = this.$auth.user.username;
+      if (!targetUsername) {
+        throw new Error(
+          "Issue authenticating you. Please sign in and out of this website and try again."
+        );
+      }
 
+      this.isSubmitting = true;
+      console.log(
+        "posting form, this.isSubmitting:",
+        this.isSubmitting,
+        "canSubmit:",
+        this.canSubmit
+      );
 
       this.updateAdditionalFiles();
 
       // HACKY
-      if (this.$store.state.groups.filter((f)=>!f.deleted).length === 1){
-        this.project.group = this.$store.state.groups.filter((f)=>!f.deleted)[0]._id;
+      if (this.$store.state.groups.filter((f) => !f.deleted).length === 1) {
+        this.project.group = this.$store.state.groups.filter(
+          (f) => !f.deleted
+        )[0]._id;
       }
 
-      this.project.owner = this.$auth.user.username; //required
+      // HACK
+      this.project.owner = targetUsername; //required
 
       this.$axios
         .post("/projects/new", this.project)
-        .then(result => {
-
+        .then((result) => {
           // HACK ensure file uploads in db/hpc before reading
           setTimeout(() => {
             this.$buefy.toast.open({
               message: "Project created!",
-              type: "is-success"
+              type: "is-success",
             });
 
             this.$router.push({
               name: "project",
-              query: { id: result.data.project._id }
+              query: { id: result.data.project._id },
             });
 
             this.isSubmitting = false;
-            console.log('succesful form, this.isSubmitting:', this.isSubmitting, 'canSubmit:', this.canSubmit);
-
-          }, 3000)
+            console.log(
+              "succesful form, this.isSubmitting:",
+              this.isSubmitting,
+              "canSubmit:",
+              this.canSubmit
+            );
+          }, 3000);
         })
-        .catch(err => {
+        .catch((err) => {
           setTimeout(() => {
-            console.error(err)
+            console.error(err);
             var errorMessage = err.message;
-            if (err.message.includes('500')){
-              const type = 'Project';
-              errorMessage = 'Unknown 500 error from server. Sorry about that.' + 
-                '\n' + type + ' info may have registered in database.' + 
-                '\nUploads are on remote server, but may not have been registered in database and/or moved to HPC.'  
-                '\nPlease check all this using this website, and notify system admin of when this happened, and which data you need cleaning up.';
-            }          
+            if (err.message.includes("500")) {
+              const type = "Project";
+              errorMessage =
+                "Unknown 500 error from server. Sorry about that." +
+                "\n" +
+                type +
+                " info may have registered in database." +
+                "\nUploads are on remote server, but may not have been registered in database and/or moved to HPC.";
+              ("\nPlease check all this using this website, and notify system admin of when this happened, and which data you need cleaning up.");
+            }
             this.$buefy.dialog.alert({
               title: "Error",
               message: errorMessage,
               type: "is-danger",
-              hasIcon: false
+              hasIcon: false,
             });
             this.isSubmitting = false;
-            console.log('error submitting, this.isSubmitting:', this.isSubmitting, 'canSubmit:', this.canSubmit);
-          }, 2000)
+            console.log(
+              "error submitting, this.isSubmitting:",
+              this.isSubmitting,
+              "canSubmit:",
+              this.canSubmit
+            );
+          }, 2000);
         });
-    }
-  }
+    },
+  },
 };
 </script>
 
 <style>
 .checkbox-label {
-  padding-left: .5rem;
+  padding-left: 0.5rem;
 }
 
 .onlyOneSelectOption {
