@@ -150,8 +150,7 @@
         admin.
       </div>
       <div v-else-if="!!fetchFilesError" class="error">
-        Error fetching files from HPC. Message: '{{ fetchFilesError }}'. Please
-        try again later or contact web admin.
+        {{ fetchFilesError }}. Please try again later or contact web admin.
       </div>
     </div>
   </div>
