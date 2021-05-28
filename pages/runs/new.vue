@@ -276,25 +276,23 @@ export default {
             invalidRunNames: existingRunNamesForThisSample,
             checkFiles: false,
             run: {
-              name: "Gary Monk" + Math.floor(Math.random() * 200),
-              //name: "",
+              //name: "Gary Monk" + Math.floor(Math.random() * 200),
+              name: "",
               sample: res.data.sample._id,
-              libraryType: "BAM", // e.g. 'BAM',
-              //libraryType: null, // e.g. 'BAM',
-              sequencingProvider: "EL", // e.g. 'EL'
-              //sequencingProvider: "", // e.g. 'EL'
-              sequencingTechnology: "454 GS", // e.g. '454 GS'
-              //sequencingTechnology: null, // e.g. '454 GS'
-              librarySource: "GENOMIC", // e.g. 'GENOMIC'
-              //librarySource: null, // e.g. 'GENOMIC'
-              librarySelection: "ChIP", // e.g. 'ChIP'
-              //librarySelection: null, // e.g. 'ChIP'
-              libraryStrategy: "CLONE", // e.g. 'CLONE'
-              //libraryStrategy: null, // e.g. 'CLONE'
-              insertSize: 1232, // e.g. 123
-              //insertSize: null, // e.g. 123
-              // additionalUploadID: uuidv4(),
-              // rawUploadID: uuidv4(),
+              //libraryType: "BAM", // e.g. 'BAM',
+              libraryType: null, // e.g. 'BAM',
+              //sequencingProvider: "EL", // e.g. 'EL'
+              sequencingProvider: "", // e.g. 'EL'
+              //sequencingTechnology: "454 GS", // e.g. '454 GS'
+              sequencingTechnology: null, // e.g. '454 GS'
+              //librarySource: "GENOMIC", // e.g. 'GENOMIC'
+              librarySource: null, // e.g. 'GENOMIC'
+              //librarySelection: "ChIP", // e.g. 'ChIP'
+              librarySelection: null, // e.g. 'ChIP'
+              //libraryStrategy: "CLONE", // e.g. 'CLONE'
+              libraryStrategy: null, // e.g. 'CLONE'
+              //insertSize: 1232, // e.g. 123
+              insertSize: null, // e.g. 123
               rawFiles: [],
               additionalFiles: [],
             },
