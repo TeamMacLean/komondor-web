@@ -171,7 +171,7 @@ export default {
       fourthDeclaration: false,
       loadingFindDirectory: false,
       directoryFiles: [],
-      targetDirectoryName: "cheese",
+      targetDirectoryName: "",
       validatedAndLockedChoices: false,
       error: "",
       fetchFilesError: false,

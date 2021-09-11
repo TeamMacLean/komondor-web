@@ -104,11 +104,15 @@
             </b-field>
           </div>
 
+          <p></p>
+
           <div class="column">
             <b-field
               label="Library selection"
               message="Which protocol was used when creating the library?"
             >
+              <p></p>
+
               <b-select
                 v-model="run.librarySelection"
                 placeholder="Select a library selection"

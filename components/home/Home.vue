@@ -6,12 +6,20 @@
           <div class="container">
             <h2 class="title is-5">
               Projects
-              <nuxt-link to="/projects/new" class="button is-success is-small is-pulled-right">New</nuxt-link>
+              <nuxt-link
+                to="/projects/new"
+                class="button is-success is-small is-pulled-right"
+                >New</nuxt-link
+              >
               <div class="is-clearfix"></div>
             </h2>
 
             <b-field>
-              <b-input placeholder="Find a project..." v-model="projectFilterText" @input="showAll"></b-input>
+              <b-input
+                v-model="projectFilterText"
+                placeholder="Find a project..."
+                @input="showAll"
+              ></b-input>
             </b-field>
             <ul id="sidebar-projects">
               <b-loading
@@ -20,10 +28,12 @@
                 :can-cancel="false"
               ></b-loading>
               <li
-                v-for="(project,index) in filteredProjects"
+                v-for="(project, index) in filteredProjects"
                 :key="index"
                 v-tooltip="{
-                  content:`<div><p>${/*getMultilinedName(*/project.name/*)*/}</p></div>`,
+                  content: `<div><p>${
+                    /*getMultilinedName(*/ project.name /*)*/
+                  }</p></div>`,
                   delay: {
                     show: 750,
                     hide: 2500,
@@ -33,18 +43,25 @@
               >
                 <div class="truncate mb-2">
                   <nuxt-link
-                    :to="{ name: 'project', query: { id: project._id }}"
+                    :to="{ name: 'project', query: { id: project._id } }"
                     class="has-text-weight-bold"
                   >
-                    <b-icon icon="folder-text-outline" size="is-small" class="has-text-grey"/>
-                    {{project.name}}
+                    <b-icon
+                      icon="folder-text-outline"
+                      size="is-small"
+                      class="has-text-grey"
+                    />
+                    {{ project.name }}
                   </nuxt-link>
                 </div>
               </li>
-              <li style="margin-top:8px;">
-                <a class="has-text-black is-size-7" @click="showAll" v-if="canShowMore">
-                  Show
-                  more
+              <li style="margin-top: 8px">
+                <a
+                  v-if="canShowMore"
+                  class="has-text-black is-size-7"
+                  @click="showAll"
+                >
+                  Show more
                 </a>
               </li>
             </ul>
@@ -53,16 +70,27 @@
       </div>
       <div class="column is-9 is-10-fullhd">
         <div class="section fill-height">
+          <h1 class="title is-2">Welcome to sequences.tsl.ac.uk!</h1>
+          <h2 class="title is-4">Quick start</h2>
+          <div>
+            Check out our <a href="/help">FAQ</a> or read our
+            <a href="/upload-instructions.html">Detailed User Guide</a>.
+          </div>
+          <br />
 
-          <div class="container" v-if="$store.state.news.length">
-            <h2 class="title is-5">Most recently added</h2>
+          <div v-if="$store.state.news.length" class="container">
+            <h2 class="title is-4">Most recently added</h2>
 
             <b-loading
               :is-full-page="false"
               :active="$store.state.refreshingNews"
               :can-cancel="false"
             ></b-loading>
-            <NewsCard v-for="(news, index) in $store.state.news" :news="news" :key="index"></NewsCard>
+            <NewsCard
+              v-for="(news, index) in $store.state.news"
+              :key="index"
+              :news="news"
+            ></NewsCard>
           </div>
           <!-- lazy v-else. use slots TODO -->
           <div v-else class="container">
@@ -73,10 +101,11 @@
               :active="$store.state.refreshingNews"
               :can-cancel="false"
             ></b-loading>
-            <div>No new projects from your group(s) added using this website recently!</div>
-          </div>   
-                    
-
+            <div>
+              No new projects from your group(s) added using this website
+              recently!
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -91,14 +120,39 @@ export default {
     return {
       showingAll: false,
       projectFilterText: "",
-      defaultProjectCount: 20
+      defaultProjectCount: 20,
     };
+  },
+  computed: {
+    renderHome() {
+      return this.$store.state.auth.loggedIn;
+    },
+    projects() {
+      return this.$store.state.projects;
+    },
+    canShowMore() {
+      return (
+        this.filteredProjects.length &&
+        !this.showingAll &&
+        this.filteredProjects.length >= this.defaultProjectCount
+      );
+    },
+    filteredProjects() {
+      const self = this;
+      const fp = self.$store.getters.filteredProjects(self.projectFilterText);
+      // return fp;
+      if (this.showingAll) {
+        return fp;
+      } else {
+        return fp.slice(0, 20);
+      }
+    },
   },
   mounted() {
     if (this.$store.state.auth.loggedIn) {
       return Promise.all([
         this.$store.dispatch("refreshProjects"),
-        this.$store.dispatch("refreshNews")
+        this.$store.dispatch("refreshNews"),
       ]);
     }
   },
@@ -125,30 +179,5 @@ export default {
     //   }
     // }
   },
-  computed: {
-    renderHome() {
-      return this.$store.state.auth.loggedIn;
-    },
-    projects() {
-      return this.$store.state.projects;
-    },
-    canShowMore() {
-      return (
-        this.filteredProjects.length &&
-        !this.showingAll &&
-        this.filteredProjects.length >= this.defaultProjectCount
-      );
-    },
-    filteredProjects() {
-      const self = this;
-      const fp = self.$store.getters.filteredProjects(self.projectFilterText);
-      // return fp;
-      if (this.showingAll) {
-        return fp;
-      } else {
-        return fp.slice(0, 20);
-      }
-    }
-  }
 };
 </script>
