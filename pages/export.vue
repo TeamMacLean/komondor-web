@@ -21,6 +21,10 @@
         <p v-if="csvFileLoading" class="spacing">
           <i>Please wait. Downloading all data takes time!</i>
         </p>
+
+        <p class="spacing">
+          Note: run creation date does not predate migration to Komondor.
+        </p>
       </div>
     </div>
   </div>
