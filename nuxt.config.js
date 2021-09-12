@@ -20,6 +20,7 @@ export default {
     HOST: process.env.HOST,
     HPC_DATASTORE_ROOT: process.env.HPC_DATASTORE_ROOT,
     DATAHOG_DEATH: process.env.DATAHOG_DEATH,
+    ENA_ADMINS: process.env.ENA_ADMINS,
   },
   server: {
     port: process.env.PORT || 3000, // default: 3000
@@ -55,13 +56,7 @@ export default {
     { src: "~/plugins/v-clipboard", ssr: false },
     { src: "~/plugins/auth", ssr: false },
   ],
-  modules: [
-    "@nuxtjs/pwa",
-    "@nuxtjs/axios",
-    "@nuxtjs/auth",
-    "nuxt-buefy",
-    // 'nuxt-fontawesome', //V
-  ],
+  modules: ["@nuxtjs/pwa", "@nuxtjs/axios", "@nuxtjs/auth", "nuxt-buefy"],
   pwa: {
     icon: {},
     manifest: {
@@ -110,7 +105,7 @@ export default {
     linkActiveClass: "is-active",
   },
   build: {
-    extend(config, { isDev, isClient }) {
+    extend(config) {
       config.resolve.alias["vue"] = "vue/dist/vue.common";
     },
     postcss: {

@@ -280,22 +280,22 @@ export default {
             invalidRunNames: existingRunNamesForThisSample,
             checkFiles: false,
             run: {
-              //name: "Gary Monk" + Math.floor(Math.random() * 200),
-              name: "",
               sample: res.data.sample._id,
-              //libraryType: "BAM", // e.g. 'BAM',
+              // name: "Gary Monk" + Math.floor(Math.random() * 200),
+              name: "",
+              // libraryType: "BAM",
               libraryType: null, // e.g. 'BAM',
-              //sequencingProvider: "EL", // e.g. 'EL'
+              // sequencingProvider: "EL",
               sequencingProvider: "", // e.g. 'EL'
-              //sequencingTechnology: "454 GS", // e.g. '454 GS'
+              // sequencingTechnology: "454 GS",
               sequencingTechnology: null, // e.g. '454 GS'
-              //librarySource: "GENOMIC", // e.g. 'GENOMIC'
+              // librarySource: "GENOMIC",
               librarySource: null, // e.g. 'GENOMIC'
-              //librarySelection: "ChIP", // e.g. 'ChIP'
+              // librarySelection: "ChIP",
               librarySelection: null, // e.g. 'ChIP'
-              //libraryStrategy: "CLONE", // e.g. 'CLONE'
+              // libraryStrategy: "CLONE",
               libraryStrategy: null, // e.g. 'CLONE'
-              //insertSize: 1232, // e.g. 123
+              // insertSize: 1232,
               insertSize: null, // e.g. 123
               rawFiles: [],
               additionalFiles: [],
@@ -513,8 +513,8 @@ export default {
               "\n" +
               type +
               " info may have registered in database." +
-              "\nUploads are on remote server, but may not have been registered in database and/or moved to HPC.";
-            ("\nPlease check all this using this website, and notify system admin of when this happened, and which data you need cleaning up.");
+              "\nUploads are on remote server, but may not have been registered in database and/or moved to HPC." +
+              "\nPlease check all this using this website, and notify system admin of when this happened, and which data you need cleaning up.";
           }
           setTimeout(() => {
             this.$buefy.dialog.alert({

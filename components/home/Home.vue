@@ -78,6 +78,14 @@
           </div>
           <br />
 
+          <div v-if="!!showAdminSection">
+            <h2 class="title is-4">Admin links</h2>
+            <div>
+              <a href="/export">Export run data as CSV</a>
+            </div>
+            <br />
+          </div>
+
           <div v-if="$store.state.news.length" class="container">
             <h2 class="title is-4">Most recently added</h2>
 
@@ -146,6 +154,9 @@ export default {
       } else {
         return fp.slice(0, 20);
       }
+    },
+    showAdminSection() {
+      return process.env.ENA_ADMINS.includes(this.$auth.$state.user.username);
     },
   },
   mounted() {

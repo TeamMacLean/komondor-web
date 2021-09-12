@@ -13,7 +13,7 @@
             <!--Name-->
             <b-field
               label="Name"
-              :type="this.isWarningStyleForNameInput"
+              :type="isWarningStyleForNameInput"
               message="Find a suitable short name for your project, 20-80 characters in length, something that you can memorise and that also works reasonably well to present your study to the public"
             >
               <b-input
@@ -136,7 +136,8 @@
           <hr />
         </div>
 
-        <FormConsentCheckbox />
+        <!-- TEMP -->
+        <FormConsentCheckbox :initial="true" />
 
         <hr />
 
@@ -152,8 +153,6 @@
 import Uploader from "~/components/uploads/Uploader.vue";
 import FormConsentCheckbox from "~/components/formHelpers/FormConsentCheckbox";
 import CollapsibleUploaderHelp from "~/components/formHelpers/CollapsibleUploaderHelp";
-import { v4 as uuidv4 } from "uuid";
-import path from "path";
 
 export default {
   name: "NewProject",
@@ -178,7 +177,15 @@ export default {
               group: "",
               shortDesc: "",
               longDesc: "",
-              isSelectOnly: false,
+
+              /** TEMP DATA 
+              name: "Hot shooting war #" + Math.round(Math.random() * 10000),
+              group: "bioinformatics",
+              shortDesc:
+                "Vestibulum id ligula porta felis euismod semper. Maecenas sed diam eget risus varius blandit sit amet non magna.",
+              longDesc:
+                "Donec ullamcorper nulla non metus auctor fringilla. Nullam id dolor id nibh ultricies vehicula ut id elit. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Vivamus sagittis lacus vel augue laoreet rutrum faucibus dolor auctor. Vestibulum id ligula porta felis euismod semper.",
+              */
               doNotSendToEna: false,
               doNotSendToEnaReason: null,
               additionalFiles: [],
@@ -238,9 +245,8 @@ export default {
     },
     updateAdditionalFiles() {
       if (this.$refs["additionalUploader"]) {
-        this.project.additionalFiles = this.$refs[
-          "additionalUploader"
-        ].getFiles();
+        this.project.additionalFiles =
+          this.$refs["additionalUploader"].getFiles();
       }
     },
     // processInvalidFormFieldError(errorMessage, badListKey, newBadItem){
@@ -318,8 +324,8 @@ export default {
                 "\n" +
                 type +
                 " info may have registered in database." +
-                "\nUploads are on remote server, but may not have been registered in database and/or moved to HPC.";
-              ("\nPlease check all this using this website, and notify system admin of when this happened, and which data you need cleaning up.");
+                "\nUploads are on remote server, but may not have been registered in database and/or moved to HPC." +
+                "\nPlease check all this using this website, and notify system admin of when this happened, and which data you need cleaning up.";
             }
             this.$buefy.dialog.alert({
               title: "Error",
