@@ -10,9 +10,17 @@
         </p>
         <br />
 
-        <b-button type="is-primary" @click="downloadCsv">
+        <b-button
+          type="is-primary"
+          :loading="csvFileLoading"
+          @click="downloadCsv"
+        >
           Download CSV
         </b-button>
+
+        <p v-if="csvFileLoading" class="spacing">
+          <i>Please wait. Downloading all data takes time!</i>
+        </p>
       </div>
     </div>
   </div>
@@ -25,7 +33,7 @@ export default {
   middleware: ["auth"],
   data() {
     return {
-      csvFile: null,
+      csvFileLoading: false,
     };
   },
   computed: {
@@ -35,6 +43,7 @@ export default {
   },
   methods: {
     downloadCsv: function () {
+      this.csvFileLoading = true;
       this.$axios
         .get("/accessions/csv")
         .then((returnObj) => {
@@ -48,8 +57,10 @@ export default {
           const title = `All runs - ${timestamp}.csv`;
           hiddenElement.download = title;
           hiddenElement.click();
+          this.csvFileLoading = false;
         })
         .catch((err) => {
+          this.csvFileLoading = false;
           this.$buefy.toast.open({
             message: err,
             type: "is-danger",
@@ -59,4 +70,8 @@ export default {
   },
 };
 </script>
-<style></style>
+<style>
+.spacing {
+  margin-top: 20px;
+}
+</style>
