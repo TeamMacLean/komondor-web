@@ -7,11 +7,15 @@
       class="help"
     >Choose the file that contains the forward reads (usually having "R1" in the filename).</p>
     <br />-->
-    <div :id="uniqueID" class="UppyInput" v-show="showInput"></div>
-    <div class="uploaded-file" v-show="fileName">
-      <ol>{{fileName}}</ol>
+    <div v-show="showInput" :id="uniqueID" class="UppyInput"></div>
+    <div v-show="fileName" class="uploaded-file">
+      <ol>
+        {{
+          fileName
+        }}
+      </ol>
     </div>
-    <div :id="uniqueID+'-progress'" class="UppyInput-Progress"></div>
+    <div :id="uniqueID + '-progress'" class="UppyInput-Progress"></div>
     <br />
     <b-field label="MD5 (required)" :message="MD5Message">
       <b-input v-model="MD5" required></b-input>
@@ -19,7 +23,12 @@
     <div v-show="fileName">
       <a v-show="!generatingMD5" @click="generateMD5">Generate MD5</a>
       <span v-show="generatingMD5">Generating MD5 Sum</span>
-      <b-progress :value="MD5Progress" type="is-success" size="is-small" v-show="generatingMD5"></b-progress>
+      <b-progress
+        v-show="generatingMD5"
+        :value="MD5Progress"
+        type="is-success"
+        size="is-small"
+      ></b-progress>
     </div>
     <!-- </div> -->
   </div>
@@ -27,7 +36,6 @@
 
 <script>
 import Uppy from "@uppy/core";
-import FileInput from "@uppy/file-input";
 import DragDrop from "@uppy/drag-drop";
 import StatusBar from "@uppy/status-bar";
 import Tus from "@uppy/tus";
@@ -38,7 +46,7 @@ import "@uppy/core/dist/style.css";
 import "@uppy/drag-drop/dist/style.css";
 
 function GenerateMD5ForUppy(uppyInstance, progressFunction) {
-  const setProgress = function(current, total) {
+  const setProgress = function (current, total) {
     progressFunction((current * 100) / total);
   };
 
@@ -60,7 +68,7 @@ function GenerateMD5ForUppy(uppyInstance, progressFunction) {
 
       setProgress(currentChunk, chunks);
 
-      fileReader.onload = function(e) {
+      fileReader.onload = function (e) {
         spark.append(e.target.result); // Append array buffer
         currentChunk++;
 
@@ -73,7 +81,7 @@ function GenerateMD5ForUppy(uppyInstance, progressFunction) {
         }
       };
 
-      fileReader.onerror = function(err) {
+      fileReader.onerror = function (err) {
         console.warn("oops, something went wrong.");
         reject(err);
       };
@@ -81,7 +89,6 @@ function GenerateMD5ForUppy(uppyInstance, progressFunction) {
       function loadNext() {
         var start = currentChunk * chunkSize,
           end = start + chunkSize >= file.size ? file.size : start + chunkSize;
-
         fileReader.readAsArrayBuffer(blobSlice.call(file, start, end));
       }
 
@@ -100,11 +107,10 @@ export default {
       MD5: "",
       MD5Progress: 0,
       showInput: true,
-      uppyInstance: null,
       generatingMD5: false,
       UUID: uuidv4(),
-      MD5Message: '',
-      errorMsg: '',
+      MD5Message: "",
+      errorMsg: "",
     };
   },
   computed: {
@@ -113,7 +119,7 @@ export default {
     },
     MD5WarningShown() {
       return this.$store.state.hasReceivedMD5Warning;
-    }
+    },
   },
   mounted() {
     // TODO get all possible uploadable file types here
@@ -129,59 +135,67 @@ export default {
         //allowedFileTypes: uppyAllowedFileTypes, //this.allowedExtensions
       },
       id: this.uniqueID,
-      onBeforeFileAdded: (currentFile, files) => {
-        const currentFileName = currentFile.name
-        const extensionStartIndex = currentFileName.indexOf('.');
+      onBeforeFileAdded: (currentFile) => {
+        const currentFileName = currentFile.name;
+        const extensionStartIndex = currentFileName.indexOf(".");
 
         // check for errors #1
-        if (!this.allowedExtensions || !this.allowedExtensions.length){
-          this.errorMsg = 'Upload cancelled - you have not specified a library type.'
+        if (!this.allowedExtensions || !this.allowedExtensions.length) {
+          this.errorMsg =
+            "Upload cancelled - you have not specified a library type.";
         }
 
         // check for errors #2
-        if (!this.errorMsg){
-          if (extensionStartIndex === 0 || extensionStartIndex === -1){          
-            this.errorMsg = 'Upload cancelled - no extension found for uploaded file. File must explicitly have allowed extension type.';
-          } 
+        if (!this.errorMsg) {
+          if (extensionStartIndex === 0 || extensionStartIndex === -1) {
+            this.errorMsg =
+              "Upload cancelled - no extension found for uploaded file. File must explicitly have allowed extension type.";
+          }
         }
 
         // check for errors #3
-        if (!this.errorMsg){
-          const extension = currentFileName.substring(extensionStartIndex, currentFileName.length)
+        if (!this.errorMsg) {
+          const extension = currentFileName.substring(
+            extensionStartIndex,
+            currentFileName.length
+          );
 
-          const extensionRegexMatchesAllowedExtensions = this.allowedExtensions.some(allowedExt => {
-            return extension.includes(allowedExt);
-          });
+          const extensionRegexMatchesAllowedExtensions =
+            this.allowedExtensions.some((allowedExt) => {
+              return extension.includes(allowedExt);
+            });
 
-          if (!extensionRegexMatchesAllowedExtensions){
-            this.errorMsg = 'Upload cancelled - file extension does not match permitted types: ' + this.allowedExtensions.toString().replace(/,+/g, ', ');
+          if (!extensionRegexMatchesAllowedExtensions) {
+            this.errorMsg =
+              "Upload cancelled - file extension does not match permitted types: " +
+              this.allowedExtensions.toString().replace(/,+/g, ", ");
           }
         }
 
         // if errors, cancel with alert
-        if (this.errorMsg){
+        if (this.errorMsg) {
           this.$buefy.dialog.alert({
             title: "Error",
             message: this.errorMsg,
             type: "is-danger",
-            hasIcon: false
+            hasIcon: false,
           });
-          this.errorMsg = '';
+          this.errorMsg = "";
           return false;
         }
 
-        return true;       
+        return true;
       },
     });
     this.uppyInstance
       .use(DragDrop, { target: `#${this.uniqueID}` })
       // .use(FileInput, { target: `#${this.uniqueID}`, pretty: true })
-      .use(Tus, { 
+      .use(Tus, {
         endpoint: this.API_URL + "/uploads",
         resume: true,
         limit: 10,
         headers: {
-          'Access-Control-Allow-Origin': '*',
+          "Access-Control-Allow-Origin": "*",
           // see Uploader.vue
         },
         // see Uploader.vue
@@ -189,30 +203,32 @@ export default {
       .use(StatusBar, {
         target: `#${this.uniqueID}-progress`,
         hideUploadButton: true,
-        hideAfterFinish: false
-      })
-    ;
+        hideAfterFinish: false,
+      });
 
     this.uppyInstance.on("upload-success", (file, response) => {
-      const url = response.uploadURL;
       const fileName = file.name;
       this.fileName = fileName;
-      this.MD5Message = "Please enter an MD5 from the provider, or click 'Generate MD5' for this field)."
+      this.MD5Message =
+        "Please enter an MD5 from the provider, or click 'Generate MD5' for this field).";
       this.showInput = false;
     });
-    this.uppyInstance.on('upload-progress', (file, progress) => {
+    this.uppyInstance.on("upload-progress", (file, progress) => {
       const { bytesUploaded, bytesTotal } = progress;
       console.log(
-        'upload-progress event:' + `${Math.round((bytesUploaded / bytesTotal) * 100)}% uploaded (${bytesUploaded}/${bytesTotal} bytes)`
+        "upload-progress event:" +
+          `${Math.round(
+            (bytesUploaded / bytesTotal) * 100
+          )}% uploaded (${bytesUploaded}/${bytesTotal} bytes)`
       );
-    })
+    });
 
     if (this.onUploadStatusChange) {
       const self = this;
       this.uppyInstance.on("*", () => {
         // console.log("rawitem files", self.uppyInstance.getFiles());
         const allUploadsComplete =
-          self.uppyInstance.getFiles().filter(file => {
+          self.uppyInstance.getFiles().filter((file) => {
             return !file.progress.uploadComplete;
           }).length < 1;
 
@@ -236,7 +252,7 @@ export default {
     //   // }
     // },
     showMD5Warning() {
-      return new Promise((resolve, reject) => {
+      return new Promise((resolve) => {
         this.$buefy.dialog.confirm({
           title: "Important Data Integrity Notice",
           message: `MD5 sums represent the file as a single number. A single change results in a different MD5 sum. By comparing MD5 before and after upload we can verify that the file stored on the server is the same as the file you uploaded in this form. However, if you do not have an MD5 from the provider (collaborator or sequence service) then we cannot fully verify that the file you are providing to us is the complete and original version. If you need to be sure please cancel the upload and check your records or with collaborators for the original MD5 of your files.`,
@@ -244,7 +260,7 @@ export default {
           confirmText: "Generate without known MD5",
           type: "is-danger",
           hasIcon: true,
-          onConfirm: resolve
+          onConfirm: resolve,
         });
       });
     },
@@ -266,17 +282,17 @@ export default {
 
       function doGeneration() {
         self.generatingMD5 = true;
-        const progress = function(value) {
+        const progress = function (value) {
           self.MD5LeftProgress = value;
         };
 
         GenerateMD5ForUppy(self.uppyInstance, progress)
-          .then(md5 => {
+          .then((md5) => {
             self.MD5 = md5;
             self.generatingMD5 = false;
           })
-          .catch(err => {
-            console.error('error', err);
+          .catch((err) => {
+            console.error("error", err);
             self.generatingMD5 = false;
           });
       }
@@ -290,28 +306,9 @@ export default {
         }
       }
       return f;
-    }
-  }
+    },
+  },
 };
 </script>
 
-<style scoped>
-/* .is-outlined {
-  border: 1px solid lightgray;
-  border-radius: 4px;
-}
-.is-padded {
-  padding: 16px;
-}
-.mb {
-  margin-bottom: 8px;
-} */
-/* .delete-button-holder {
-  position: relative;
-}
-.delete-row {
-  position: absolute;
-  right: 0;
-  top: 0;
-} */
-</style>
+<style scoped></style>

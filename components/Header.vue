@@ -11,32 +11,45 @@
         </div>
 
         <nuxt-link
+          v-if="$auth.loggedIn"
           class="navbar-item-custom has-text-weight-bold"
           to="/"
-          v-if="this.$auth.loggedIn"
         >
           Home
         </nuxt-link>
 
         <nuxt-link
+          v-if="$auth.loggedIn"
           class="navbar-item-custom has-text-weight-bold"
           to="/projects"
-          v-if="this.$auth.loggedIn"
         >
           Projects
         </nuxt-link>
       </div>
 
       <div class="nav-search-wrapper">
-        <NavSearch v-if="this.$auth.loggedIn" />
+        <NavSearch v-if="$auth.loggedIn" />
       </div>
-      
+
       <div class="navbar-menu">
         <div class="navbar-end">
-          <b-dropdown close-on-click position="is-bottom-left" append-to-body aria-role="menu" trap-focus>
-        
-            <button class="button is-primary" slot="trigger" slot-scope="{ active }">
-              <b-icon icon="account-circle-outline" size="is-medium" class="mr-1-tablet"></b-icon>              
+          <b-dropdown
+            close-on-click
+            position="is-bottom-left"
+            append-to-body
+            aria-role="menu"
+            trap-focus
+          >
+            <button
+              slot="trigger"
+              slot-scope="{ active }"
+              class="button is-primary"
+            >
+              <b-icon
+                icon="account-circle-outline"
+                size="is-medium"
+                class="mr-1-tablet"
+              ></b-icon>
               <b-icon :icon="active ? 'menu-up' : 'menu-down'"></b-icon>
             </button>
 
@@ -51,34 +64,41 @@
 
             <b-dropdown-item aria-role="listitem">
               <nuxt-link
-                :to="{ name: 'user', query: { username: this.$auth.user.username }}"
+                :to="{
+                  name: 'user',
+                  query: { username: $auth.user.username },
+                }"
                 class="dropdown-item"
               >
                 <b-icon icon="account" size="is-small"></b-icon>
-                {{this.$auth.user.name}}
+                {{ $auth.user.name }}
               </nuxt-link>
             </b-dropdown-item>
 
             <b-dropdown-item aria-role="listitem">
-              <nuxt-link to="/admin" class="dropdown-item" v-if="this.$store.getters.isAdmin">
-                <b-icon icon="shield-account-outline" size="is-small"></b-icon>Admin
+              <nuxt-link
+                v-if="$store.getters.isAdmin"
+                to="/admin"
+                class="dropdown-item"
+              >
+                <b-icon icon="shield-account-outline" size="is-small"></b-icon
+                >Admin
               </nuxt-link>
-              </b-dropdown-item>
-            
+            </b-dropdown-item>
+
             <hr class="dropdown-divider" />
-            
+
             <b-dropdown-item aria-role="listitem">
               <nuxt-link to="/help" class="dropdown-item">
                 <b-icon icon="help-circle-outline" size="is-small"></b-icon>Help
               </nuxt-link>
             </b-dropdown-item>
-            
+
             <b-dropdown-item aria-role="listitem">
-              <a class="dropdown-item" v-on:click="LogOut">
+              <a class="dropdown-item" @click="LogOut">
                 <b-icon icon="logout" size="is-small"></b-icon>Sign out
               </a>
             </b-dropdown-item>
-          
           </b-dropdown>
         </div>
       </div>
@@ -92,15 +112,6 @@ import NavSearch from "~/components/NavSearch.vue";
 export default {
   name: "HeadAfterLogin",
   components: { NavSearch },
-  methods: {
-    async LogOut() {
-      await this.$auth.logout();
-      this.$buefy.toast.open("Logged out");
-      this.$router.push({
-        path: "/"
-      });
-    }
-  },
   mounted() {
     function getAll(selector) {
       return Array.prototype.slice.call(document.querySelectorAll(selector), 0);
@@ -109,50 +120,55 @@ export default {
     var $dropdowns = getAll(".dropdown:not(.is-hoverable)");
 
     if ($dropdowns.length > 0) {
-      $dropdowns.forEach(function($el) {
-        $el.addEventListener("click", function(event) {
+      $dropdowns.forEach(function ($el) {
+        $el.addEventListener("click", function (event) {
           event.stopPropagation();
           $el.classList.toggle("is-active");
         });
       });
 
-      document.addEventListener("click", function(event) {
+      document.addEventListener("click", function (event) {
         closeDropdowns();
       });
     }
 
     function closeDropdowns() {
-      $dropdowns.forEach(function($el) {
+      $dropdowns.forEach(function ($el) {
         $el.classList.remove("is-active");
       });
     }
-  }
+  },
+  methods: {
+    async LogOut() {
+      await this.$auth.logout();
+      this.$buefy.toast.open("Logged out");
+      this.$router.push({
+        path: "/",
+      });
+    },
+  },
 };
 </script>
 
 <style scoped>
-
 .nav-search-wrapper {
   display: flex;
   flex-grow: 10;
   justify-content: center;
 }
 .close-mobile-modal {
-    margin-right: 10px;
-  }
-
+  margin-right: 10px;
+}
 
 /* MEDIA QUERIES */
 
 @media screen and (max-width: 1023px) {
-
   .navbar-menu {
     display: contents;
   }
 }
 
 @media screen and (max-width: 768px) {
-  
   .nav-search-wrapper {
     display: none;
   }
@@ -169,6 +185,4 @@ export default {
     display: none;
   }
 }
-
 </style>
-
