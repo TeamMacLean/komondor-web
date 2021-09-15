@@ -11,6 +11,8 @@
             v-if="!!showAddAcession"
             type="project"
             :type-id="project._id"
+            :initial-accessions="project.accessions"
+            :initial-release-date="project.releaseDate"
           />
         </div>
 
@@ -35,8 +37,10 @@
           {{ project.group.name }}
           <br />
           <b-icon icon="home-lock" size="is-small" class="has-text-grey" />
-          Accession number{{
-            project.accession ? `: ${project.accession}` : ` unknown`
+          Study accession numbers{{
+            project.accessions.length
+              ? `: ${project.accessions.join(", ")}`
+              : ` unknown`
           }}
           <br />
           <b-icon
@@ -44,8 +48,8 @@
             size="is-small"
             class="has-text-grey"
           />
-          ENA release date{{
-            project.releaseDate ? `: ${project.releaseDate}` : ` unknown`
+          ENA project release date:{{
+            project.releaseDate ? ` ${project.releaseDate}` : ` unknown`
           }}
         </p>
 
@@ -101,6 +105,8 @@ export default {
               verified:
                 !!verifiedAdditionalFileNames.includes(additionalFileName),
             }));
+
+          console.log("initial-release-date", res.data.project.releaseDate);
 
           return {
             project: res.data.project,

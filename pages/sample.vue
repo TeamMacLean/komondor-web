@@ -10,6 +10,7 @@
             v-if="!!showAddAcession"
             type="sample"
             :type-id="sample._id"
+            :initial-accessions="sample.accessions"
           />
         </div>
 
@@ -46,8 +47,10 @@
           </nuxt-link>
           <br />
           <b-icon icon="home-lock" size="is-small" class="has-text-grey" />
-          Accession number{{
-            sample.accession ? `: ${sample.accession}` : ` unknown`
+          Sample accession numbers:{{
+            sample.accessions && sample.accessions.length
+              ? ` ${sample.accessions.join(", ")}`
+              : ` unknown`
           }}
         </p>
 

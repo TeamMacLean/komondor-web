@@ -101,7 +101,7 @@
         </b-field>
         <CollapsibleUploaderHelp />
         <hr />
-        <FormConsentCheckbox :initial="true" />
+        <FormConsentCheckbox :initial="false" />
         <hr />
 
         <!--<div class="buttons is-right">-->

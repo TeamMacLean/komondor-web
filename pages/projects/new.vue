@@ -137,7 +137,7 @@
         </div>
 
         <!-- TEMP -->
-        <FormConsentCheckbox :initial="true" />
+        <FormConsentCheckbox :initial="false" />
 
         <hr />
 

@@ -10,6 +10,7 @@
             v-if="!!showAddAcession"
             type="run"
             :type-id="run._id"
+            :initial-accessions="run.accessions"
           />
         </div>
 
@@ -41,8 +42,8 @@
           </nuxt-link>
           <br />
           <b-icon icon="home-lock" size="is-small" class="has-text-grey" />
-          Accession number{{
-            run.accession ? `: ${run.accession}` : ` unknown`
+          Run accession numbers:{{
+            run.accessions.length ? ` ${run.accessions.join(", ")}` : ` unknown`
           }}
         </p>
 
@@ -150,7 +151,7 @@ export default {
         if (res.status === 200 && res.data.run) {
           const dbReadFileEntries = res.data.run.rawFiles;
 
-          console.log("db reads", dbReadFileEntries);
+          //console.log("db reads", dbReadFileEntries);
 
           const verifiedRawFileNames = dbReadFileEntries.map(
             (rf) => rf.file.originalName
@@ -161,7 +162,7 @@ export default {
           );
           // TODO check this works with empty addFiles and empty raw files
 
-          console.log("hpc reads", res.data.actualReads);
+          //console.log("hpc reads", res.data.actualReads);
 
           const actualReadFileNames = res.data.actualReads
             ? JSON.parse(JSON.stringify(res.data.actualReads))
