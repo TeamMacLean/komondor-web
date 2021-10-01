@@ -203,6 +203,9 @@ export default {
   },
   fetch({ store }) {
     // NB don't need return necessarily
+
+    console.log("auth for user", this.$auth);
+
     return store.dispatch("refreshGroups");
   },
   computed: {
