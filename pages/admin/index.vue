@@ -1,6 +1,6 @@
 <template>
   <div>
-    <GroupModal :groupToEdit="groupToEdit" />
+    <GroupModal :group-to-edit="groupToEdit" />
 
     <div class="section">
       <div class="container">
@@ -16,30 +16,43 @@
                       closable
                       aria-close-label="Close tag"
                       @close="promptToDeleteLibraryType(option)"
-                    >{{option.value}}</b-tag>
+                      >{{ option.value }}</b-tag
+                    >
                   </li>
                 </ul>
-                <button type="button" class="button is-success" @click="promptForNewLibraryType">New</button>
+                <button
+                  type="button"
+                  class="button is-success"
+                  @click="promptForNewLibraryType"
+                >
+                  New
+                </button>
               </div>
             </b-field>
 
             <b-field label="Sequencing technologies">
               <div>
                 <ul>
-                  <li v-for="option in sequencingTechnologies" :key="option._id">
+                  <li
+                    v-for="option in sequencingTechnologies"
+                    :key="option._id"
+                  >
                     <b-tag
                       size="is-medium"
                       closable
                       aria-close-label="Close tag"
                       @close="promptToDeleteSequencingTechnology(option)"
-                    >{{option.value}}</b-tag>
+                      >{{ option.value }}</b-tag
+                    >
                   </li>
                 </ul>
                 <button
                   type="button"
                   class="button is-success"
                   @click="promptForNewSequencingTechnology"
-                >New</button>
+                >
+                  New
+                </button>
               </div>
             </b-field>
             <b-field label="Library sources">
@@ -51,14 +64,17 @@
                       closable
                       aria-close-label="Close tag"
                       @close="promptToDeleteLibrarySource(option)"
-                    >{{option.value}}</b-tag>
+                      >{{ option.value }}</b-tag
+                    >
                   </li>
                 </ul>
                 <button
                   type="button"
                   class="button is-success"
                   @click="promptForNewLibrarySource"
-                >New</button>
+                >
+                  New
+                </button>
               </div>
             </b-field>
             <b-field label="Library selections">
@@ -70,14 +86,17 @@
                       closable
                       aria-close-label="Close tag"
                       @close="promptToDeleteLibrarySelection(option)"
-                    >{{option.value}}</b-tag>
+                      >{{ option.value }}</b-tag
+                    >
                   </li>
                 </ul>
                 <button
                   type="button"
                   class="button is-success"
                   @click="promptForNewLibrarySelection"
-                >New</button>
+                >
+                  New
+                </button>
               </div>
             </b-field>
             <b-field label="Library strategies">
@@ -89,42 +108,64 @@
                       closable
                       aria-close-label="Close tag"
                       @close="promptToDeleteLibraryStrategy(option)"
-                    >{{option.value}}</b-tag>
+                      >{{ option.value }}</b-tag
+                    >
                   </li>
                 </ul>
                 <button
                   type="button"
                   class="button is-success"
                   @click="promptForNewLibraryStrategy"
-                >New</button>
+                >
+                  New
+                </button>
               </div>
             </b-field>
           </b-tab-item>
           <b-tab-item label="Users">
             <ul>
               <li v-for="user in users" :key="user._id">
-                <nuxt-link :to="{ name: 'user', query: { username: user.username}}">{{user.name}}</nuxt-link>
+                <nuxt-link
+                  :to="{ name: 'user', query: { username: user.username } }"
+                  >{{ user.name }}</nuxt-link
+                >
               </li>
             </ul>
           </b-tab-item>
           <b-tab-item label="Groups">
-            <button type="button" class="button is-success" @click="showModalForNewGroup">New</button>
+            <button
+              type="button"
+              class="button is-success"
+              @click="showModalForNewGroup"
+            >
+              New
+            </button>
             <hr />
             <p>TODO: fix: cannot edit LDAP groups using web app</p>
+            <p>db.groups.find({ name: 'two_blades'}).pretty()</p>
+            <p>
+              db.groups.update({ name: 'two_blades'}, { $push: { ldapGroups:
+              'CN=slproj_2BL1_Modify,OU=TSLGroups,OU=NBIGroups,DC=nbi,DC=ac,DC=uk'
+              } })
+            </p>
             <hr />
 
-            <div class="columns" v-for="i in Math.ceil(groups.length / 4)" :key="i">
+            <div
+              v-for="i in Math.ceil(groups.length / 4)"
+              :key="i"
+              class="columns"
+            >
               <div
-                class="column is-3"
                 v-for="group in groups.slice((i - 1) * 4, i * 4)"
                 :key="group._id"
+                class="column is-3"
               >
                 <div class="card">
                   <div class="card-content truncate">
                     <a @click="editGroup(group)">
-                      <p class="title is-4 truncate">{{group.name}}</p>
+                      <p class="title is-4 truncate">{{ group.name }}</p>
                     </a>
-                    <p class="subtitle is-6">@{{group.safeName}}</p>
+                    <p class="subtitle is-6">@{{ group.safeName }}</p>
 
                     <b-tag v-if="group.deleted" type="is-danger">Deleted</b-tag>
                   </div>
@@ -146,8 +187,9 @@
             <ul>
               <li v-for="sample in samples" :key="sample._id">
                 <nuxt-link
-                  :to="{ name: 'sample', query: { id: sample._id }}"
-                >{{sample.scientificName}}</nuxt-link>
+                  :to="{ name: 'sample', query: { id: sample._id } }"
+                  >{{ sample.scientificName }}</nuxt-link
+                >
               </li>
             </ul>
           </b-tab-item>
@@ -164,8 +206,8 @@ import ProjectList from "~/components/projects/ProjectList.vue";
 import LibraryTypeModal from "./LibraryTypeModal";
 
 export default {
-  middleware: ["auth", "admin"],
   components: { GroupModal, ProjectList },
+  middleware: ["auth", "admin"],
   data() {
     return {
       test: "some test text",
@@ -174,20 +216,11 @@ export default {
       projectsFilterText: "",
 
       isGroupModalActive: false,
-      groupToEdit: null
+      groupToEdit: null,
       // newGroupLdap: '',
       // newGroupsName: '',
       // groupLdapList: []
     };
-  },
-  mounted() {
-    return Promise.all([
-      this.$store.dispatch("refreshProjects"),
-      this.$store.dispatch("refreshGroups"),
-      this.$store.dispatch("refreshUsers"),
-      this.$store.dispatch("refreshSamples"),
-      this.$store.dispatch("refreshOptions")
-    ]);
   },
 
   computed: {
@@ -219,7 +252,16 @@ export default {
     },
     libraryStrategies() {
       return JSON.parse(JSON.stringify(this.$store.state.libraryStrategies));
-    }
+    },
+  },
+  mounted() {
+    return Promise.all([
+      this.$store.dispatch("refreshProjects"),
+      this.$store.dispatch("refreshGroups"),
+      this.$store.dispatch("refreshUsers"),
+      this.$store.dispatch("refreshSamples"),
+      this.$store.dispatch("refreshOptions"),
+    ]);
   },
   methods: {
     editGroup(group) {
@@ -238,13 +280,13 @@ export default {
         message: `Group Name`,
         inputAttrs: {
           placeholder: "e.g. jjones",
-          maxlength: 20
+          maxlength: 20,
         },
-        onConfirm: value =>
+        onConfirm: (value) =>
           this.$buefy.toast.open({
             message: `Added group: ${value}`,
-            type: "is-success"
-          })
+            type: "is-success",
+          }),
       });
     },
     promptForNewLibraryType() {
@@ -254,8 +296,8 @@ export default {
         hasModalCard: true,
         trapFocus: true,
         props: {
-          existingNames: this.libraryTypes.map(lt => lt.value)
-        }
+          existingNames: this.libraryTypes.map((lt) => lt.value),
+        },
       });
 
       // this.$buefy.dialog.prompt({
@@ -292,43 +334,43 @@ export default {
               this.$store.dispatch("refreshLibraryTypes");
               this.$buefy.toast.open({
                 message: `Deleted: ${option.value}`,
-                type: "is-success"
+                type: "is-success",
               });
             })
-            .catch(err => {
+            .catch((err) => {
               console.error(err);
               this.$buefy.toast.open({
                 message: `Failed to delete option`,
-                type: "is-danger"
+                type: "is-danger",
               });
             });
-        }
+        },
       });
     },
     promptForNewSequencingTechnology() {
       this.$buefy.dialog.prompt({
         message: `Sequencing Technology`,
         inputAttrs: {
-          minlength: 2
+          minlength: 2,
         },
-        onConfirm: value => {
+        onConfirm: (value) => {
           this.$axios
             .post("/options/sequencingtechnology", { value })
             .then(() => {
               this.$store.dispatch("refreshSequencingTechnologies");
               this.$buefy.toast.open({
                 message: `Added: ${value}`,
-                type: "is-success"
+                type: "is-success",
               });
             })
-            .catch(err => {
+            .catch((err) => {
               console.error(err);
               this.$buefy.toast.open({
                 message: `Failed to save option`,
-                type: "is-danger"
+                type: "is-danger",
               });
             });
-        }
+        },
       });
     },
     promptToDeleteSequencingTechnology(option) {
@@ -337,49 +379,49 @@ export default {
         onConfirm: () => {
           this.$axios
             .delete("/options/sequencingtechnology", {
-              data: { id: option._id }
+              data: { id: option._id },
             })
             .then(() => {
               this.$store.dispatch("refreshSequencingTechnologies");
               this.$buefy.toast.open({
                 message: `Deleted: ${option.value}`,
-                type: "is-success"
+                type: "is-success",
               });
             })
-            .catch(err => {
+            .catch((err) => {
               console.error(err);
               this.$buefy.toast.open({
                 message: `Failed to delete option, error: ${err}`,
-                type: "is-danger"
+                type: "is-danger",
               });
             });
-        }
+        },
       });
     },
     promptForNewLibrarySource() {
       this.$buefy.dialog.prompt({
         message: `Library Source`,
         inputAttrs: {
-          minlength: 2
+          minlength: 2,
         },
-        onConfirm: value => {
+        onConfirm: (value) => {
           this.$axios
             .post("/options/librarysource", { value })
             .then(() => {
               this.$store.dispatch("refreshLibrarySources");
               this.$buefy.toast.open({
                 message: `Added: ${value}`,
-                type: "is-success"
+                type: "is-success",
               });
             })
-            .catch(err => {
+            .catch((err) => {
               console.error(err);
               this.$buefy.toast.open({
                 message: `Failed to save option`,
-                type: "is-danger"
+                type: "is-danger",
               });
             });
-        }
+        },
       });
     },
     promptToDeleteLibrarySource(option) {
@@ -392,17 +434,17 @@ export default {
               this.$store.dispatch("refreshLibrarySources");
               this.$buefy.toast.open({
                 message: `Deleted: ${option.value}`,
-                type: "is-success"
+                type: "is-success",
               });
             })
-            .catch(err => {
+            .catch((err) => {
               console.error(err);
               this.$buefy.toast.open({
                 message: `Failed to delete option`,
-                type: "is-danger"
+                type: "is-danger",
               });
             });
-        }
+        },
       });
     },
     promptForNewLibrarySelection() {
@@ -411,26 +453,26 @@ export default {
         inputAttrs: {
           // placeholder: "e.g. jjones",
           // maxlength: 20
-          minlength: 2
+          minlength: 2,
         },
-        onConfirm: value => {
+        onConfirm: (value) => {
           this.$axios
             .post("/options/libraryselection", { value })
             .then(() => {
               this.$store.dispatch("refreshLibrarySelections");
               this.$buefy.toast.open({
                 message: `Added: ${value}`,
-                type: "is-success"
+                type: "is-success",
               });
             })
-            .catch(err => {
+            .catch((err) => {
               console.error(err);
               this.$buefy.toast.open({
                 message: `Failed to save option`,
-                type: "is-danger"
+                type: "is-danger",
               });
             });
-        }
+        },
       });
     },
     promptToDeleteLibrarySelection(option) {
@@ -443,43 +485,43 @@ export default {
               this.$store.dispatch("refreshLibrarySelections");
               this.$buefy.toast.open({
                 message: `Deleted: ${option.value}`,
-                type: "is-success"
+                type: "is-success",
               });
             })
-            .catch(err => {
+            .catch((err) => {
               console.error(err);
               this.$buefy.toast.open({
                 message: `Failed to delete option`,
-                type: "is-danger"
+                type: "is-danger",
               });
             });
-        }
+        },
       });
     },
     promptForNewLibraryStrategy() {
       this.$buefy.dialog.prompt({
         message: `Library Strategy`,
         inputAttrs: {
-          minlength: 2
+          minlength: 2,
         },
-        onConfirm: value => {
+        onConfirm: (value) => {
           this.$axios
             .post("/options/librarystrategy", { value })
             .then(() => {
               this.$store.dispatch("refreshLibraryStrategies");
               this.$buefy.toast.open({
                 message: `Added: ${value}`,
-                type: "is-success"
+                type: "is-success",
               });
             })
-            .catch(err => {
+            .catch((err) => {
               console.error(err);
               this.$buefy.toast.open({
                 message: `Failed to save option`,
-                type: "is-danger"
+                type: "is-danger",
               });
             });
-        }
+        },
       });
     },
     promptToDeleteLibraryStrategy(option) {
@@ -492,20 +534,20 @@ export default {
               this.$store.dispatch("refreshLibraryStrategies");
               this.$buefy.toast.open({
                 message: `Deleted: ${option.value}`,
-                type: "is-success"
+                type: "is-success",
               });
             })
-            .catch(err => {
+            .catch((err) => {
               console.error(err);
               this.$buefy.toast.open({
                 message: `Failed to delete option, error: ${err}`,
-                type: "is-danger"
+                type: "is-danger",
               });
             });
-        }
+        },
       });
-    }
-  }
+    },
+  },
 };
 </script>
 
