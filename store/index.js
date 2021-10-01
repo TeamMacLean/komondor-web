@@ -1,4 +1,3 @@
-
 export const state = () => ({
   // stock: null,
   user: null,
@@ -26,26 +25,32 @@ export const getters = {
   // isAuthenticated: state => {
   //   return !!state.auth.loggedIn
   // },
-  isAdmin: state => {
+  isAdmin: (state) => {
     return !!(state.auth && state.auth.loggedIn && state.auth.user.isAdmin);
   },
-  filteredProjects: state => (filterText) => {
+  filteredProjects: (state) => (filterText) => {
     if (filterText && filterText.length) {
-      return state.projects.filter(p => p.name.toLowerCase().indexOf(filterText.toLowerCase()) > -1)
+      return state.projects.filter(
+        (p) => p.name.toLowerCase().indexOf(filterText.toLowerCase()) > -1
+      );
     } else {
       return state.projects;
     }
   },
-  filteredSamples: state => (filterText) => {
+  filteredSamples: (state) => (filterText) => {
     if (filterText && filterText.length) {
-      return state.samples.filter(p => p.name.toLowerCase().indexOf(filterText.toLowerCase()) > -1)
+      return state.samples.filter(
+        (p) => p.name.toLowerCase().indexOf(filterText.toLowerCase()) > -1
+      );
     } else {
       return state.samples;
     }
   },
-  filteredRuns: state => (filterText) => {
+  filteredRuns: (state) => (filterText) => {
     if (filterText && filterText.length) {
-      return state.runs.filter(p => p.name.toLowerCase().indexOf(filterText.toLowerCase()) > -1)
+      return state.runs.filter(
+        (p) => p.name.toLowerCase().indexOf(filterText.toLowerCase()) > -1
+      );
     } else {
       return state.runs;
     }
@@ -87,7 +92,6 @@ export const getters = {
   // }
 };
 
-
 export const mutations = {
   setUsers(state, users) {
     state.users = users;
@@ -126,131 +130,137 @@ export const mutations = {
     state.libraryStrategies = list;
   },
   setHasReceivedMD5WarningMutation(state, bool) {
-    state.hasReceivedMD5Warning = bool
+    state.hasReceivedMD5Warning = bool;
   },
-
 };
 
 export const actions = {
-  async nuxtServerInit(store, context) {
-  },
-  async refreshNews({ store, commit }) {
-    return this.$axios.get('/news')
+  async nuxtServerInit() {},
+  async refreshNews({ commit }) {
+    return this.$axios
+      .get("/news")
       .then(({ data }) => {
-        commit('setNews', data.news);
+        commit("setNews", data.news);
       })
-      .catch(err => {
+      .catch((err) => {
         console.error(err);
-      })
-
+      });
   },
   async refreshUsers({ commit }) {
-    return this.$axios.get('/users')
+    return this.$axios
+      .get("/users")
       .then(({ data }) => {
-        commit('setUsers', data.users);
+        commit("setUsers", data.users);
       })
       .catch((err) => {
         console.error(err);
-      })
+      });
   },
   async refreshGroups({ commit }) {
-    return this.$axios.get('/groups')
+    return this.$axios
+      .get("/groups")
       .then(({ data }) => {
-        commit('setGroups', data.groups);
+        console.log("refreshGroups", data.groups);
+
+        commit("setGroups", data.groups);
       })
       .catch((err) => {
         console.error(err);
-      })
+      });
   },
   async refreshProjects({ commit }) {
-    return this.$axios.get('/projects')
+    return this.$axios
+      .get("/projects")
       .then(({ data }) => {
-        commit('setProjects', data.projects);
+        commit("setProjects", data.projects);
       })
       .catch((err) => {
         console.error(err);
-      })
+      });
   },
   async refreshSamples({ commit }) {
-    return this.$axios.get('/samples')
+    return this.$axios
+      .get("/samples")
       .then(({ data }) => {
-        commit('setSamples', data.samples);
+        commit("setSamples", data.samples);
       })
       .catch((err) => {
         console.error(err);
-      })
+      });
   },
   async refreshRuns({ commit }) {
-    return this.$axios.get('/runs')
+    return this.$axios
+      .get("/runs")
       .then(({ data }) => {
-        commit('setRuns', data.runs);
+        commit("setRuns", data.runs);
       })
       .catch((err) => {
         console.error(err);
-      })
+      });
   },
 
   async refreshLibraryTypes({ commit }) {
-    return this.$axios.get('/options/librarytype')
+    return this.$axios
+      .get("/options/librarytype")
       .then(({ data }) => {
-        commit('setLibraryTypes', data.options);
+        commit("setLibraryTypes", data.options);
       })
       .catch((err) => {
         console.error(err);
-      })
+      });
   },
   async refreshSequencingTechnologies({ commit }) {
-    return this.$axios.get('/options/sequencingtechnology')
+    return this.$axios
+      .get("/options/sequencingtechnology")
       .then(({ data }) => {
-        commit('setSequencingTechnologies', data.options);
+        commit("setSequencingTechnologies", data.options);
       })
       .catch((err) => {
         console.error(err);
-      })
+      });
   },
   async refreshLibrarySources({ commit }) {
-    return this.$axios.get('/options/librarysource')
+    return this.$axios
+      .get("/options/librarysource")
       .then(({ data }) => {
-        commit('setLibrarySources', data.options);
+        commit("setLibrarySources", data.options);
       })
       .catch((err) => {
         console.error(err);
-      })
+      });
   },
   async refreshLibrarySelections({ commit }) {
-    return this.$axios.get('/options/libraryselection')
+    return this.$axios
+      .get("/options/libraryselection")
       .then(({ data }) => {
-        commit('setLibrarySelections', data.options);
+        commit("setLibrarySelections", data.options);
       })
       .catch((err) => {
         console.error(err);
-      })
+      });
   },
   async refreshLibraryStrategies({ commit }) {
-    return this.$axios.get('/options/librarystrategy')
+    return this.$axios
+      .get("/options/librarystrategy")
       .then(({ data }) => {
-        commit('setLibraryStrategies', data.options);
+        commit("setLibraryStrategies", data.options);
       })
       .catch((err) => {
         console.error(err);
-      })
+      });
   },
 
-  async refreshOptions({ commit, dispatch }) {
-
+  async refreshOptions({ dispatch }) {
     return Promise.all([
-      dispatch('refreshLibraryTypes'),
-      dispatch('refreshSequencingTechnologies'),
-      dispatch('refreshLibrarySources'),
-      dispatch('refreshLibrarySelections'),
-      dispatch('refreshLibraryStrategies'),
-    ])
-
+      dispatch("refreshLibraryTypes"),
+      dispatch("refreshSequencingTechnologies"),
+      dispatch("refreshLibrarySources"),
+      dispatch("refreshLibrarySelections"),
+      dispatch("refreshLibraryStrategies"),
+    ]);
   },
   async setHasReceivedMD5Warning({ commit }) {
     // this.hasReceivedMD5Warning=false,
-    return commit('setHasReceivedMD5WarningMutation', true)
-  }
-
-
+    return commit("setHasReceivedMD5WarningMutation", true);
+  },
 };
