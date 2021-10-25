@@ -49,13 +49,12 @@
               </b-select>
             </b-field>
             <b-field
-              v-else-if="
-                $store.state.groups.filter((f) => !f.deleted).length === 1
-              "
+              v-else-if="onlyOneGroup"
               label="Group"
               message="The group that this project belongs to. (Defaulted as the only group available to you. Contact system admin to create new groups if required.)"
             >
               <div class="onlyOneSelectOption">
+                <!-- <input v-model="project.group" type="hidden" /> -->
                 {{ $store.state.groups.filter((f) => !f.deleted)[0].name }}
               </div>
             </b-field>
@@ -137,7 +136,7 @@
         </div>
 
         <!-- TEMP -->
-        <FormConsentCheckbox :initial="false" />
+        <FormConsentCheckbox :initial="consent" :on-toggle="onToggleConsent" />
 
         <hr />
 
@@ -172,6 +171,7 @@ export default {
             bad: {
               nameList: res.data.projectsNames,
             },
+            consent: false,
             project: {
               name: "",
               group: "",
@@ -201,14 +201,17 @@ export default {
         error({ statusCode: 501, message: "Unknown error" });
       });
   },
-  fetch({ store }) {
+  async fetch({ store }) {
     // NB don't need return necessarily
 
     console.log("auth for user", this.$auth);
 
-    return store.dispatch("refreshGroups");
+    await store.dispatch("refreshGroups");
   },
   computed: {
+    onlyOneGroup() {
+      return this.$store.state.groups.filter((f) => !f.deleted).length === 1;
+    },
     isWarningStyleForNameInput() {
       return this.bad.nameList.includes(this.project.name) ? "is-danger" : "";
     },
@@ -217,7 +220,12 @@ export default {
         this.additionalUploadsComplete &&
         !this.isWarningStyleForNameInput &&
         !this.isSubmitting &&
-        this.project.group
+        // hacky
+        (this.project.group || this.onlyOneGroup) &&
+        this.project.name &&
+        this.project.shortDesc &&
+        this.project.longDesc &&
+        this.consent
       ) {
         return true;
       } else {
@@ -240,6 +248,9 @@ export default {
     },
   },
   methods: {
+    onToggleConsent(newState) {
+      this.consent = newState;
+    },
     onUploaderChange() {
       //
       // if (typeof val === "boolean") {
@@ -284,7 +295,7 @@ export default {
       this.updateAdditionalFiles();
 
       // HACKY
-      if (this.$store.state.groups.filter((f) => !f.deleted).length === 1) {
+      if (this.onlyOneGroup) {
         this.project.group = this.$store.state.groups.filter(
           (f) => !f.deleted
         )[0]._id;
