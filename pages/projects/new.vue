@@ -216,7 +216,8 @@ export default {
       if (
         this.additionalUploadsComplete &&
         !this.isWarningStyleForNameInput &&
-        !this.isSubmitting
+        !this.isSubmitting &&
+        !(this.$store.state.groups.filter((f) => !f.deleted).length === 1)
       ) {
         return true;
       } else {
