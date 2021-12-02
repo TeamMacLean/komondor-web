@@ -16,13 +16,13 @@
             <b-field
               label="Name"
               :type="isWarningStyleForNameInput"
-              message="A choose a short, informative name to identify your sample, between 10 and 80 characters."
+              message="A choose a short, informative name to identify your sample, ideally between 10 and 80 characters."
             >
               <b-input
                 id="name"
                 v-model="sample.name"
                 name="name"
-                minlength="10"
+                minlength="3"
                 maxlength="80"
                 required
               ></b-input>
