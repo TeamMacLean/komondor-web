@@ -72,10 +72,10 @@
         <div class="section fill-height">
           <h1 class="title is-2">Welcome to sequences.tsl.ac.uk!</h1>
 
-          <div class="site-down">
+          <!-- <div class="site-down">
             Site is temporarily down (19-10-2022). We are working to resolve the
             issue as soon as possible.
-          </div>
+          </div> -->
 
           <h2 class="title is-4">Quick start</h2>
           <div>
