@@ -8,7 +8,7 @@
             {{ project.name }}
           </div>
           <AddAccessionModal
-            v-if="!!showAddAcession"
+            v-if="!!showAddAccession"
             type="project"
             :type-id="project._id"
             :initial-accessions="project.accessions"
@@ -52,6 +52,27 @@
             project.releaseDate ? ` ${project.releaseDate}` : ` unknown`
           }}
         </p>
+
+        <div
+          v-if="!showAdminEmailNudgeUpdateCheckbox"
+          class="nudge-email-wrapper"
+        >
+          <!-- <b-checkbox
+          readonly
+          :checked="project.nudgeEmail"  
+          class="nudge-email-label">
+            This project is currently scheduled to send reminder emails
+            surrounding its release date.
+          </b-checkbox> -->
+          <div>
+            <b-button>Toggle status</b-button>
+            <!-- <b-checkbox>
+              <span> Ticking this box </span>
+              <span class="disable-emphasis-text"> disables </span>
+              <span> email updates. </span>
+            </b-checkbox> -->
+          </div>
+        </div>
 
         <b-field label="Short Description">{{ project.shortDesc }}</b-field>
         <b-field label="Long Description">{{ project.longDesc }}</b-field>
@@ -125,7 +146,10 @@ export default {
     canSubmitToENA() {
       return true;
     },
-    showAddAcession() {
+    showAddAccession() {
+      return process.env.ENA_ADMINS.includes(this.$auth.$state.user.username);
+    },
+    showAdminEmailNudgeUpdateCheckbox() {
       return process.env.ENA_ADMINS.includes(this.$auth.$state.user.username);
     },
   },
@@ -135,5 +159,20 @@ export default {
 .title-wrapper {
   display: flex;
   justify-content: space-between;
+}
+
+.disable-emphasis-text {
+  color: red;
+  font-weight: bold;
+  font-style: italic;
+}
+
+.nudge-email-wrapper {
+  padding-bottom: 2rem;
+}
+
+.nudge-email-label {
+  padding-bottom: 0.5rem;
+  font-style: italic;
 }
 </style>
