@@ -8,25 +8,32 @@
             'HPC upload' is the recommended way to upload large raw files to the
             HPC. This covers most use cases. Please use the 'Local filesystem
             upload' method (click tab above) if your use case is not covered
-            here.
+            here. Remember we have a step-by-step guide to helping you with this
+            form <a href="/upload-instructions.html">here</a>.
           </li>
           <li>
-            Before using this method, you should create a directory in
-            <code>/tsl/data/tempWebUploadToSequences</code> that contains any
-            number of nested subdirectories that pertain to 1 or more run
-            submissions you wish to make over a short period of time.
+            Before using this method, you should create a parent directory in
+            <code>/tsl/data/tempWebUploadToSequences</code> that contains a
+            subdirectory for each run submission you wish to make over a short
+            period of time. To submit 2 runs for a sample for instance, you
+            could create a `deeks-sample-3945` directory, and then create a
+            `run1` and `run2` subdirectory within that. This is to help you keep
+            track of your data and upload it efficiently, and to help us keep
+            track of it too.
           </li>
           <li>
-            Use the below searchbox to find the specific directory that relates
-            to this run submission. This directory must only contain raw read
-            files and (optionally) their associated MD5 checksums. Secondly, all
-            of the raw read files for this submission must be only contained in
-            this directory.
+            Use the below searchbox to find the specific subdirectory that
+            pertains to this run submission. This must be the exact path to the
+            specific directory that ONLY contains the raw read files for this
+            particular run (plus their associated checksum files, optionally).
+            You cannot have any other files in there - for example, raw read
+            files for other runs you want to submit, or explanatory .pdf files
+            for this run (you must use 'Additional Files', see below).
           </li>
           <li>
             You may upload .md5 files in addition to raw reads files here, but
             you must also specify the string MD5 value for each file before
-            proceeding.
+            proceeding in the relevant part of the form (see below).
           </li>
           <li>
             <code>/tsl/data/tempWebUploadToSequences</code> is only a temporary
@@ -34,8 +41,10 @@
             considerate of others when creating directories. You should remove
             data from it when you are finished submitting. Submitted files will
             be moved to their destination folder, leaving an empty directory
-            that must be tidied. Both empty and untouched (>3 weeks) directories
-            will be removed automatically from this location.
+            that must be tidied by YOU shortly afterwards. Both empty and
+            untouched (>3 weeks) directories may be removed automatically from
+            this location unless you otherwise
+            <a href="mailto:george.deeks@tsl.ac.uk">request us</a>.
           </li>
           <li>
             This field is not for uploading associated additional files;
@@ -46,14 +55,16 @@
 
       <b-checkbox v-model="firstDeclaration" class="padding">
         I declare that I have read the above and understand how to use this
-        manner of upload.
+        manner of upload. I know there is a guide on this site to help me, and
+        that if I am uncertain of anything I can contact the TSL Bioinformatics
+        team for more assistance.
       </b-checkbox>
       <b-checkbox v-model="secondDeclaration" class="padding">
         I declare that my storing of data in
         <code>/tsl/data/tempWebUploadToSequences</code> is only temporary, and
         that inactivity with this data will lead to it being removed without
-        warning, and that I have sufficient backups of this data before
-        proceeding with this method of upload.
+        warning, and that I have already backed up this data in another location
+        before proceeding with this method of upload as my files may be deleted.
       </b-checkbox>
     </div>
     <div v-if="!allDeclared">(Please declare the above.)</div>
@@ -96,21 +107,40 @@
         </div>
         <div>
           <div class="row">
-            <div class="column1">File name</div>
+            <div class="column1">
+              File name{{
+                anyTruncatedFileNames && " (hover over for untruncated)"
+              }}
+            </div>
             <div class="column2">MD5 checksum</div>
-            <div v-if="paired" class="column3heading">Sibling</div>
+            <div v-if="paired" class="column3heading">
+              Sibling{{
+                anyTruncatedFileNames && " (hover over for untruncated)"
+              }}
+            </div>
           </div>
 
           <div v-for="file in directoryFiles" :key="file.name" class="row">
             <div class="column1">
-              <code>{{ truncateName(file.name) }}</code>
+              <code
+                v-if="nameMustTruncate(file.name)"
+                v-tooltip="{
+                  content: file.name,
+                  trigger: 'hover',
+                  placement: 'top',
+                }"
+                >{{ truncateName(file.name) }}</code
+              >
+              <code v-else>{{ truncateName(file.name) }}</code>
             </div>
+
             <b-input
               :ref="file.name + '-MD5'"
               v-model="file.MD5"
               :disabled="validatedAndLockedChoices || file.MD5 === 'n/a'"
               class="column2"
             ></b-input>
+
             <b-select
               v-if="paired"
               :ref="file.name + '-sibling'"
@@ -122,6 +152,7 @@
                 v-for="siblingContender in siblingContenderNames(file)"
                 :key="siblingContender"
                 :value="siblingContender"
+                :title="nameMustTruncate(siblingContender) && siblingContender"
                 class="select-fixed-width"
                 :disabled="validatedAndLockedChoices"
               >
@@ -157,6 +188,8 @@
 </template>
 
 <script>
+const targetMaxChunkLength = 18;
+
 export default {
   name: "SpecifiedLocationFileSelector",
   props: {
@@ -178,6 +211,11 @@ export default {
     };
   },
   computed: {
+    anyTruncatedFileNames() {
+      return this.directoryFiles.some((file) =>
+        this.nameMustTruncate(file.name)
+      );
+    },
     allDeclared() {
       return this.firstDeclaration && this.secondDeclaration;
     },
@@ -190,11 +228,19 @@ export default {
     },
   },
   methods: {
+    nameMustTruncate(name) {
+      const ellipsisLength = 3;
+      const targetMaxLength =
+        targetMaxChunkLength + ellipsisLength + targetMaxChunkLength;
+      return targetMaxLength < name.length;
+    },
     truncateName(name) {
-      const totalLength = name.length;
-      if (12 + 12 + 3 < totalLength) {
-        const beginning = name.substring(0, 12);
-        const end = name.substring(totalLength - 12, totalLength);
+      if (this.nameMustTruncate(name)) {
+        const beginning = name.substring(0, targetMaxChunkLength);
+        const end = name.substring(
+          name.length - targetMaxChunkLength,
+          name.length
+        );
         return `${beginning}...${end}`;
       } else {
         return name;
@@ -247,9 +293,8 @@ export default {
           MD5Error =
             "Error: at least one of your MD5 checksums is the wrong length of string. An MD5 should be 32 characters in length.";
         } else {
-          this.directoryFiles.find(
-            (obj) => obj.name === file.name
-          ).MD5 = MD5String;
+          this.directoryFiles.find((obj) => obj.name === file.name).MD5 =
+            MD5String;
         }
       });
       if (MD5Error) {
@@ -307,9 +352,8 @@ export default {
             }
           }
           if (!siblingError) {
-            this.directoryFiles.find(
-              (obj) => obj.name === file.name
-            ).sibling = siblingString;
+            this.directoryFiles.find((obj) => obj.name === file.name).sibling =
+              siblingString;
           }
         });
         if (siblingError) {
