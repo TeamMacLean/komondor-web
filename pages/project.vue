@@ -197,7 +197,7 @@ export default {
       const res = process.env.ENA_ADMINS.includes(
         this.$auth.$state.user.username
       );
-      return false; // TODO change back to res
+      return res;
     },
   },
   methods: {
