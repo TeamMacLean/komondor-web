@@ -191,7 +191,11 @@ export default {
       return true;
     },
     showAddAccession() {
-      return process.env.ENA_ADMINS.includes(this.$auth.$state.user.username);
+      if (this?.$auth?.$state?.user?.username && process?.env?.ENA_ADMINS) {
+        return process.env.ENA_ADMINS.includes(this.$auth.$state.user.username);
+      } else {
+        return false;
+      }
     },
     showAdminEmailNudgeUpdateCheckbox() {
       const res = process.env.ENA_ADMINS.includes(

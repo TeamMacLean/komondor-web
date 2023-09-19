@@ -42,7 +42,11 @@ export default {
   },
   computed: {
     showAdminSection() {
-      return process.env.ENA_ADMINS.includes(this.$auth.$state.user.username);
+      if (this?.$auth?.$state?.user?.username && process?.env?.ENA_ADMINS) {
+        return process.env.ENA_ADMINS.includes(this.$auth.$state.user.username);
+      } else {
+        return false;
+      }
     },
   },
   methods: {
