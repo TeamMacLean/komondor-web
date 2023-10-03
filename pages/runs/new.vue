@@ -4,7 +4,7 @@
       <h1 class="title">New Run</h1>
       <h5>
         If any options that you need are not listed, please contact system
-        adminstrator.
+        administrator.
       </h5>
       <hr />
       <form novalidate @submit.prevent="postForm">
@@ -28,6 +28,7 @@
           </div>
           <div class="column">
             <b-field
+              v-if="!isOxfordNanopore"
               label="Insert size"
               message="What is the average insert size covered by your read pairs? This should be in the communication with your provider."
             >
@@ -38,6 +39,19 @@
                 type="number"
                 min="0"
                 required
+              ></b-input>
+            </b-field>
+            <b-field
+              v-else
+              label="Insert size (Optional)"
+              message="This field is optional for Oxford Nanopore. Probably better to leave blank."
+            >
+              <b-input
+                v-model="run.insertSize"
+                placeholder="Number"
+                expanded
+                type="number"
+                min="0"
               ></b-input>
             </b-field>
           </div>
@@ -316,6 +330,12 @@ export default {
       });
   },
   computed: {
+    // COULD DO: make more robust
+    isOxfordNanopore() {
+      return this.run.libraryType
+        ? this.run.libraryType.toLowerCase().includes("oxford nanopore")
+        : false;
+    },
     shouldShowAllUploadRawMsg() {
       return (
         this.activeTab !== "hpc-mv" && this.isAnyRawReadFileFieldIncomplete
