@@ -7,6 +7,12 @@
         administrator.
       </h5>
       <hr />
+      <h4>
+        <b>
+          Please note: all fields in this section are mandatory unless otherwise
+          specified.
+        </b>
+      </h4>
       <form novalidate @submit.prevent="postForm">
         <div class="columns">
           <div class="column">
@@ -34,7 +40,7 @@
             >
               <b-input
                 v-model="run.insertSize"
-                placeholder="Number"
+                placeholder="Please specify a number - e.g. 13"
                 expanded
                 type="number"
                 min="0"
@@ -65,7 +71,7 @@
             >
               <b-input
                 v-model="run.sequencingProvider"
-                placeholder="EI"
+                placeholder="This is a required field"
                 expanded
                 type="text"
                 required

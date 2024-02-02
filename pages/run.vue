@@ -92,7 +92,16 @@
         </div>
 
         <b-field label="Insert Size">
-          <p class="bottomPadding">{{ run.insertSize }}</p>
+          <p class="bottomPadding">
+            {{
+              // insert size of 0 displayed, otherwise untruthy yields special text
+              typeof insertSize !== "undefined" &&
+              insertSize !== null &&
+              insertSize !== ""
+                ? insertSize
+                : "[none]"
+            }}
+          </p>
         </b-field>
 
         <!-- TODO additioanlfilelist and readlist could be recombined again -->
