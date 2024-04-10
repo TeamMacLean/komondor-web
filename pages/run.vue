@@ -97,7 +97,7 @@
               // insert size of 0 displayed, otherwise untruthy yields special text
               typeof insertSize !== "undefined" &&
               insertSize !== null &&
-              insertSize !== ""
+              (insertSize === 0 || insertSize !== "")
                 ? insertSize
                 : "[none]"
             }}
