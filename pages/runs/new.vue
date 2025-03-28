@@ -3,7 +3,7 @@
     <div class="container">
       <h1 class="title">New Run</h1>
       <h3 class="subtitle">
-        <i> Ensure required fields are filled in before submitting. </i>
+        <i> Ensure required fields (*) are filled in before submitting. </i>
       </h3>
       <h3>
         If any options that you need are not listed, please contact system
@@ -15,7 +15,7 @@
           <div class="column">
             <b-field
               :type="isWarningStyleForNameInput"
-              label="Name"
+              label="Name*"
               message="A short (5-20 characters in length), informative name to identify your data set."
             >
               <b-input
@@ -31,31 +31,23 @@
           </div>
           <div class="column">
             <b-field
-              v-if="!isOxfordNanopore"
-              label="Insert size"
-              message="What is the average insert size covered by your read pairs? This should be in the communication with your provider."
+              label="Library strategy*"
+              message="What kind of sequencing experiment was performed?"
             >
-              <b-input
-                v-model="run.insertSize"
-                placeholder="Please specify a number - e.g. 13"
-                expanded
-                type="number"
-                min="0"
+              <b-select
+                v-model="run.libraryStrategy"
+                placeholder="Select a library strategy"
                 required
-              ></b-input>
-            </b-field>
-            <b-field
-              v-else
-              label="Insert size (Optional)"
-              message="This field is optional for Oxford Nanopore. Probably better to leave blank."
-            >
-              <b-input
-                v-model="run.insertSize"
-                placeholder="Number"
                 expanded
-                type="number"
-                min="0"
-              ></b-input>
+              >
+                <option
+                  v-for="option in libraryStrategies"
+                  :key="option._id"
+                  :value="option.value"
+                >
+                  {{ option.value }}
+                </option>
+              </b-select>
             </b-field>
           </div>
         </div>
@@ -63,7 +55,7 @@
         <div class="columns">
           <div class="column">
             <b-field
-              label="Sequencing provider"
+              label="Sequencing provider*"
               message="Which company/institute did your sequencing? Please provide at least the name."
             >
               <b-input
@@ -75,9 +67,10 @@
               ></b-input>
             </b-field>
           </div>
+
           <div class="column">
             <b-field
-              label="Sequencing technology"
+              label="Sequencing technology*"
               message="What was the technology used for sequencing? This should be in the communication with your provider."
             >
               <b-select
@@ -101,7 +94,7 @@
         <div class="columns">
           <div class="column">
             <b-field
-              label="Library source"
+              label="Library source*"
               message="From what kind of material was your library prepared?"
             >
               <b-select
@@ -125,7 +118,7 @@
 
           <div class="column">
             <b-field
-              label="Library selection"
+              label="Library selection*"
               message="Which protocol was used when creating the library?"
             >
               <p></p>
@@ -150,7 +143,7 @@
         <div class="columns">
           <div class="column">
             <b-field
-              label="Library type"
+              label="Library type*"
               message="Do you have unpaired, paired, or mate-pair reads? Please upload compressed files where possible - ENA only accepts these in some cases (e.g. use .fq.gz, not .fastq)"
             >
               <b-select
@@ -172,23 +165,31 @@
 
           <div class="column">
             <b-field
-              label="Library strategy"
-              message="What kind of sequencing experiment was performed?"
+              v-if="!isOxfordNanopore"
+              label="Insert size*"
+              message="What is the average insert size covered by your read pairs? This should be in the communication with your provider. (Please note: this field becomes optional when Oxford Nanopore is selected.)"
             >
-              <b-select
-                v-model="run.libraryStrategy"
-                placeholder="Select a library strategy"
-                required
+              <b-input
+                v-model="run.insertSize"
+                placeholder="Please specify a number - e.g. 13"
                 expanded
-              >
-                <option
-                  v-for="option in libraryStrategies"
-                  :key="option._id"
-                  :value="option.value"
-                >
-                  {{ option.value }}
-                </option>
-              </b-select>
+                type="number"
+                min="0"
+                required
+              ></b-input>
+            </b-field>
+            <b-field
+              v-else
+              label="Insert size"
+              message="This field is optional for the currently-selected Oxford Nanopore. Probably leave blank."
+            >
+              <b-input
+                v-model="run.insertSize"
+                placeholder="Number"
+                expanded
+                type="number"
+                min="0"
+              ></b-input>
             </b-field>
           </div>
         </div>
@@ -242,7 +243,7 @@
         <FormConsentCheckbox :on-toggle="onToggleFormConsentCheckbox" />
 
         <b-checkbox v-model="checkFiles" type="checkbox">
-          I confirm that I will check my raw read files have moved successfully
+          *I confirm that I will check my raw read files have moved successfully
           to their correct location on the HPC, and keep a backup copy of these
           files until I confirm.
         </b-checkbox>
