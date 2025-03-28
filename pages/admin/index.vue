@@ -133,13 +133,13 @@
             </ul>
           </b-tab-item>
           <b-tab-item label="Groups">
-            <button
+            <!-- <button
               type="button"
               class="button is-success"
               @click="showModalForNewGroup"
             >
               New
-            </button>
+            </button> -->
             <hr />
             <p>Use CLI to update LDAP groups</p>
             <p>db.groups.find({ name: 'two_blades'}).pretty()</p>
