@@ -4,12 +4,13 @@
       <form @submit.prevent="handleSubmit">
         <div class="modal-card" style="width: auto">
           <header class="modal-card-head">
-            <p class="modal-card-title">{{ isEdit ? "Edit" : "New" }} group</p>
+            <p class="modal-card-title">{{ isEdit ? "View" : "View" }} group</p>
           </header>
           <section class="modal-card-body">
             <!--{{this.groupToEdit}}-->
             <b-field label="Name">
-              <b-input v-model="newGroupsName" type="text" required> </b-input>
+              <b-input v-model="newGroupsName" type="text" required readonly>
+              </b-input>
             </b-field>
 
             <b-field label="LDAP Groups">
@@ -23,17 +24,17 @@
                   "
                 >
                   {{ groupLdap }}
-                  <button
+                  <!-- <button
                     type="button"
                     aria-label="Close message"
                     class="delete is-vcentered"
                     @click="removeLdapGroup(groupLdap)"
-                  ></button>
+                  ></button> -->
                 </span>
               </div>
             </b-field>
 
-            <b-field label="Add LDAP Groups">
+            <!-- <b-field label="Add LDAP Groups">
               <b-field>
                 <b-input
                   v-model="newGroupLdap"
@@ -51,10 +52,15 @@
                   </button>
                 </p>
               </b-field>
-            </b-field>
+            </b-field> -->
 
             <div v-if="groupToEdit" class="field">
-              <b-switch v-model="sendToEna" :value="groupToEdit.sendToEna">
+              <b-switch
+                v-model="sendToEna"
+                readonly
+                disabled
+                :value="groupToEdit.sendToEna"
+              >
                 Send to ENA
               </b-switch>
             </div>
@@ -71,11 +77,11 @@
               >
                 Close
               </button>
-              <button class="button is-primary" type="submit">Save</button>
+              <!-- <button class="button is-primary" type="submit">Save</button> -->
             </div>
 
             <div>
-              <button
+              <!-- <button
                 v-if="groupToEdit && !groupToEdit.deleted"
                 class="button is-danger is-small"
                 type="button"
@@ -90,7 +96,7 @@
                 @click="resurrectGroup"
               >
                 Resurrect
-              </button>
+              </button> -->
             </div>
           </footer>
         </div>
@@ -124,7 +130,8 @@ export default {
     },
   },
   methods: {
-    handleSubmit() {
+    handleSubmit() {},
+    handleSubmit2() {
       //save vs edit
 
       if (this.isEdit) {

@@ -141,7 +141,7 @@
               New
             </button>
             <hr />
-            <p>TODO: fix: cannot edit LDAP groups using web app</p>
+            <p>Use CLI to update LDAP groups</p>
             <p>db.groups.find({ name: 'two_blades'}).pretty()</p>
             <p>
               db.groups.update({ name: 'two_blades'}, { $push: { ldapGroups:
