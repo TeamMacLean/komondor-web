@@ -3,7 +3,7 @@
     <div class="container">
       <h1 class="title">New Project</h1>
       <h3 class="subtitle">
-        <i> Ensure required fields are filled in before submitting. </i>
+        <i> Ensure required fields (*) are filled in before submitting. </i>
       </h3>
       <hr />
       <form @submit.prevent="postForm">
@@ -11,7 +11,7 @@
           <div class="column">
             <!--Name-->
             <b-field
-              label="Name"
+              label="Name*"
               :type="isWarningStyleForNameInput"
               message="Find a suitable short name for your project, 20-80 characters in length, something that you can memorise and that also works reasonably well to present your study to the public"
             >
@@ -30,7 +30,7 @@
             <!--Group-->
             <b-field
               v-if="$store.state.groups.filter((f) => !f.deleted).length > 1"
-              label="Group"
+              label="Group*"
               message="The group that this project belongs to."
             >
               <b-select
@@ -49,7 +49,7 @@
             </b-field>
             <b-field
               v-else-if="onlyOneGroup"
-              label="Group"
+              label="Group*"
               message="The group that this project belongs to. (Defaulted as the only group available to you. Contact system admin to create new groups if required.)"
             >
               <div class="onlyOneSelectOption">
@@ -67,7 +67,7 @@
         </div>
         <!--Short desc-->
         <b-field
-          label="Short description"
+          label="Short description*"
           message="One to three short descriptive sentences, 20-200 characters in length, that provide information about the study."
         >
           <b-input
@@ -82,7 +82,7 @@
 
         <!--Long desc-->
         <b-field
-          label="Long description"
+          label="Long description*"
           message="Provide an abstract about the study, 100-1000 characters in length. It is a required field for ENA and if you already have an abstract for a publication ready, then by all  means use it. If not, simply copy or embellish the short description and paste it here."
         >
           <b-input

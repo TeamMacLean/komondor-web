@@ -3,17 +3,17 @@
     <div class="container">
       <h1 class="title">New Sample</h1>
       <h3 class="subtitle">
-        <i> Ensure required fields are filled in before submitting. </i>
+        <i> Ensure required fields (*) are filled in before submitting. </i>
       </h3>
       <hr />
       <form @submit.prevent="postForm">
-        <b-field label="Project">{{ project.name }}</b-field>
+        <b-field label="Project*">{{ project.name }}</b-field>
 
         <div class="columns">
           <div class="column">
             <!-- TODO this field isnt counting its characters, same for run -->
             <b-field
-              label="Name"
+              label="Name*"
               :type="isWarningStyleForNameInput"
               message="A choose a short, informative name to identify your sample, ideally between 10 and 80 characters."
             >
@@ -33,7 +33,7 @@
         <div class="columns">
           <div class="column">
             <b-field
-              label="Scientific Name"
+              label="Scientific Name*"
               message="The scientific name of your sample organism as it appears in NCBI Taxonomy. E.g. Solanum lycopersicum."
             >
               <b-input
@@ -47,7 +47,7 @@
           </div>
           <div class="column">
             <b-field
-              label="Common Name"
+              label="Common Name*"
               message="The common name of your sample organism if known (optional). E.g. Tomato."
             >
               <b-input
@@ -61,7 +61,7 @@
           </div>
           <div class="column">
             <b-field
-              label="NCBI Taxonomy ID"
+              label="NCBI Taxonomy ID*"
               message="The Taxonomy ID for your sample's organism. (Choose the host if you're investigating host - pathogen interactions.)"
             >
               <b-input
@@ -76,7 +76,7 @@
         </div>
 
         <b-field
-          label="Conditions"
+          label="Conditions*"
           message="Information (required, minimum 50 characters) about the sample conditions (environmental conditions, is it a pathogen interaction?, what pathogen? etc.)"
         >
           <b-input
