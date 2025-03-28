@@ -93,14 +93,7 @@
 
         <b-field label="Insert Size">
           <p class="bottomPadding">
-            {{
-              // insert size of 0 displayed, otherwise untruthy yields special text
-              typeof insertSize !== "undefined" &&
-              insertSize !== null &&
-              (insertSize === 0 || insertSize !== "")
-                ? insertSize
-                : "[none]"
-            }}
+            {{ this.insertSizeString }}
           </p>
         </b-field>
 
@@ -209,11 +202,15 @@ export default {
             })
           );
 
-          return {
+          const result = {
             run: res.data.run,
             reads: verifiedReads,
             additionalFiles: addFileRes,
           };
+
+          console.log("result run", result.run.insertSize);
+
+          return result;
         } else {
           error({ statusCode: 501, message: "Run not found" });
         }
@@ -224,6 +221,20 @@ export default {
       });
   },
   computed: {
+    insertSizeString() {
+      const insertSizeToCheck = this.run.insertSize;
+      let insertSizeString = "(not set)";
+
+      if (typeof insertSizeToCheck === "undefined") {
+        return;
+      } else if (typeof insertSizeToCheck === "null") {
+        return;
+      } else {
+        insertSizeString = insertSizeToCheck.toString();
+      }
+
+      return insertSizeString;
+    },
     showAddAcession() {
       if (this?.$auth?.$state?.user?.username && process?.env?.ENA_ADMINS) {
         return process.env.ENA_ADMINS.includes(this.$auth.$state.user.username);
