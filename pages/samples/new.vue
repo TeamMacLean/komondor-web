@@ -2,10 +2,9 @@
   <div class="section">
     <div class="container">
       <h1 class="title">New Sample</h1>
-      <!-- <h2 class="subtitle">
-        Aenean eu leo quam. Pellentesque ornare sem lacinia quam venenatis vestibulum. Morbi leo
-        risus, porta ac consectetur ac, vestibulum at eros.
-      </h2>-->
+      <h3 class="subtitle">
+        <i> Ensure required fields are filled in before submitting. </i>
+      </h3>
       <hr />
       <form @submit.prevent="postForm">
         <b-field label="Project">{{ project.name }}</b-field>

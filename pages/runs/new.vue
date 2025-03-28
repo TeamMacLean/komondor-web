@@ -2,17 +2,14 @@
   <div class="section">
     <div class="container">
       <h1 class="title">New Run</h1>
-      <h5>
+      <h3 class="subtitle">
+        <i> Ensure required fields are filled in before submitting. </i>
+      </h3>
+      <h3>
         If any options that you need are not listed, please contact system
         administrator.
-      </h5>
+      </h3>
       <hr />
-      <h4>
-        <b>
-          Please note: all fields in this section are mandatory unless otherwise
-          specified.
-        </b>
-      </h4>
       <form novalidate @submit.prevent="postForm">
         <div class="columns">
           <div class="column">
