@@ -208,7 +208,7 @@ export default {
             additionalFiles: addFileRes,
           };
 
-          console.log("result run", result.run.insertSize);
+          //console.log("result run", result.run.insertSize);
 
           return result;
         } else {
@@ -222,18 +222,8 @@ export default {
   },
   computed: {
     insertSizeString() {
-      const insertSizeToCheck = this.run.insertSize;
-      let insertSizeString = "(not set)";
-
-      if (typeof insertSizeToCheck === "undefined") {
-        return;
-      } else if (typeof insertSizeToCheck === "null") {
-        return;
-      } else {
-        insertSizeString = insertSizeToCheck.toString();
-      }
-
-      return insertSizeString;
+      const insertSize = this.run.insertSize;
+      return insertSize == null ? "(not set)" : insertSize.toString();
     },
     showAddAcession() {
       if (this?.$auth?.$state?.user?.username && process?.env?.ENA_ADMINS) {
