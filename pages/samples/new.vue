@@ -89,6 +89,28 @@
           ></b-input>
         </b-field>
 
+        <hr />
+
+        <!-- TPLEX SECTION (ADMIN ONLY) -->
+        <div v-if="isAdmin" class="box" style="border: 2px solid #336699">
+          <!-- Added custom border style here -->
+          <h2 class="title is-5">Tplex Data (Admin-only)</h2>
+          <b-field>
+            <b-checkbox v-model="isTplexChecked"> Is Tplex sample? </b-checkbox>
+          </b-field>
+
+          <b-field
+            v-if="isTplexChecked"
+            label="Upload Tplex CSV File"
+            message="Please upload a single .csv file containing the Tplex data for this sample. Click 'Done' to remove an uploaded file and try again, or untick the checkbox to remove the tplex option from the submission. This is a once-only submission where edits cannot be made afterwards, so please triple-check all the data is correct before uploading."
+          >
+            <UploaderTslPlex
+              ref="tplexCsvUploader"
+              :on-upload-status-change="onTplexUploaderChange"
+            />
+          </b-field>
+        </div>
+
         <b-field
           label="Additional files"
           message="Please upload any documentation obtained from the sequencing provider, including copies of the communication. If the documentation pertains to the whole project or only to a certain data set, then please add it there instead. Note: this is NOT the place to upload raw sequence files."
@@ -103,80 +125,99 @@
         <FormConsentCheckbox :initial="false" />
         <hr />
 
-        <!--<div class="buttons is-right">-->
         <button type="submit" class="button is-success" :disabled="!canSubmit">
           Create sample
         </button>
-        <!--</div>-->
       </form>
     </div>
   </div>
 </template>
 
 <script>
+import UploaderTslPlex from "~/components/uploads/UploaderTslPlex.vue";
 import Uploader from "~/components/uploads/Uploader.vue";
 import FormConsentCheckbox from "~/components/formHelpers/FormConsentCheckbox";
 import CollapsibleUploaderHelp from "~/components/formHelpers/CollapsibleUploaderHelp";
+
 export default {
   name: "NewSample",
-  components: { Uploader, FormConsentCheckbox, CollapsibleUploaderHelp },
+  components: {
+    UploaderTslPlex,
+    Uploader,
+    FormConsentCheckbox,
+    CollapsibleUploaderHelp,
+  },
   middleware: "auth",
-  asyncData({ /**store,*/ route, $axios, error }) {
+  async asyncData({ route, $axios, error, app }) {
     if (!route.query.project) {
       return error({ statusCode: 500, message: "Project not found" });
     }
 
-    return $axios
-      .get("/project", { params: { id: route.query.project } })
-      .then((res) => {
-        if (res.status === 200) {
-          if (
-            res.data.project &&
-            res.data.project.group &&
-            res.data.project.doNotSendToEna &&
-            res.data.project.group.sendToEna
-          ) {
-            return error({
-              message:
-                "You have requested that this data not go to ENA, you cannot add any samples until this is resolved.",
-            });
-          }
-
-          const existingSampleNamesForThisProject =
-            res.data.project.samples.map((s) => s.name);
-          return {
-            isSubmitting: false,
-            additionalUploadsComplete: true,
-            project: res.data.project,
-            invalidSampleNames: existingSampleNamesForThisProject,
-            sample: {
-              /* fields */
-              name: "",
-              scientificName: "",
-              commonName: "",
-              ncbi: null,
-              conditions: "",
-
-              /** shared fields */
-              project: res.data.project.id,
-              additionalFiles: [],
-
-              /* Test data */
-              // name: "Wilfried Zaha #" + Math.round(Math.random() * 10000),
-              // scientificName: "Andros Townsend",
-              // commonName: "Dion Dublin",
-              // ncbi: 12345,
-              // conditions:
-              //   "How lucky are they? Being a test data of my elk, representing all the time!",
-            },
-          };
-        }
-        return error({ statusCode: 500, message: "Project not found" });
-      })
-      .catch((err) => {
-        console.error(err);
-        return error({ statusCode: 500, message: "Project not found" });
+    try {
+      const res = await $axios.get("/project", {
+        params: { id: route.query.project },
       });
+
+      if (res.status === 200) {
+        if (
+          res.data.project &&
+          res.data.project.group &&
+          res.data.project.doNotSendToEna &&
+          res.data.project.group.sendToEna
+        ) {
+          return error({
+            message:
+              "You have requested that this data not go to ENA, you cannot add any samples until this is resolved.",
+          });
+        }
+
+        const existingSampleNamesForThisProject = res.data.project.samples.map(
+          (s) => s.name
+        );
+
+        const isAdmin = app?.$auth?.user && app.$auth.user.isAdmin;
+
+        return {
+          isAdmin,
+          isSubmitting: false,
+          additionalUploadsComplete: true, // Renamed for clarity
+          tplexCsvUploadComplete: true, // New: Track Tplex CSV upload status
+          project: res.data.project,
+          invalidSampleNames: existingSampleNamesForThisProject,
+          isTplexChecked: false, // New: Control for "Is Tplex sample?" checkbox
+          sample: {
+            /* fields */
+            name: "Gasprd",
+            scientificName: "Honus Maximum",
+            commonName: "Geoffrey",
+            ncbi: 3953,
+            conditions: "He understand sfootball, he's a quick learner.",
+            tplexCsv: null, // New: To store the raw CSV string
+
+            /** shared fields */
+            project: res.data.project.id,
+            additionalFiles: [],
+          },
+          // sample: {
+          //   /* fields */
+          //   name: "",
+          //   scientificName: "",
+          //   commonName: "",
+          //   ncbi: null,
+          //   conditions: "",
+          //   tplexCsv: null, // New: To store the raw CSV string
+
+          //   /** shared fields */
+          //   project: res.data.project.id,
+          //   additionalFiles: [],
+          // },
+        };
+      }
+      return error({ statusCode: 500, message: "Project not found" });
+    } catch (err) {
+      console.error(err);
+      return error({ statusCode: 500, message: "Project not found" });
+    }
   },
   computed: {
     isWarningStyleForNameInput() {
@@ -185,20 +226,23 @@ export default {
         : "";
     },
     canSubmit() {
-      if (
+      const baseCanSubmit =
         this.additionalUploadsComplete &&
+        this.tplexCsvUploadComplete &&
         !this.isWarningStyleForNameInput &&
-        !this.isSubmitting
-      ) {
-        return true;
+        !this.isSubmitting;
+
+      if (this.isTplexChecked) {
+        // If "Is Tplex sample?" is checked, tplexCsv must not be empty
+        return baseCanSubmit && !!this.sample.tplexCsv;
       } else {
-        return false;
+        // If not checked, tplexCsv is irrelevant for submission
+        return baseCanSubmit;
       }
     },
   },
   methods: {
     onUploaderChange(val) {
-      //
       if (typeof val === "boolean") {
         this.additionalUploadsComplete = val;
       }
@@ -206,25 +250,67 @@ export default {
     },
     updateAdditionalFiles() {
       if (this.$refs["additionalUploader"]) {
+        // This Uploader should provide file objects, not raw strings
+        // For actual files, we'll typically send upload IDs or similar
+        // Let's assume for now `getFiles()` correctly provides what the backend expects
         this.sample.additionalFiles =
           this.$refs["additionalUploader"].getFiles();
       }
     },
+    async onTplexUploaderChange(val) {
+      if (typeof val === "boolean") {
+        this.tplexCsvUploadComplete = val;
+      }
+      // If upload is complete and there's a file, try to read its content
+      if (this.tplexCsvUploadComplete && this.$refs["tplexCsvUploader"]) {
+        const files = this.$refs["tplexCsvUploader"].getFiles();
+        if (files && files.length > 0) {
+          const file = files[0];
+          try {
+            // Read the content of the CSV file as a string
+            const csvContent = await this.readFileAsText(file);
+            this.sample.tplexCsv = csvContent;
+          } catch (e) {
+            console.error("Error reading Tplex CSV file:", e);
+            this.$buefy.toast.open({
+              message: "Failed to read Tplex CSV file.",
+              type: "is-danger",
+            });
+            this.sample.tplexCsv = null; // Clear if reading fails
+          }
+        } else {
+          this.sample.tplexCsv = null; // Clear if no file or file removed
+        }
+      } else {
+        this.sample.tplexCsv = null; // Clear if uploader status changes or no longer complete
+      }
+    },
+    // Helper function to read file content as text
+    readFileAsText(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target.result);
+        reader.onerror = (e) => reject(e);
+        reader.readAsText(file);
+      });
+    },
     postForm() {
       this.isSubmitting = true;
-      this.updateAdditionalFiles();
+      this.updateAdditionalFiles(); // Ensure additional files are up to date
 
-      //
+      // If "Is Tplex sample?" is NOT checked, explicitly set tplexCsv to null
+      // to ensure it's not sent if the user unchecked it after uploading.
+      if (!this.isTplexChecked) {
+        this.sample.tplexCsv = null;
+      }
+
       this.sample.owner = this.$auth.user.username; //required
       this.sample.group = this.project.group;
       this.sample.project = this.project._id; //required
-      // this.project.tags = this.tags;
-      //console.log('sampleaddfiles', this.sample.additionalFiles);
 
       this.$axios
         .post("/samples/new", this.sample)
         .then((result) => {
-          // give additionalFile time to enter DB
           setTimeout(() => {
             this.$buefy.toast.open({
               message: "Sample created!",
@@ -264,3 +350,7 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+/* Any specific styles for your component */
+</style>

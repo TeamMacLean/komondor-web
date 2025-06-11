@@ -76,6 +76,61 @@
           <p>{{ sample.conditions }}</p>
         </b-field>
 
+        <!-- New: TPLEX CSV DISPLAY SECTION (Now with table preview) -->
+        <div v-if="sample.tplexCsv" class="tplex-csv-section box">
+          <h2 class="title is-5">Tplex Data</h2>
+          <b-field label="Tplex CSV Content Preview">
+            <div class="csv-table-container">
+              <table
+                class="
+                  table
+                  is-bordered is-striped is-narrow is-hoverable is-fullwidth
+                "
+              >
+                <thead>
+                  <tr>
+                    <th
+                      v-for="(header, index) in tplexCsvHeaders"
+                      :key="`header-${index}`"
+                    >
+                      {{ header }}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    v-for="(row, rowIndex) in tplexCsvRows"
+                    :key="`row-${rowIndex}`"
+                  >
+                    <td
+                      v-for="(cell, cellIndex) in row"
+                      :key="`cell-${rowIndex}-${cellIndex}`"
+                    >
+                      {{ cell }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <p v-if="hasMoreCsvRows" class="has-text-grey is-size-7 pt-2">
+                ... (truncated rows)
+              </p>
+              <p v-if="hasMoreCsvColumns" class="has-text-grey is-size-7 pt-2">
+                ... (truncated columns)
+              </p>
+            </div>
+          </b-field>
+          <div class="has-text-right">
+            <b-button
+              type="is-primary"
+              icon-left="download"
+              @click="downloadTplexCsv"
+            >
+              Download CSV file
+            </b-button>
+          </div>
+        </div>
+        <!-- End new section -->
+
         <b-field label="Additional Files">
           <AdditionalFileList
             :files="additionalFiles"
@@ -99,23 +154,15 @@
 import RunList from "../components/runs/RunList";
 import AdditionalFileList from "../components/AdditionalFileList";
 import AddAccessionModal from "../components/AddAccessionModal";
+import Papa from "papaparse"; // Import papaparse
+
 export default {
   components: { RunList, AdditionalFileList, AddAccessionModal },
   middleware: ["auth"],
   asyncData({ route, $axios, error }) {
-    //TODO check if can view
-
     if (!route.query.id) {
       error({ statusCode: 404, message: "Sample not found" });
     }
-
-    //use cached project if available
-    // const cachedProject = store.getters.getCachedSampleById(route.query.id);
-    // if (cachedProject) {
-    //   return Promise.resolve({
-    //     project: cachedProject
-    //   })
-    // }
 
     return $axios
       .get("/sample", { params: { id: route.query.id } })
@@ -146,12 +193,100 @@ export default {
         error({ statusCode: 501, message: "Sample not found" });
       });
   },
+  data() {
+    return {
+      MAX_PREVIEW_ROWS: 20, // Max rows to display in preview table
+      MAX_PREVIEW_COLUMNS: 10, // Max columns to display in preview table
+    };
+  },
   computed: {
     showAddAcession() {
       if (this?.$auth?.$state?.user?.username && process?.env?.ENA_ADMINS) {
         return process.env.ENA_ADMINS.includes(this.$auth.$state.user.username);
       } else {
         return false;
+      }
+    },
+    parsedTplexCsv() {
+      // Parse the CSV string into an array of arrays
+      if (this.sample && this.sample.tplexCsv) {
+        const result = Papa.parse(this.sample.tplexCsv, {
+          header: false, // We'll handle header separately
+          skipEmptyLines: true,
+        });
+        if (result.errors.length) {
+          console.error("Error parsing Tplex CSV:", result.errors);
+          // Handle parse errors (e.g., return empty or show message)
+          return [];
+        }
+        return result.data;
+      }
+      return [];
+    },
+    tplexCsvHeaders() {
+      if (this.parsedTplexCsv.length > 0) {
+        // Get the first row as headers, and slice to MAX_PREVIEW_COLUMNS
+        return this.parsedTplexCsv[0].slice(0, this.MAX_PREVIEW_COLUMNS);
+      }
+      return [];
+    },
+    tplexCsvRows() {
+      if (this.parsedTplexCsv.length > 1) {
+        // Get data rows (skip header row), and slice to MAX_PREVIEW_ROWS
+        // Also slice each row to MAX_PREVIEW_COLUMNS
+        return this.parsedTplexCsv
+          .slice(1, this.MAX_PREVIEW_ROWS + 1)
+          .map((row) => row.slice(0, this.MAX_PREVIEW_COLUMNS));
+      }
+      return [];
+    },
+    hasMoreCsvRows() {
+      // Check if there are more rows than MAX_PREVIEW_ROWS (after header)
+      return this.parsedTplexCsv.length > this.MAX_PREVIEW_ROWS + 1;
+    },
+    hasMoreCsvColumns() {
+      // Check if the first row (headers) has more columns than MAX_PREVIEW_COLUMNS
+      if (this.parsedTplexCsv.length > 0) {
+        return this.parsedTplexCsv[0].length > this.MAX_PREVIEW_COLUMNS;
+      }
+      return false;
+    },
+  },
+  methods: {
+    downloadTplexCsv() {
+      if (!this.sample || !this.sample.tplexCsv) {
+        this.$buefy.toast.open({
+          message: "No Tplex CSV data to download.",
+          type: "is-warning",
+        });
+        return;
+      }
+
+      const filename = `tplex_${this.sample.safeName || "sample"}.csv`;
+      const csvContent = this.sample.tplexCsv;
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+
+      const link = document.createElement("a");
+      if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", filename);
+        link.style.visibility = "hidden";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      } else {
+        this.$buefy.dialog.alert({
+          title: "Download Not Supported",
+          message:
+            "Your browser does not support automatic downloads. Please copy the content and save it manually.",
+          type: "is-danger",
+          hasIcon: false,
+        });
+        window.open(
+          "data:text/csv;charset=utf-8," + encodeURIComponent(csvContent)
+        );
       }
     },
   },
@@ -161,5 +296,51 @@ export default {
 .title-wrapper {
   display: flex;
   justify-content: space-between;
+}
+
+.tplex-csv-section {
+  border: 1px solid #ddd;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  border-radius: 6px;
+  background-color: #fcfcfc;
+  box-shadow: 0 2px 3px rgba(10, 10, 10, 0.1), 0 0 0 1px rgba(10, 10, 10, 0.1);
+}
+
+/* Styles for the CSV table container */
+.csv-table-container {
+  max-height: 250px; /* Max height for vertical scroll */
+  overflow: auto; /* Enable both horizontal and vertical scrollbars */
+  position: relative; /* Needed for sticky header */
+  border: 1px solid #eee; /* Light border around the scrollable area */
+  border-radius: 4px;
+}
+
+.csv-table-container table {
+  width: 100%;
+  min-width: fit-content; /* Allow table to be wider than container */
+  border-collapse: collapse;
+}
+
+.csv-table-container thead th {
+  position: sticky; /* Make headers sticky */
+  top: 0;
+  background-color: #f5f5f5; /* Light background for sticky header */
+  z-index: 10; /* Ensure header is above scrolling content */
+  padding: 0.75rem 1rem; /* Adjust padding as needed */
+  border-bottom: 2px solid #dbdbdb;
+  text-align: left;
+}
+
+.csv-table-container tbody tr td {
+  padding: 0.5rem 1rem; /* Adjust padding as needed */
+  white-space: nowrap; /* Prevent text wrapping in cells by default */
+  overflow: hidden; /* Hide overflow */
+  text-overflow: ellipsis; /* Add ellipsis for hidden text */
+  max-width: 200px; /* Limit cell width to avoid excessively wide columns */
+}
+
+.csv-table-container tbody tr:last-child td {
+  border-bottom: none; /* Remove bottom border for the last row if desired */
 }
 </style>
