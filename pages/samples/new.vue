@@ -98,6 +98,13 @@
           <b-field>
             <b-checkbox v-model="isTplexChecked"> Is Tplex sample? </b-checkbox>
           </b-field>
+          <b-field>
+            <div v-if="isTplexChecked">
+              Please fill out the above fields, even if you need to give generic
+              or vague or best guess answers. You can reference the .csv as part
+              of this too.
+            </div>
+          </b-field>
 
           <b-field
             v-if="isTplexChecked"
@@ -175,7 +182,12 @@ export default {
           (s) => s.name
         );
 
-        const isAdmin = app?.$auth?.user && app.$auth.user.isAdmin;
+        const loggedInUsername = app?.$auth?.user?.username;
+
+        const isAdmin =
+          loggedInUsername &&
+          process?.env?.ENA_ADMINS?.length &&
+          process.env.ENA_ADMINS.includes(loggedInUsername);
 
         return {
           isAdmin,
