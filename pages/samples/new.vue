@@ -185,8 +185,8 @@ export default {
           project: res.data.project,
           invalidSampleNames: existingSampleNamesForThisProject,
           isTplexChecked: false, // New: Control for "Is Tplex sample?" checkbox
-          sample: {
-            /* fields */
+          /*sample: {
+            // fields
             name: "Gasprd",
             scientificName: "Honus Maximum",
             commonName: "Geoffrey",
@@ -194,23 +194,23 @@ export default {
             conditions: "He understand sfootball, he's a quick learner.",
             tplexCsv: null, // New: To store the raw CSV string
 
+            // shared fields
+            project: res.data.project.id,
+            additionalFiles: [],
+          },*/
+          sample: {
+            /* fields */
+            name: "",
+            scientificName: "",
+            commonName: "",
+            ncbi: null,
+            conditions: "",
+            tplexCsv: null, // New: To store the raw CSV string
+
             /** shared fields */
             project: res.data.project.id,
             additionalFiles: [],
           },
-          // sample: {
-          //   /* fields */
-          //   name: "",
-          //   scientificName: "",
-          //   commonName: "",
-          //   ncbi: null,
-          //   conditions: "",
-          //   tplexCsv: null, // New: To store the raw CSV string
-
-          //   /** shared fields */
-          //   project: res.data.project.id,
-          //   additionalFiles: [],
-          // },
         };
       }
       return error({ statusCode: 500, message: "Project not found" });
