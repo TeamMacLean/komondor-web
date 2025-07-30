@@ -14,6 +14,17 @@
           />
         </div>
 
+        <div class="buttons-wrapper">
+          <b-button
+            type="is-secondary"
+            icon-left="content-copy"
+            @click="cloneSample"
+            :loading="isCloning"
+          >
+            Clone data for new Sample
+          </b-button>
+        </div>
+
         <p class="subtitle">
           <nuxt-link
             :to="{ name: 'user', query: { username: sample.owner } }"
@@ -253,6 +264,15 @@ export default {
     },
   },
   methods: {
+    cloneSample() {
+      this.$router.push({
+        path: "/samples/new",
+        query: {
+          clonedSampleId: this.sample._id,
+          project: this.sample.project._id,
+        },
+      });
+    },
     downloadTplexCsv() {
       if (!this.sample || !this.sample.tplexCsv) {
         this.$buefy.toast.open({
@@ -296,6 +316,11 @@ export default {
 .title-wrapper {
   display: flex;
   justify-content: space-between;
+  align-items: center;
+}
+
+.buttons-wrapper {
+  margin-bottom: 1rem;
 }
 
 .tplex-csv-section {

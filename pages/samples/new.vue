@@ -15,7 +15,7 @@
             <b-field
               label="Name*"
               :type="isWarningStyleForNameInput"
-              message="A choose a short, informative name to identify your sample, ideally between 10 and 80 characters."
+              message="Choose a short, informative name to identify your sample, ideally between 10 and 80 characters."
             >
               <b-input
                 id="name"
@@ -166,6 +166,7 @@ export default {
       });
 
       if (res.status === 200) {
+        // Project data and validation checks
         if (
           res.data.project &&
           res.data.project.group &&
@@ -183,50 +184,76 @@ export default {
         );
 
         const loggedInUsername = app?.$auth?.user?.username;
-
         const isAdmin =
           loggedInUsername &&
           process?.env?.ENA_ADMINS?.length &&
           process.env.ENA_ADMINS.includes(loggedInUsername);
 
-        return {
+        // Base object for the component data
+        let returnObj = {
           isAdmin,
           isSubmitting: false,
-          additionalUploadsComplete: true, // Renamed for clarity
-          tplexCsvUploadComplete: true, // New: Track Tplex CSV upload status
+          additionalUploadsComplete: true,
+          tplexCsvUploadComplete: true,
           project: res.data.project,
           invalidSampleNames: existingSampleNamesForThisProject,
-          isTplexChecked: false, // New: Control for "Is Tplex sample?" checkbox
-          /*sample: {
-            // fields
-            name: "Gasprd",
-            scientificName: "Honus Maximum",
-            commonName: "Geoffrey",
-            ncbi: 3953,
-            conditions: "He understand sfootball, he's a quick learner.",
-            tplexCsv: null, // New: To store the raw CSV string
-
-            // shared fields
-            project: res.data.project.id,
-            additionalFiles: [],
-          },*/
+          isTplexChecked: false,
           sample: {
-            /* fields */
             name: "",
             scientificName: "",
             commonName: "",
             ncbi: null,
             conditions: "",
-            tplexCsv: null, // New: To store the raw CSV string
-
-            /** shared fields */
+            tplexCsv: null, // Handled by uploader
             project: res.data.project.id,
-            additionalFiles: [],
+            additionalFiles: [], // Handled by uploader
           },
         };
-      }
+
+        // Handle cloning if clonedSampleId is present in the query
+        if (route.query.clonedSampleId) {
+          const clonedSampleId = route.query.clonedSampleId;
+          try {
+            const clonedSampleResponse = await $axios.get("/sample", {
+              params: { id: clonedSampleId },
+            });
+            if (
+              clonedSampleResponse.status === 200 &&
+              clonedSampleResponse.data.sample
+            ) {
+              let clonedSample = clonedSampleResponse.data.sample;
+
+              const plusOneClonedSampleName = clonedSample.name
+                ? `${clonedSample.name}_clone`
+                : "";
+
+              returnObj.sample.name = plusOneClonedSampleName || "";
+              returnObj.sample.scientificName =
+                clonedSample.scientificName || "";
+              returnObj.sample.commonName = clonedSample.commonName || "";
+              returnObj.sample.ncbi = clonedSample.ncbi || null;
+              returnObj.sample.conditions = clonedSample.conditions || "";
+            }
+          } catch (cloneErr) {
+            console.error("Error fetching cloned sample data:", cloneErr);
+            // Optionally show a toast to the user that cloning failed for this field
+            if (app.$buefy && app.$buefy.toast) {
+              app.$buefy.toast.open({
+                message: "Could not pre-fill data from cloned sample.",
+                type: "is-warning",
+              });
+            }
+            // We still want to let the user fill out the form when errored, so we just log the error.
+          }
+        }
+
+        return returnObj;
+      } // End of if (res.status === 200)
+
+      // If project fetch failed
       return error({ statusCode: 500, message: "Project not found" });
     } catch (err) {
+      // Catch block for the initial project fetch or other errors
       console.error(err);
       return error({ statusCode: 500, message: "Project not found" });
     }
