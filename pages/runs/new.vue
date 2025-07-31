@@ -144,23 +144,31 @@
           <div class="column">
             <b-field
               label="Library type*"
-              message="Do you have unpaired, paired, or mate-pair reads? Please upload compressed files where possible - ENA only accepts these in some cases (e.g. use .fq.gz, not .fastq)"
+              message="Do you have unpaired, paired, or mate-pair reads? Please only upload compressed files - ENA only accepts these in some cases (e.g. use .fq.gz, not .fastq). Please only use 'indexed' options if you have the appropriate files (e.g., i5, i7, etc.)."
             >
               <b-select
                 v-model="run.libraryType"
                 placeholder="Select a library type"
                 required
                 expanded
+                :disabled="libraryTypeLocked"
               >
                 <option
                   v-for="option in libraryTypes"
                   :key="option._id"
                   :value="option.value"
                 >
-                  {{ computeOptionString(option) }}
+                  <span>{{ computeOptionString(option) }}</span>
+                  <span class="bold">{{ computeIndexStatus(option) }}</span>
                 </option>
               </b-select>
             </b-field>
+            <div v-if="libraryTypeLocked">
+              <i
+                >Cannot alter library type once HPC directory has been
+                selected.</i
+              >
+            </div>
           </div>
 
           <div class="column">
@@ -201,8 +209,10 @@
           <b-tab-item key="hpc-mv-tab" value="hpc-mv" label="HPC upload">
             <SpecifiedLocationFileSelector
               :paired="paired"
+              :indexed="indexed"
               :allowed-extensions="allowedExtensions"
               :on-validation-change-status="onHpcUploadValidationChangeStatus"
+              :lockLibraryType="lockLibraryTypeToggleOn"
             >
               <!-- TODO: 
               - if paired = true, ALL selections should be paired
@@ -214,13 +224,15 @@
             key="local-filesystem-tab"
             value="local-filesystem"
             label="Local filesystem upload"
+            :disabled="isLocalFileSystemDisabled"
           >
-            <UploadRawInfo :paired="paired" />
+            <UploadRawInfo :paired="paired" :indexed="indexed" />
             <b-field>
               <UploadRaw
                 v-if="paired !== null"
                 ref="rawUploader"
                 :paired="paired"
+                :indexed="indexed"
                 :on-upload-status-change="onRawUploaderChange"
                 :allowed-extensions="allowedExtensions"
               />
@@ -317,6 +329,7 @@ export default {
           tabs: ["hpc-mv", "local-filesystem"],
           validatedHpcUploads: false,
           formConsentCheckbox: false,
+          libraryTypeLocked: false,
         };
 
         if (route.query.clonedRunId) {
@@ -376,6 +389,13 @@ export default {
         ? this.run.libraryType.toLowerCase().includes("oxford nanopore")
         : false;
     },
+    isLocalFileSystemDisabled() {
+      const found = this.libraryTypes.filter(
+        (lt) => lt.value == this.run.libraryType
+      );
+      this.activeTab = "hpc-mv";
+      return !!(found.length && found[0].indexed);
+    },
     shouldShowAllUploadRawMsg() {
       return (
         this.activeTab !== "hpc-mv" && this.isAnyRawReadFileFieldIncomplete
@@ -414,6 +434,9 @@ export default {
     },
     paired() {
       return this.libraryTypeObject ? this.libraryTypeObject.paired : null;
+    },
+    indexed() {
+      return this.libraryTypeObject ? this.libraryTypeObject.indexed : null;
     },
     allowedExtensions() {
       if (
@@ -464,6 +487,9 @@ export default {
     this.$store.dispatch("refreshOptions");
   },
   methods: {
+    lockLibraryTypeToggleOn() {
+      this.libraryTypeLocked = true;
+    },
     onToggleFormConsentCheckbox(newVal) {
       this.formConsentCheckbox = newVal;
     },
@@ -479,10 +505,15 @@ export default {
     computeOptionString(option) {
       const typesSupported = !option.extensions.length
         ? " (any file type allowed)"
-        : " (permitted file types:" +
-          option.extensions.map((ext) => " " + ext) +
+        : " (" +
+          option.extensions.map((ext, index) =>
+            index === 0 ? ext : " " + ext
+          ) +
           ")";
       return option.value + typesSupported;
+    },
+    computeIndexStatus(option) {
+      return option.indexed ? " - STRICT INDEXING REQUIRED" : "";
     },
     onUploaderChange(val) {
       if (typeof val === "boolean") {
@@ -527,6 +558,7 @@ export default {
       this.run.sample = this.sample._id; //required
 
       this.run.paired = this.paired;
+      this.run.indexed = this.indexed;
 
       if (this.activeTab === "hpc-mv") {
         this.run.rawFiles = this.run.hpcRawFiles.files;
@@ -612,5 +644,8 @@ export default {
   font-size: 1rem;
   font-weight: 700;
   margin-bottom: 0.5em;
+}
+.bold {
+  font-weight: bold;
 }
 </style>
