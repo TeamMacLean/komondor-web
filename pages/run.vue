@@ -54,7 +54,6 @@
             type="is-secondary"
             icon-left="content-copy"
             @click="cloneRun"
-            :loading="isCloning"
           >
             Clone data for new Run
           </b-button>

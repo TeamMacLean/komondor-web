@@ -19,7 +19,6 @@
             type="is-secondary"
             icon-left="content-copy"
             @click="cloneSample"
-            :loading="isCloning"
           >
             Clone data for new Sample
           </b-button>
