@@ -156,9 +156,6 @@ export default {
   name: "NewProject",
   components: { Uploader, FormConsentCheckbox, CollapsibleUploaderHelp },
   middleware: "auth",
-  // mounted(){
-  //   console.log('mounted, this.isSubmitting:', this.isSubmitting, 'canSubmit:', this.canSubmit);
-  // },
   asyncData({ $axios, error }) {
     return $axios
       .get("/projects/names")
@@ -176,60 +173,54 @@ export default {
               group: "",
               shortDesc: "",
               longDesc: "",
-
-              /** TEMP DATA 
-              name: "Hot shooting war #" + Math.round(Math.random() * 10000),
-              group: "bioinformatics",
-              shortDesc:
-                "Vestibulum id ligula porta felis euismod semper. Maecenas sed diam eget risus varius blandit sit amet non magna.",
-              longDesc:
-                "Donec ullamcorper nulla non metus auctor fringilla. Nullam id dolor id nibh ultricies vehicula ut id elit. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Vivamus sagittis lacus vel augue laoreet rutrum faucibus dolor auctor. Vestibulum id ligula porta felis euismod semper.",
-              */
               doNotSendToEna: false,
               doNotSendToEnaReason: null,
               additionalFiles: [],
-            } /*,
-            isSubmitting: false, TODO for loading style on button when applicable / i can get to work */,
+            },
           };
         } else {
           error({ statusCode: 501, message: "Unknown error" });
         }
       })
       .catch((err) => {
-        console.error(err);
+        console.error("Error fetching project names:", err); // More specific error log
         error({ statusCode: 501, message: "Unknown error" });
       });
   },
   async fetch({ store }) {
-    // NB don't need return necessarily
-
-    console.log("auth for user", this.$auth);
-
     await store.dispatch("refreshGroups");
   },
   computed: {
     onlyOneGroup() {
-      return this.$store.state.groups.filter((f) => !f.deleted).length === 1;
+      // Check if there's exactly one non-deleted group
+      const nonDeletedGroups = this.$store.state.groups.filter(
+        (f) => !f.deleted
+      );
+      return nonDeletedGroups.length === 1;
     },
     isWarningStyleForNameInput() {
       return this.bad.nameList.includes(this.project.name) ? "is-danger" : "";
     },
     canSubmit() {
-      if (
-        this.additionalUploadsComplete &&
-        !this.isWarningStyleForNameInput &&
-        !this.isSubmitting &&
-        // hacky
+      const allFieldsFilled =
         (this.project.group || this.onlyOneGroup) &&
         this.project.name &&
         this.project.shortDesc &&
-        this.project.longDesc &&
-        this.consent
-      ) {
-        return true;
-      } else {
-        return false;
-      }
+        this.project.longDesc;
+
+      const isEnaReasonValid = this.project.doNotSendToEna
+        ? this.project.doNotSendToEnaReason &&
+          this.project.doNotSendToEnaReason.length >= 50
+        : true;
+
+      return (
+        this.additionalUploadsComplete &&
+        !this.isWarningStyleForNameInput &&
+        !this.isSubmitting &&
+        allFieldsFilled &&
+        this.consent &&
+        isEnaReasonValid
+      );
     },
     selectedGroup() {
       if (this.project.group) {
@@ -239,6 +230,17 @@ export default {
         if (found.length) {
           return found[0];
         } else {
+          // --- DEBUGGING: Log error if selected group ID doesn't match any found group ---
+          // This might indicate an issue with the stored group ID or the filtering.
+          console.error("Selected group ID not found in available groups.", {
+            selectedGroupId: this.project.group,
+            availableGroups: this.$store.state.groups,
+            filteredGroupsCount: this.$store.state.groups.filter(
+              (f) => !f.deleted
+            ).length,
+            errorContext: "selectedGroup computed property",
+            currentUser: this.$auth?.user,
+          });
           return null;
         }
       } else {
@@ -251,10 +253,6 @@ export default {
       this.consent = newState;
     },
     onUploaderChange() {
-      //
-      // if (typeof val === "boolean") {
-      //   this.additionalUploadsComplete = val;
-      // }
       this.updateAdditionalFiles();
     },
     updateAdditionalFiles() {
@@ -263,84 +261,88 @@ export default {
           this.$refs["additionalUploader"].getFiles();
       }
     },
-    // processInvalidFormFieldError(errorMessage, badListKey, newBadItem){
-    //   this.bad[badListKey].push(newBadItem);
-    //   this.$buefy.dialog.alert({
-    // },
-    // isFormValid() {
-    //   const wrongNameLength = false;
-    //   if (wrongNameLength){
-    //     this.processInvalidFormFieldError('Project name not the correct length', 'nameList', this.project.name)
-    //     return false;
-    //   }
-    //   return true;
-    // },
     postForm() {
-      const targetUsername = this.$auth.user.username;
+      const targetUsername = this.$auth?.user?.username;
       if (!targetUsername) {
+        console.error("Authentication Error: User or username missing.", {
+          auth: this.$auth,
+          user: this.$auth?.user,
+          errorContext: "postForm - User authentication check",
+        });
         throw new Error(
           "Issue authenticating you. Please sign in and out of this website and try again."
         );
       }
 
       this.isSubmitting = true;
-      console.log(
-        "posting form, this.isSubmitting:",
-        this.isSubmitting,
-        "canSubmit:",
-        this.canSubmit
-      );
-
       this.updateAdditionalFiles();
 
-      // HACKY
+      // Handle group selection logic if only one group is available
       if (this.onlyOneGroup) {
-        this.project.group = this.$store.state.groups.filter(
+        const availableGroup = this.$store.state.groups.filter(
           (f) => !f.deleted
-        )[0]._id;
+        )[0];
+        if (availableGroup) {
+          this.project.group = availableGroup._id;
+        } else {
+          // --- DEBUGGING: Log error if onlyOneGroup is true but no group found ---
+          // This should ideally be caught by the watcher, but as a fallback.
+          console.error(
+            "Logic Error: onlyOneGroup is true, but no group found.",
+            {
+              currentUser: this.$auth?.user,
+              groupsInStore: this.$store.state.groups,
+              errorContext: "postForm - Group assignment fallback",
+            }
+          );
+          // We can't proceed without a group
+          this.isSubmitting = false; // Reset submitting state
+          // Optionally, show a user-facing error here.
+          this.$buefy.dialog.alert({
+            title: "Configuration Error",
+            message:
+              "Cannot determine the project group. Please contact support.",
+            type: "is-danger",
+          });
+          return; // Stop form submission
+        }
       }
 
-      // HACK
-      this.project.owner = targetUsername; //required
+      // Assign the owner of the project
+      this.project.owner = targetUsername;
 
       this.$axios
         .post("/projects/new", this.project)
         .then((result) => {
-          // HACK ensure file uploads in db/hpc before reading
           setTimeout(() => {
             this.$buefy.toast.open({
               message: "Project created!",
               type: "is-success",
             });
-
             this.$router.push({
               name: "project",
               query: { id: result.data.project._id },
             });
-
             this.isSubmitting = false;
-            console.log(
-              "succesful form, this.isSubmitting:",
-              this.isSubmitting,
-              "canSubmit:",
-              this.canSubmit
-            );
           }, 3000);
         })
         .catch((err) => {
           setTimeout(() => {
-            console.error(err);
+            console.error("Error submitting form:", err);
             var errorMessage = err.message;
             if (err.message.includes("500")) {
-              const type = "Project";
               errorMessage =
-                "Unknown 500 error from server. Sorry about that." +
-                "\n" +
-                type +
-                " info may have registered in database." +
-                "\nUploads are on remote server, but may not have been registered in database and/or moved to HPC." +
-                "\nPlease check all this using this website, and notify system admin of when this happened, and which data you need cleaning up.";
+                "Unknown 500 error from server. Sorry about that. " +
+                "Your project details might have been partially saved. " +
+                "Uploads may exist on the server but might not be linked to the project. " +
+                "Please check the website and notify the system admin of the time this error occurred.";
+            } else if (err.response?.data?.error) {
+              errorMessage = err.response.data.error;
+            } else {
+              errorMessage =
+                "An unexpected error occurred. Please try again or contact support.";
             }
+
             this.$buefy.dialog.alert({
               title: "Error",
               message: errorMessage,
@@ -348,14 +350,39 @@ export default {
               hasIcon: false,
             });
             this.isSubmitting = false;
-            console.log(
-              "error submitting, this.isSubmitting:",
-              this.isSubmitting,
-              "canSubmit:",
-              this.canSubmit
-            );
           }, 2000);
         });
+    },
+  },
+  watch: {
+    "$store.state.groups": {
+      handler(newGroups) {
+        const nonDeletedGroups = newGroups.filter((f) => !f.deleted);
+        if (nonDeletedGroups.length === 0) {
+          console.error(
+            "No groups found for project creation. Cannot proceed without a group.",
+            {
+              currentUser: this.$auth?.user,
+              groupsInStore: this.$store.state.groups,
+              filteredGroups: nonDeletedGroups,
+              errorContext: "Group selection watcher",
+            }
+          );
+        } else if (nonDeletedGroups.length === 1 && !this.project.group) {
+          this.project.group = nonDeletedGroups[0]._id;
+        }
+      },
+      immediate: true,
+    },
+    "project.name": {
+      // Handler is not strictly needed here as computed property handles it
+    },
+    "project.doNotSendToEna": {
+      handler(newValue) {
+        if (!newValue) {
+          this.project.doNotSendToEnaReason = null;
+        }
+      },
     },
   },
 };
