@@ -277,61 +277,97 @@ export default {
     SpecifiedLocationFileSelector,
   },
   middleware: "auth",
-  asyncData({ route, $axios, error }) {
+  async asyncData({ route, $axios, error, app }) {
     if (!route.query.sample) {
-      error({ statusCode: 500, message: "Project not found" });
+      return error({ statusCode: 500, message: "Sample not found" });
     }
 
-    return $axios
-      .get("/sample", { params: { id: route.query.sample } })
-      .then((res) => {
-        if (res.status === 200) {
-          const existingRunNamesForThisSample = res.data.sample.runs.map(
-            (r) => r.name
-          );
-
-          return {
-            additionalUploadsComplete: true,
-            isSubmitting: false,
-            rawUploadsComplete: false,
-            sample: res.data.sample,
-            invalidRunNames: existingRunNamesForThisSample,
-            checkFiles: false,
-            run: {
-              sample: res.data.sample._id,
-              // name: "Gary Monk" + Math.floor(Math.random() * 200),
-              name: "",
-              // libraryType: "BAM",
-              libraryType: null, // e.g. 'BAM',
-              // sequencingProvider: "EL",
-              sequencingProvider: "", // e.g. 'EL'
-              // sequencingTechnology: "454 GS",
-              sequencingTechnology: null, // e.g. '454 GS'
-              // librarySource: "GENOMIC",
-              librarySource: null, // e.g. 'GENOMIC'
-              // librarySelection: "ChIP",
-              librarySelection: null, // e.g. 'ChIP'
-              // libraryStrategy: "CLONE",
-              libraryStrategy: null, // e.g. 'CLONE'
-              // insertSize: 1232,
-              insertSize: null, // e.g. 123
-              rawFiles: [],
-              additionalFiles: [],
-            },
-            isAnyRawReadFileFieldIncomplete: true,
-            activeTab: "hpc-mv",
-            tabs: ["hpc-mv", "local-filesystem"],
-            validatedHpcUploads: false,
-            formConsentCheckbox: false,
-          };
-        } else {
-          return error({ statusCode: 500, message: "Parent sample not found" });
-        }
-      })
-      .catch((err) => {
-        console.error(err);
-        error({ statusCode: 500, message: "Parent sample not found" });
+    try {
+      const res = await $axios.get("/sample", {
+        params: { id: route.query.sample },
       });
+
+      if (res.status === 200 && res.data.sample) {
+        const existingRunNamesForThisSample = res.data.sample.runs.map(
+          (r) => r.name
+        );
+
+        let returnObj = {
+          additionalUploadsComplete: true,
+          isSubmitting: false,
+          rawUploadsComplete: false,
+          sample: res.data.sample,
+          invalidRunNames: existingRunNamesForThisSample,
+          checkFiles: false,
+          run: {
+            sample: res.data.sample._id,
+            name: "",
+            libraryType: null,
+            sequencingProvider: "",
+            sequencingTechnology: null,
+            librarySource: null,
+            librarySelection: null,
+            libraryStrategy: null,
+            insertSize: null,
+            rawFiles: [],
+            additionalFiles: [],
+          },
+          isAnyRawReadFileFieldIncomplete: true,
+          activeTab: "hpc-mv",
+          tabs: ["hpc-mv", "local-filesystem"],
+          validatedHpcUploads: false,
+          formConsentCheckbox: false,
+        };
+
+        if (route.query.clonedRunId) {
+          const clonedRunId = route.query.clonedRunId;
+          try {
+            const clonedRunResponse = await $axios.get("/run", {
+              params: { id: clonedRunId },
+            });
+
+            if (
+              clonedRunResponse.status === 200 &&
+              clonedRunResponse.data.run
+            ) {
+              let clonedRun = clonedRunResponse.data.run;
+
+              const plusOneClonedRunName = clonedRun.name
+                ? `${clonedRun.name}_clone`
+                : "";
+
+              returnObj.run.name = plusOneClonedRunName || "";
+              returnObj.run.libraryStrategy = clonedRun.libraryStrategy || null;
+              returnObj.run.sequencingProvider =
+                clonedRun.sequencingProvider || "";
+              // could check dropdowns for valid values, but db wont care regardless
+              returnObj.run.sequencingTechnology =
+                clonedRun.sequencingTechnology || null;
+              returnObj.run.librarySource = clonedRun.librarySource || null;
+              returnObj.run.librarySelection =
+                clonedRun.librarySelection || null;
+              returnObj.run.libraryType = clonedRun.libraryType || null;
+              returnObj.run.insertSize = clonedRun.insertSize || null;
+            }
+          } catch (cloneErr) {
+            console.error("Error fetching cloned run data:", cloneErr);
+            if (app.$buefy && app.$buefy.toast) {
+              app.$buefy.toast.open({
+                message: "Could not pre-fill data from cloned run.",
+                type: "is-warning",
+              });
+            }
+          }
+        }
+
+        return returnObj;
+      } else {
+        return error({ statusCode: 500, message: "Parent sample not found" });
+      }
+    } catch (err) {
+      console.error(err);
+      return error({ statusCode: 500, message: "Parent sample not found" });
+    }
   },
   computed: {
     // COULD DO: make more robust

@@ -47,9 +47,17 @@
           }}
         </p>
 
-        <div class="columns">
-          <div class="column"></div>
-          <div class="column"></div>
+        <div class="columns"></div>
+
+        <div class="buttons-wrapper">
+          <b-button
+            type="is-secondary"
+            icon-left="content-copy"
+            @click="cloneRun"
+            :loading="isCloning"
+          >
+            Clone data for new Run
+          </b-button>
         </div>
 
         <div class="columns">
@@ -220,6 +228,17 @@ export default {
         error({ statusCode: 501, message: "Run not found" });
       });
   },
+  methods: {
+    cloneRun() {
+      this.$router.push({
+        path: "/runs/new",
+        query: {
+          clonedRunId: this.run._id,
+          sample: this.run.sample._id,
+        },
+      });
+    },
+  },
   computed: {
     insertSizeString() {
       const insertSize = this.run.insertSize;
@@ -242,5 +261,10 @@ export default {
 .title-wrapper {
   display: flex;
   justify-content: space-between;
+  align-items: center;
+}
+
+.buttons-wrapper {
+  margin-bottom: 2rem;
 }
 </style>
