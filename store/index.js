@@ -160,7 +160,7 @@ export const actions = {
     return this.$axios
       .get("/groups")
       .then(({ data }) => {
-        //console.log("refreshGroups", data.groups);
+        console.log("refreshGroups length", data.groups.length);
 
         commit("setGroups", data.groups);
       })

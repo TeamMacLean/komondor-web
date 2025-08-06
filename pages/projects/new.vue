@@ -29,7 +29,7 @@
           <div class="column">
             <!--Group-->
             <b-field
-              v-if="$store.state.groups.filter((f) => !f.deleted).length > 1"
+              v-if="areMultipleAvailableGroups"
               label="Group*"
               message="The group that this project belongs to."
             >
@@ -39,7 +39,7 @@
                 required
               >
                 <option
-                  v-for="group in $store.state.groups.filter((f) => !f.deleted)"
+                  v-for="group in this.availableGroups"
                   :key="group._id"
                   :value="group._id"
                 >
@@ -54,7 +54,7 @@
             >
               <div class="onlyOneSelectOption">
                 <!-- <input v-model="project.group" type="hidden" /> -->
-                {{ $store.state.groups.filter((f) => !f.deleted)[0].name }}
+                {{ this.availableGroups[0].name }}
               </div>
             </b-field>
             <b-field v-else>
@@ -191,12 +191,19 @@ export default {
     await store.dispatch("refreshGroups");
   },
   computed: {
-    onlyOneGroup() {
-      // Check if there's exactly one non-deleted group
-      const nonDeletedGroups = this.$store.state.groups.filter(
+    availableGroups() {
+      console.log("stateGroups length", this.$store.state.groups.length);
+      const availableGroupsResult = this.$store.state.groups.filter(
         (f) => !f.deleted
       );
-      return nonDeletedGroups.length === 1;
+      console.log("availableGroups length", availableGroupsResult.length);
+      return availableGroupsResult;
+    },
+    areMultipleAvailableGroups() {
+      return this.availableGroups.length > 1;
+    },
+    onlyOneGroup() {
+      return this.availableGroups.length === 1;
     },
     isWarningStyleForNameInput() {
       return this.bad.nameList.includes(this.project.name) ? "is-danger" : "";
@@ -224,7 +231,7 @@ export default {
     },
     selectedGroup() {
       if (this.project.group) {
-        const found = this.$store.state.groups.filter(
+        const found = this.availableGroups.filter(
           (f) => f._id === this.project.group
         );
         if (found.length) {
@@ -234,10 +241,7 @@ export default {
           // This might indicate an issue with the stored group ID or the filtering.
           console.error("Selected group ID not found in available groups.", {
             selectedGroupId: this.project.group,
-            availableGroups: this.$store.state.groups,
-            filteredGroupsCount: this.$store.state.groups.filter(
-              (f) => !f.deleted
-            ).length,
+            availableGroupsCount: this.availableGroups.length,
             errorContext: "selectedGroup computed property",
             currentUser: this.$auth?.user,
           });
@@ -279,33 +283,7 @@ export default {
 
       // Handle group selection logic if only one group is available
       if (this.onlyOneGroup) {
-        const availableGroup = this.$store.state.groups.filter(
-          (f) => !f.deleted
-        )[0];
-        if (availableGroup) {
-          this.project.group = availableGroup._id;
-        } else {
-          // --- DEBUGGING: Log error if onlyOneGroup is true but no group found ---
-          // This should ideally be caught by the watcher, but as a fallback.
-          console.error(
-            "Logic Error: onlyOneGroup is true, but no group found.",
-            {
-              currentUser: this.$auth?.user,
-              groupsInStore: this.$store.state.groups,
-              errorContext: "postForm - Group assignment fallback",
-            }
-          );
-          // We can't proceed without a group
-          this.isSubmitting = false; // Reset submitting state
-          // Optionally, show a user-facing error here.
-          this.$buefy.dialog.alert({
-            title: "Configuration Error",
-            message:
-              "Cannot determine the project group. Please contact support.",
-            type: "is-danger",
-          });
-          return; // Stop form submission
-        }
+        this.project.group = this.availableGroups[0]._id;
       }
 
       // Assign the owner of the project
@@ -355,21 +333,20 @@ export default {
     },
   },
   watch: {
-    "$store.state.groups": {
+    availableGroups: {
       handler(newGroups) {
-        const nonDeletedGroups = newGroups.filter((f) => !f.deleted);
-        if (nonDeletedGroups.length === 0) {
+        if (newGroups.length === 0) {
           console.error(
             "No groups found for project creation. Cannot proceed without a group.",
             {
               currentUser: this.$auth?.user,
-              groupsInStore: this.$store.state.groups,
-              filteredGroups: nonDeletedGroups,
+              groupsInStore: this.availableGroups,
+              filteredGroups: newGroups,
               errorContext: "Group selection watcher",
             }
           );
-        } else if (nonDeletedGroups.length === 1 && !this.project.group) {
-          this.project.group = nonDeletedGroups[0]._id;
+        } else if (newGroups.length === 1 && !this.project.group) {
+          this.project.group = newGroups[0]._id;
         }
       },
       immediate: true,
