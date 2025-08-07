@@ -192,11 +192,9 @@ export default {
   },
   computed: {
     availableGroups() {
-      console.log("stateGroups length", this.$store.state.groups.length);
       const availableGroupsResult = this.$store.state.groups.filter(
         (f) => !f.deleted
       );
-      console.log("availableGroups length", availableGroupsResult.length);
       return availableGroupsResult;
     },
     areMultipleAvailableGroups() {
