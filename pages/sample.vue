@@ -147,6 +147,9 @@
             :parent-path="sample.path"
           />
         </b-field>
+        <b-field label="File path">
+          <p>/tsl/data/reads{{ sample.path }}</p>
+        </b-field>
         <hr />
         <p class="title is-4">Runs</p>
         <RunList

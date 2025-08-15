@@ -98,11 +98,21 @@
           </div>
         </div>
 
-        <b-field label="Insert Size">
-          <p class="bottomPadding">
-            {{ this.insertSizeString }}
-          </p>
+        <div class="columns">
+          <div class="column">
+            <b-field label="Insert Size">
+              <p class="bottomPadding">
+                {{ this.insertSizeString }}
+              </p>
+            </b-field>
+          </div>
+        </div>
+
+        <b-field label="File path">
+          <p>/tsl/data/reads{{ run.path }}</p>
         </b-field>
+
+        <div class="bottomPadding"></div>
 
         <!-- TODO additioanlfilelist and readlist could be recombined again -->
 

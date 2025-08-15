@@ -124,6 +124,10 @@
           />
         </b-field>
 
+        <b-field label="File path">
+          <p>/tsl/data/reads{{ project.path }}</p>
+        </b-field>
+
         <hr />
 
         <p class="title is-4">Samples</p>
