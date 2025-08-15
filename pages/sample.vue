@@ -4,7 +4,7 @@
       <div v-if="sample">
         <div class="title-wrapper">
           <div class="title">
-            {{ sample.scientificName }}
+            {{ sample.scientificName }} - {{ sample.name }}
           </div>
           <AddAccessionModal
             v-if="!!showAddAcession"
