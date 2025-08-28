@@ -19,10 +19,10 @@
                 @click="searchType('sample')"
                 :disabled="getDisabledStatus('samples')"
               ></b-menu-item>
-              <b-menu-item 
-                icon="dna"                 
+              <b-menu-item
+                icon="dna"
                 :label="getComputedLabel('runs')"
-                :active="type === 'run'" 
+                :active="type === 'run'"
                 @click="searchType('run')"
                 :disabled="getDisabledStatus('runs')"
               ></b-menu-item>
@@ -42,26 +42,44 @@
               type="is-danger"
               aria-close-label="Close notification"
               role="alert"
-            >{{this.error}}</b-notification>
+              >{{ this.error }}</b-notification
+            >
             <!-- <b-icon pack="fas" icon="sync-alt" size="is-large" custom-class="fa-spin"></b-icon> -->
             <div v-if="isSearching">
               <b-notification :closable="false">
                 Searching...
-                <b-loading :is-full-page="false" :active="true" :can-cancel="false"></b-loading>
+                <b-loading
+                  :is-full-page="false"
+                  :active="true"
+                  :can-cancel="false"
+                ></b-loading>
               </b-notification>
             </div>
             <div v-if="!isSearching">
               <div v-if="!totalResultsLength">
-                <p v-if="totalResultsLength" class="title is-4">Select type to search</p>
-                <p v-else class="title is-5">No results found for "{{query}}".</p>
+                <p v-if="totalResultsLength" class="title is-4">
+                  Select type to search
+                </p>
+                <p v-else class="title is-5">
+                  No results found for "{{ query }}".
+                </p>
               </div>
               <div v-else>
-                <p class="title is-4">Showing {{typeResultsLength}} {{type}} {{countLingo}} for "{{query}}"</p>
+                <p class="title is-4">
+                  Showing {{ typeResultsLength }} {{ type }}
+                  {{ countLingo }} for "{{ query }}"
+                </p>
                 <div v-if="type === 'project'">
-                  <ProjectList :projects="results.projects" showNewButton="false" />
+                  <ProjectList
+                    :projects="results.projects"
+                    showNewButton="false"
+                  />
                 </div>
                 <div v-if="type === 'sample'">
-                  <SampleList :samples="results.samples" showNewButton="false" />
+                  <SampleList
+                    :samples="results.samples"
+                    showNewButton="false"
+                  />
                 </div>
                 <div v-if="type === 'run'">
                   <RunList :runs="results.runs" showNewButton="false" />
@@ -83,10 +101,10 @@ import RunList from "../components/runs/RunList";
 export default {
   components: { ProjectList, SampleList, RunList },
   watch: {
-    '$route.query': '$fetch'
+    "$route.query": "$fetch",
   },
-  async fetch(){
-    this.query = this.$route.query.query
+  async fetch() {
+    this.query = this.$route.query.query;
     this.searchAndUpdateType();
   },
   data() {
@@ -95,7 +113,7 @@ export default {
       type: null,
       query: this.$route.query.query,
       results: {},
-      error: null
+      error: null,
     };
   },
   mounted() {
@@ -103,22 +121,33 @@ export default {
   },
   computed: {
     countLingo() {
-      if (this.type && this.results && this.results[(this.type + 's')] && this.results[(this.type + 's')].length){
-        return this.type + ' ' + (this.results[(this.type + 's')].length !== 1)
+      if (
+        this.type &&
+        this.results &&
+        this.results[this.type + "s"] &&
+        this.results[this.type + "s"].length
+      ) {
+        return this.type + " " + (this.results[this.type + "s"].length !== 1)
           ? "results"
-          : "result"
+          : "result";
       } else {
-        return '';
+        return "";
       }
     },
     totalResultsLength() {
-      const total = this.results.projects?.length + this.results.samples?.length + this.results.runs?.length;
+      const total =
+        this.results.projects?.length +
+        this.results.samples?.length +
+        this.results.runs?.length;
       return total || 0;
     },
     typeResultsLength() {
-      var result = this.results && this.results[(this.type + 's')] && this.results[(this.type + 's')].length;
+      var result =
+        this.results &&
+        this.results[this.type + "s"] &&
+        this.results[this.type + "s"].length;
       return result;
-    }
+    },
   },
   methods: {
     setQuery(query) {
@@ -134,70 +163,50 @@ export default {
       this.$axios
         .get(url, {
           params: {
-            query: this.$route.query.query
-          }
+            query: this.$route.query.query,
+          },
         })
-        .then(res => {
+        .then((res) => {
           this.isSearching = false;
           // console.log('asda ', this.results)
-          var parsedObj = JSON.parse(JSON.stringify(res.data.results))
+          var parsedObj = JSON.parse(JSON.stringify(res.data.results));
 
           this.results = {};
 
-          this.results.projects = parsedObj.projects
-          this.results.samples = parsedObj.samples
-          this.results.runs = parsedObj.runs
-          var totalResultsLength = 
-            this.results.projects ? this.results.projects.length : 0 + 
-            this.results.samples ? this.results.samples.length : 0 + 
-            this.results.runs ? this.results.runs.length : 0
-          ;
+          this.results.projects = parsedObj.projects;
+          this.results.samples = parsedObj.samples;
+          this.results.runs = parsedObj.runs;
 
-          if (this.results.projects && this.results.projects.length){
-            this.type = 'project'
-          } else if (this.results.samples && this.results.samples.length){
-            this.type = 'sample'
-          } else if (this.results.runs && this.results.runs.length){
-            this.type = 'run'
-          // } else if (!totalResultsLength) {
-          //   this.type = null;
+          if (this.results.projects && this.results.projects.length) {
+            this.type = "project";
+          } else if (this.results.samples && this.results.samples.length) {
+            this.type = "sample";
+          } else if (this.results.runs && this.results.runs.length) {
+            this.type = "run";
           } else {
             this.type = null;
           }
-          //console.log('lamb', this.results)
         })
-        .catch(err => {
+        .catch((err) => {
           this.isSearching = false;
           this.error = err;
         });
     },
-    // searchProjects() {
-    //   this.$router.push({
-    //     name: "search",
-    //     query: { type: "project", query: this.query }
-    //   });
-    // },
     searchType(type) {
       this.type = type;
     },
     getComputedLabel(type) {
-      return `${type.charAt(0).toUpperCase() + type.slice(1)} (${ this.results?.[type]?.length })`
+      return `${type.charAt(0).toUpperCase() + type.slice(1)} (${
+        this.results?.[type]?.length
+      })`;
     },
     getDisabledStatus(type) {
-      const result = !this.results?.[type]?.length
-      // console.log('res', this.results?.projects?.length, result ? 'disabled' : 'not disabled')
-      return result
-    }
-    // searchReads() {
-    //   this.$router.push({
-    //     name: "search",
-    //     query: { type: "read", query: this.query }
-    //   });
-    // }
-  }
+      const result = !this.results?.[type]?.length;
+      return result;
+    },
+  },
 };
 </script>
-
 
 <style scoped>
 @media (max-width: 769px) {
@@ -205,7 +214,6 @@ export default {
     display: flex;
   }
   .menu-list li {
-    /* width:25%; */
     flex-grow: 1;
     text-align: center;
   }

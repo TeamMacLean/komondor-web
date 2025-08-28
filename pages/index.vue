@@ -2,31 +2,23 @@
   <div>
     <Home v-if="renderHome"></Home>
     <div v-else>
-      <section class="hero is-medium is-primary" style="height:calc(100vh - 46px);">
+      <section
+        class="hero is-medium is-primary"
+        style="height: calc(100vh - 46px)"
+      >
         <div class="hero-body">
           <div class="container is-large">
-            <!-- <div class="columns">
-            <div class="column">-->
             <div class="container has-text-centered-mobile">
               <h1 class="title is-1 has-text-centered">TSL Sequence Store</h1>
-
-              <!-- <h2
-                class="subtitle has-text-centered"
-              >This site is for the storage of TSL read data and its associated meta data</h2> -->
             </div>
             <br />
-            <!-- </div> -->
-            <!-- <div class="column"> -->
             <SigninCard hideHeader="true" />
-            <!-- </div> -->
           </div>
         </div>
-        <!-- </div> -->
       </section>
     </div>
   </div>
 </template>
-
 
 <script>
 import SigninCard from "~/components/SigninCard";
@@ -47,8 +39,8 @@ export default {
   computed: {
     renderHome() {
       return this.$store.state.auth.loggedIn;
-    }
-  }
+    },
+  },
 };
 </script>
 
