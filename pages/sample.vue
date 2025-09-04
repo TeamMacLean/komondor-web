@@ -64,30 +64,30 @@
           }}
         </p>
 
-        <div class="columns">
-          <div class="column">
-            <b-field label="Scientific Name">
-              <p>{{ sample.scientificName }}</p>
-            </b-field>
+        <div v-if="!sample.tplexCsv">
+          <div class="columns">
+            <div class="column">
+              <b-field label="Scientific Name">
+                <p>{{ sample.scientificName }}</p>
+              </b-field>
+            </div>
+            <div class="column">
+              <b-field label="Common Name">
+                <p>{{ sample.commonName }}</p>
+              </b-field>
+            </div>
+            <div class="column">
+              <b-field label="NCBI Taxonomy ID">
+                <p>{{ sample.ncbi }}</p>
+              </b-field>
+            </div>
           </div>
-          <div class="column">
-            <b-field label="Common Name">
-              <p>{{ sample.commonName }}</p>
-            </b-field>
-          </div>
-          <div class="column">
-            <b-field label="NCBI Taxonomy ID">
-              <p>{{ sample.ncbi }}</p>
-            </b-field>
-          </div>
+
+          <b-field label="Conditions">
+            <p>{{ sample.conditions }}</p>
+          </b-field>
         </div>
-
-        <b-field label="Conditions">
-          <p>{{ sample.conditions }}</p>
-        </b-field>
-
-        <!-- New: TPLEX CSV DISPLAY SECTION (Now with table preview) -->
-        <div v-if="sample.tplexCsv" class="tplex-csv-section box">
+        <div v-else class="tplex-csv-section box">
           <h2 class="title is-5">Tplex Data</h2>
           <b-field label="Tplex CSV Content Preview">
             <div class="csv-table-container">
@@ -141,7 +141,11 @@
         </div>
         <!-- End new section -->
 
-        <b-field label="Additional Files">
+        <b-field
+          v-if="!sample.tplexCsv"
+          label="Additional Files"
+          class="additional-files-field"
+        >
           <AdditionalFileList
             :files="additionalFiles"
             :parent-path="sample.path"
@@ -369,5 +373,9 @@ export default {
 
 .csv-table-container tbody tr:last-child td {
   border-bottom: none; /* Remove bottom border for the last row if desired */
+}
+
+.additional-files-field {
+  margin-top: 2rem;
 }
 </style>

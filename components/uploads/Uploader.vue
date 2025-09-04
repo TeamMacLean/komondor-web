@@ -15,7 +15,12 @@ import "@uppy/core/dist/style.css";
 import "@uppy/dashboard/dist/style.css";
 
 export default {
-  props: ["onUploadStatusChange"],
+  props: {
+    onUploadStatusChange: {
+      type: Function,
+      default: null,
+    },
+  },
   data() {
     return {
       API_URL: process.env.API_URL,
@@ -25,8 +30,6 @@ export default {
   },
   computed: {
     readExtensions() {
-      // console.log('computed store', this.$nuxt.context.store.state.libraryTypes, 'arrayed', JSON.parse(JSON.stringify(this.$nuxt.context.store.state.libraryTypes)))
-
       const libraryTypes = JSON.parse(
         JSON.stringify(this.$nuxt.context.store.state.libraryTypes)
       );
@@ -47,14 +50,10 @@ export default {
   mounted() {
     this.uppyInstance = new Uppy({
       debug: true,
-      //store: new DefaultStore(),
       autoProceed: true,
       allowMultipleUploads: true,
       id: `uppy-${this.uppyId}`,
-      // onBeforeUpload: (currentFile, files) => {
-      //   console.log('onBeforeUpload, currentFileInfo:', currentFile, 'currentFiles', files);
-      // },
-      onBeforeFileAdded: (currentFile, files) => {
+      onBeforeFileAdded: (currentFile) => {
         var errorMsg = "";
 
         if (!this.readExtensions.length) {
@@ -95,10 +94,6 @@ export default {
 
         return true;
       },
-      // meta: {
-      // uploadID: this.uploadID,
-      // UUID: this.UUID
-      // },
       restrictions: {
         maxFileSize: 30000 * 1000000, //30g
         maxNumberOfFiles: 20,
@@ -153,8 +148,7 @@ export default {
       console.log("progress update:", progress);
     });
     this.uppyInstance.on("upload-progress", (file, progress) => {
-      const { name } = file;
-      const { uploader, bytesUploaded, bytesTotal } = progress;
+      const { bytesUploaded, bytesTotal } = progress;
       console.log(
         "upload-progress event:" +
           `${Math.round(
@@ -218,8 +212,6 @@ export default {
         }
         return f;
       });
-
-      // return this.uppyInstance.getFiles();
     },
   },
 };
