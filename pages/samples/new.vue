@@ -338,11 +338,9 @@ export default {
   computed: {
     isWarningStyleForNameInput() {
       if (this.isTplexChecked) {
-        return "";
+        return false;
       }
-      return this.invalidSampleNames.includes(this.sample.name)
-        ? "is-danger"
-        : "";
+      return this.invalidSampleNames.includes(this.sample.name);
     },
     areStandardFieldsValid() {
       if (this.isTplexChecked) {
