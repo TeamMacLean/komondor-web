@@ -370,36 +370,27 @@ export default {
     },
     canSubmit() {
       const baseChecks = this.additionalUploadsComplete && !this.isSubmitting;
+      const consentCheck = this.consentGiven;
 
-      if (!this.consentGiven) {
+      if (!consentCheck) {
+        console.log("canSubmit: Blocked by consentGiven");
         return false;
       }
 
       if (this.isTplexChecked) {
-        // For Tplex samples:
-        // - baseChecks must pass
-        // - Tplex CSV Uploader must be complete (tplexCsvUploadComplete)
-        // - tplexCsv must have content
-        // - AND: CSV must be validated (`validatedCsv`)
-        return (
-          baseChecks &&
-          this.tplexCsvUploadComplete &&
-          !!this.sample.tplexCsv &&
-          this.validatedCsv // NEW: Must be validated
-        );
+        // Tplex specific checks
+        const tplexValid = baseChecks && this.tplexCsvUploadComplete && !!this.sample.tplexCsv && this.validatedCsv;
+        console.log(`canSubmit (Tplex): baseChecks=${baseChecks}, tplexCsvUploadComplete=${this.tplexCsvUploadComplete}, hasTplexCsv=${!!this.sample.tplexCsv}, validatedCsv=${this.validatedCsv}, result=${tplexValid}`);
+        return tplexValid;
       } else {
-        // For NON-Tplex samples:
-        // - baseChecks must pass
-        // - Standard fields must be valid (areStandardFieldsValid)
-        // - Name must not be a warning (isWarningStyleForNameInput)
-        return (
-          baseChecks &&
-          this.areStandardFieldsValid &&
-          !this.isWarningStyleForNameInput
-        );
+        // Non-Tplex specific checks
+        const standardFieldsValid = this.areStandardFieldsValid;
+        const nameWarning = this.isWarningStyleForNameInput; // This should be a boolean now
+        const nonTplexValid = baseChecks && standardFieldsValid && !nameWarning;
+        console.log(`canSubmit (Non-Tplex): baseChecks=${baseChecks}, areStandardFieldsValid=${standardFieldsValid}, isWarningStyleForNameInput=${nameWarning}, !isWarningStyleForNameInput=${!nameWarning}, result=${nonTplexValid}`);
+        return nonTplexValid;
       }
     },
-  },
   methods: {
     onUploaderChange(val) {
       if (typeof val === "boolean") {
