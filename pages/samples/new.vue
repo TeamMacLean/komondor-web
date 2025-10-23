@@ -111,7 +111,7 @@
               <div class="column">
                 <b-field
                   label="Name*"
-                  :type="isWarningStyleForNameInput"
+                  :class="isWarningStyleForNameInput"
                   message="A choose a short, informative name to identify your sample, ideally between 10 and 80 characters."
                 >
                   <b-input
@@ -200,7 +200,121 @@
             <CollapsibleUploaderHelp />
           </div>
 
-          <hr />
+          <br />
+
+          <div v-if="!canSubmit" class="box is-warning mt-5">
+            <p class="title is-6 has-text-warning-dark">
+              Submission Disabled - Check these items:
+            </p>
+            <ul>
+              <li>
+                Consent Given:
+                <b-icon
+                  :icon="consentGiven ? 'check-circle' : 'alert-circle'"
+                  :type="consentGiven ? 'is-success' : 'is-danger'"
+                ></b-icon>
+              </li>
+              <li>
+                Uploads Complete:
+                <b-icon
+                  :icon="
+                    additionalUploadsComplete ? 'check-circle' : 'alert-circle'
+                  "
+                  :type="additionalUploadsComplete ? 'is-success' : 'is-danger'"
+                ></b-icon>
+              </li>
+              <li>
+                Not Submitting:
+                <b-icon
+                  :icon="!isSubmitting ? 'check-circle' : 'alert-circle'"
+                  :type="!isSubmitting ? 'is-success' : 'is-danger'"
+                ></b-icon>
+              </li>
+
+              <li v-if="!isTplexChecked">
+                Standard Fields Valid:
+                <b-icon
+                  :icon="
+                    areStandardFieldsValid ? 'check-circle' : 'alert-circle'
+                  "
+                  :type="areStandardFieldsValid ? 'is-success' : 'is-danger'"
+                ></b-icon>
+                <ul v-if="!areStandardFieldsValid" class="ml-4">
+                  <li
+                    v-if="
+                      !sample.name ||
+                      sample.name.length < 3 ||
+                      sample.name.length > 80
+                    "
+                  >
+                    Name length (3-80 chars)
+                  </li>
+                  <li v-if="invalidSampleNames.includes(sample.name)">
+                    Name already exists
+                  </li>
+                  <li
+                    v-if="
+                      !sample.scientificName || sample.scientificName.length < 5
+                    "
+                  >
+                    Scientific Name (min 5 chars)
+                  </li>
+                  <li v-if="!sample.commonName || sample.commonName.length < 3">
+                    Common Name (min 3 chars)
+                  </li>
+                  <li
+                    v-if="
+                      sample.ncbi === null ||
+                      sample.ncbi === '' ||
+                      isNaN(sample.ncbi)
+                    "
+                  >
+                    NCBI ID (must be number)
+                  </li>
+                  <li
+                    v-if="!sample.conditions || sample.conditions.length < 50"
+                  >
+                    Conditions (min 50 chars)
+                  </li>
+                </ul>
+              </li>
+
+              <li v-if="!isTplexChecked">
+                Name not in warning state:
+                <b-icon
+                  :icon="
+                    !isWarningStyleForNameInput
+                      ? 'check-circle'
+                      : 'alert-circle'
+                  "
+                  :type="
+                    !isWarningStyleForNameInput ? 'is-success' : 'is-danger'
+                  "
+                ></b-icon>
+              </li>
+
+              <li v-if="isTplexChecked">
+                Tplex CSV Uploaded:
+                <b-icon
+                  :icon="!!sample.tplexCsv ? 'check-circle' : 'alert-circle'"
+                  :type="!!sample.tplexCsv ? 'is-success' : 'is-danger'"
+                ></b-icon>
+              </li>
+              <li v-if="isTplexChecked">
+                Tplex CSV Validated:
+                <b-icon
+                  :icon="validatedCsv ? 'check-circle' : 'alert-circle'"
+                  :type="validatedCsv ? 'is-success' : 'is-danger'"
+                ></b-icon>
+              </li>
+            </ul>
+          </div>
+
+          <FormConsentCheckbox
+            :initial="consentGiven"
+            :on-toggle="onToggleConsent"
+          />
+
           <hr />
 
           <button
@@ -220,6 +334,7 @@
 import UploaderTslPlex from "~/components/uploads/UploaderTslPlex.vue";
 import Uploader from "~/components/uploads/Uploader.vue";
 import CollapsibleUploaderHelp from "~/components/formHelpers/CollapsibleUploaderHelp";
+import FormConsentCheckbox from "~/components/formHelpers/FormConsentCheckbox.vue";
 import Papa from "papaparse"; // Import papaparse for CSV parsing
 
 export default {
@@ -228,6 +343,7 @@ export default {
     UploaderTslPlex,
     Uploader,
     CollapsibleUploaderHelp,
+    FormConsentCheckbox,
   },
   middleware: "auth",
   async asyncData({ route, $axios, error, app }) {
@@ -379,19 +495,35 @@ export default {
 
       if (this.isTplexChecked) {
         // Tplex specific checks
-        const tplexValid = baseChecks && this.tplexCsvUploadComplete && !!this.sample.tplexCsv && this.validatedCsv;
-        console.log(`canSubmit (Tplex): baseChecks=${baseChecks}, tplexCsvUploadComplete=${this.tplexCsvUploadComplete}, hasTplexCsv=${!!this.sample.tplexCsv}, validatedCsv=${this.validatedCsv}, result=${tplexValid}`);
+        const tplexValid =
+          baseChecks &&
+          this.tplexCsvUploadComplete &&
+          !!this.sample.tplexCsv &&
+          this.validatedCsv;
+        console.log(
+          `canSubmit (Tplex): baseChecks=${baseChecks}, tplexCsvUploadComplete=${
+            this.tplexCsvUploadComplete
+          }, hasTplexCsv=${!!this.sample.tplexCsv}, validatedCsv=${
+            this.validatedCsv
+          }, result=${tplexValid}`
+        );
         return tplexValid;
       } else {
         // Non-Tplex specific checks
         const standardFieldsValid = this.areStandardFieldsValid;
         const nameWarning = this.isWarningStyleForNameInput; // This should be a boolean now
         const nonTplexValid = baseChecks && standardFieldsValid && !nameWarning;
-        console.log(`canSubmit (Non-Tplex): baseChecks=${baseChecks}, areStandardFieldsValid=${standardFieldsValid}, isWarningStyleForNameInput=${nameWarning}, !isWarningStyleForNameInput=${!nameWarning}, result=${nonTplexValid}`);
+        console.log(
+          `canSubmit (Non-Tplex): baseChecks=${baseChecks}, areStandardFieldsValid=${standardFieldsValid}, isWarningStyleForNameInput=${nameWarning}, !isWarningStyleForNameInput=${!nameWarning}, result=${nonTplexValid}`
+        );
         return nonTplexValid;
       }
     },
+  },
   methods: {
+    onToggleConsent(newState) {
+      this.consentGiven = newState;
+    },
     onUploaderChange(val) {
       if (typeof val === "boolean") {
         this.additionalUploadsComplete = val;
