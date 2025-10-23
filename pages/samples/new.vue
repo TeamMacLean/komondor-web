@@ -202,7 +202,7 @@
 
           <br />
 
-          <div v-if="!canSubmit" class="box is-warning mt-5">
+          <div v-if="!canSubmit && !isSubmitting" class="box is-warning mt-5">
             <p class="title is-6 has-text-warning-dark">
               Submission Disabled - Check these items:
             </p>
@@ -320,7 +320,8 @@
           <button
             type="submit"
             class="button is-success"
-            :disabled="!canSubmit"
+            :class="{ 'is-loading': isSubmitting }"
+            :disabled="!canSubmit || isSubmitting"
           >
             Create sample
           </button>
@@ -656,58 +657,58 @@ export default {
       this.isSubmitting = true;
       this.updateAdditionalFiles();
 
+      // Don't modify sample data here - wait for success
+
+      const sampleData = { ...this.sample }; // Create a copy
+
       if (this.isTplexChecked) {
-        // If it's a Tplex sample, these fields become optional.
-        this.sample.name = null;
-        this.sample.scientificName = null;
-        this.sample.commonName = null;
-        this.sample.ncbi = null;
-        this.sample.conditions = null;
+        // For Tplex samples, clear these fields in the copy
+        sampleData.name = null;
+        sampleData.scientificName = null;
+        sampleData.commonName = null;
+        sampleData.ncbi = null;
+        sampleData.conditions = null;
       } else {
-        this.sample.tplexCsv = null;
+        sampleData.tplexCsv = null;
       }
 
-      this.sample.owner = this.$auth.user.username;
-      this.sample.group = this.project.group;
-      this.sample.project = this.project._id;
+      sampleData.owner = this.$auth.user.username;
+      sampleData.group = this.project.group;
+      sampleData.project = this.project._id;
 
       this.$axios
-        .post("/samples/new", this.sample)
+        .post("/samples/new", sampleData)
         .then((result) => {
-          setTimeout(() => {
-            this.$buefy.toast.open({
-              message: "Sample created!",
-              type: "is-success",
-            });
-            this.$router.push({
-              name: "sample",
-              query: { id: result.data.sample._id },
-            });
-            this.isSubmitting = false;
-          }, 3000);
+          this.$buefy.toast.open({
+            message: "Sample created!",
+            type: "is-success",
+          });
+          this.$router.push({
+            name: "sample",
+            query: { id: result.data.sample._id },
+          });
+          // No need to set isSubmitting = false here as we're navigating away
         })
         .catch((err) => {
-          setTimeout(() => {
-            console.error(err);
-            var errorMessage = err.message;
-            if (err.message.includes("500")) {
-              const type = "Sample";
-              errorMessage =
-                "Unknown 500 error from server. Sorry about that." +
-                "\n" +
-                type +
-                " info may have registered in database." +
-                "\nUploads are on remote server, but may not have been registered in database and/or moved to HPC." +
-                "\nPlease check all this using this website, and notify system admin of when this happened, and which data you need cleaning up.";
-            }
-            this.$buefy.dialog.alert({
-              title: "Error",
-              message: errorMessage,
-              type: "is-danger",
-              hasIcon: false,
-            });
-            this.isSubmitting = false;
-          }, 2000);
+          console.error(err);
+          let errorMessage = err.message;
+          if (err.message.includes("500")) {
+            const type = "Sample";
+            errorMessage =
+              "Unknown 500 error from server. Sorry about that." +
+              "\n" +
+              type +
+              " info may have registered in database." +
+              "\nUploads are on remote server, but may not have been registered in database and/or moved to HPC." +
+              "\nPlease check all this using this website, and notify system admin of when this happened, and which data you need cleaning up.";
+          }
+          this.$buefy.dialog.alert({
+            title: "Error",
+            message: errorMessage,
+            type: "is-danger",
+            hasIcon: false,
+          });
+          this.isSubmitting = false; // Reset loading state on error
         });
     },
   },
