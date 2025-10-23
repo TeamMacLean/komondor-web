@@ -454,9 +454,11 @@ export default {
   computed: {
     isWarningStyleForNameInput() {
       if (this.isTplexChecked) {
-        return false;
+        return "";
       }
-      return this.invalidSampleNames.includes(this.sample.name);
+      return this.invalidSampleNames.includes(this.sample.name)
+        ? "is-danger"
+        : "";
     },
     areStandardFieldsValid() {
       if (this.isTplexChecked) {
@@ -556,6 +558,9 @@ export default {
         this.sample.tplexCsv = null;
       }
     },
+    onConsentToggle(consent) {
+      this.consentGiven = consent;
+    },
     readFileAsText(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -563,9 +568,6 @@ export default {
         reader.onerror = (e) => reject(e);
         reader.readAsText(file);
       });
-    },
-    onConsentToggle(consent) {
-      this.consentGiven = consent;
     },
     validateTplexCsv() {
       this.validatedCsv = false; // Reset validation state
@@ -575,9 +577,8 @@ export default {
           message: "No CSV file content to validate.",
           type: "is-warning",
         });
-        return;
+        return false;
       }
-
       // Define expected headers (case-sensitive as per your request)
       const expectedHeaders = [
         "Sample Name",
@@ -638,6 +639,7 @@ export default {
           message: "Tplex CSV validated successfully!",
           type: "is-success",
         });
+        return true;
       } catch (error) {
         console.error("Tplex CSV Validation Error:", error.message);
         this.$buefy.dialog.alert({
@@ -647,6 +649,7 @@ export default {
           hasIcon: false,
         });
         this.validatedCsv = false; // Ensure it's false on failure
+        return false;
       }
     },
     postForm() {
