@@ -39,7 +39,7 @@
                 required
               >
                 <option
-                  v-for="group in this.availableGroups"
+                  v-for="group in availableGroups"
                   :key="group._id"
                   :value="group._id"
                 >
@@ -54,7 +54,7 @@
             >
               <div class="onlyOneSelectOption">
                 <!-- <input v-model="project.group" type="hidden" /> -->
-                {{ this.availableGroups[0].name }}
+                {{ availableGroups[0].name }}
               </div>
             </b-field>
             <b-field v-else>
@@ -250,6 +250,36 @@ export default {
       }
     },
   },
+  watch: {
+    availableGroups: {
+      handler(newGroups) {
+        if (newGroups.length === 0) {
+          console.error(
+            "No groups found for project creation. Cannot proceed without a group.",
+            {
+              currentUser: this.$auth?.user,
+              groupsInStore: this.availableGroups,
+              filteredGroups: newGroups,
+              errorContext: "Group selection watcher",
+            }
+          );
+        } else if (newGroups.length === 1 && !this.project.group) {
+          this.project.group = newGroups[0]._id;
+        }
+      },
+      immediate: true,
+    },
+    "project.name": {
+      // Handler is not strictly needed here as computed property handles it
+    },
+    "project.doNotSendToEna": {
+      handler(newValue) {
+        if (!newValue) {
+          this.project.doNotSendToEnaReason = null;
+        }
+      },
+    },
+  },
   methods: {
     onToggleConsent(newState) {
       this.consent = newState;
@@ -328,36 +358,6 @@ export default {
             this.isSubmitting = false;
           }, 2000);
         });
-    },
-  },
-  watch: {
-    availableGroups: {
-      handler(newGroups) {
-        if (newGroups.length === 0) {
-          console.error(
-            "No groups found for project creation. Cannot proceed without a group.",
-            {
-              currentUser: this.$auth?.user,
-              groupsInStore: this.availableGroups,
-              filteredGroups: newGroups,
-              errorContext: "Group selection watcher",
-            }
-          );
-        } else if (newGroups.length === 1 && !this.project.group) {
-          this.project.group = newGroups[0]._id;
-        }
-      },
-      immediate: true,
-    },
-    "project.name": {
-      // Handler is not strictly needed here as computed property handles it
-    },
-    "project.doNotSendToEna": {
-      handler(newValue) {
-        if (!newValue) {
-          this.project.doNotSendToEnaReason = null;
-        }
-      },
     },
   },
 };
