@@ -191,6 +191,9 @@ export default {
     await store.dispatch("refreshGroups");
   },
   computed: {
+    user() {
+      return this.$auth?.user || null;
+    },
     availableGroups() {
       const availableGroupsResult = this.$store.state.groups.filter(
         (f) => !f.deleted
