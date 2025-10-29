@@ -48,9 +48,7 @@
             size="is-small"
             class="has-text-grey"
           />
-          ENA project release date:{{
-            project.releaseDate ? ` ${project.releaseDate}` : ` unknown`
-          }}
+          {{ this.enaInfo }}
         </p>
 
         <div
@@ -171,8 +169,6 @@ export default {
                 !!verifiedAdditionalFileNames.includes(additionalFileName),
             }));
 
-          console.log("nudgeable at frontend", res.data.project.nudgeable);
-
           return {
             project: res.data.project,
             additionalFiles: additionalFilesWithVerifiedField,
@@ -191,8 +187,14 @@ export default {
       });
   },
   computed: {
-    canSubmitToENA() {
-      return true;
+    enaInfo() {
+      if (!this.isSendingToEna) {
+        return "Project not being sent to ENA";
+      }
+
+      const releaseDateText = this.project.releaseDate || "Unknown";
+
+      return "ENA project release date: " + releaseDateText;
     },
     showAddAccession() {
       if (this?.$auth?.$state?.user?.username && process?.env?.ENA_ADMINS) {
@@ -201,11 +203,22 @@ export default {
         return false;
       }
     },
+    isSendingToEna() {
+      const noBlockingOfSendingToEna = !this.project.doNotSendToEna;
+      const isGroupThatNeverSubmitsToEna =
+        this.project.group.name === "two_blades";
+      const isSending =
+        noBlockingOfSendingToEna && !isGroupThatNeverSubmitsToEna;
+      return isSending;
+    },
     showAdminEmailNudgeUpdateCheckbox() {
-      const res = process.env.ENA_ADMINS.includes(
+      if (!this.isSendingToEna) {
+        return false;
+      }
+      const userIsEnaAdmin = process.env.ENA_ADMINS.includes(
         this.$auth.$state.user.username
       );
-      return res;
+      return userIsEnaAdmin;
     },
   },
   methods: {

@@ -117,7 +117,10 @@
               >Request that this not be sent to ENA</b-checkbox
             >
             <p v-if="!project.doNotSendToEna" class="help">
-              Checking this will require you to give a reason why.
+              Checking this will require you to give a reason why. It will also
+              mean you cannot submit Samples or Runs until this has been
+              resolved between yourself and the Bioinformatics department. In
+              nearly every use case, you do not want to check this box!
             </p>
           </div>
 
@@ -134,12 +137,102 @@
           <hr />
         </div>
 
-        <!-- TEMP -->
+        <div v-if="!canSubmit && !isSubmitting" class="box is-warning mt-5">
+          <p class="title is-6 has-text-warning-dark">
+            Submission Disabled - Check these items:
+          </p>
+          <ul>
+            <li>
+              Consent Given:
+              <b-icon
+                :icon="consent ? 'check-circle' : 'alert-circle'"
+                :type="consent ? 'is-success' : 'is-danger'"
+              ></b-icon>
+            </li>
+            <!-- <li>
+              Uploads Complete:
+              <b-icon
+                :icon="
+                  additionalUploadsComplete ? 'check-circle' : 'alert-circle'
+                "
+                :type="additionalUploadsComplete ? 'is-success' : 'is-danger'"
+              ></b-icon>
+            </li>
+            <li>
+              Not Submitting:
+              <b-icon
+                :icon="!isSubmitting ? 'check-circle' : 'alert-circle'"
+                :type="!isSubmitting ? 'is-success' : 'is-danger'"
+              ></b-icon>
+            </li> -->
+            <li>
+              Standard Fields Valid:
+              <b-icon
+                :icon="areStandardFieldsValid ? 'check-circle' : 'alert-circle'"
+                :type="areStandardFieldsValid ? 'is-success' : 'is-danger'"
+              ></b-icon>
+              <ul v-if="!areStandardFieldsValid" class="ml-4">
+                <li
+                  v-if="
+                    !project.name ||
+                    project.name.length < 20 ||
+                    project.name.length > 80
+                  "
+                >
+                  Name length (20-80 chars)
+                </li>
+                <li
+                  v-if="
+                    project &&
+                    project.name &&
+                    bad.nameList.includes(project.name)
+                  "
+                >
+                  Name already exists
+                </li>
+                <li v-if="!project.group && !onlyOneGroup">Group selected</li>
+                <li
+                  v-if="
+                    !project.shortDesc ||
+                    project.shortDesc.length < 20 ||
+                    project.shortDesc.length > 200
+                  "
+                >
+                  Short Description (20-200 chars)
+                </li>
+                <li
+                  v-if="
+                    !project.longDesc ||
+                    project.longDesc.length < 100 ||
+                    project.longDesc.length > 1000
+                  "
+                >
+                  Long Description (100-1000 chars)
+                </li>
+                <li
+                  v-if="
+                    project.doNotSendToEna &&
+                    (!project.doNotSendToEnaReason ||
+                      project.doNotSendToEnaReason.length < 50)
+                  "
+                >
+                  Reason for not sending to ENA (min 50 chars)
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
         <FormConsentCheckbox :initial="consent" :on-toggle="onToggleConsent" />
 
         <hr />
 
-        <button type="submit" class="button is-success" :disabled="!canSubmit">
+        <button
+          type="submit"
+          class="button is-success"
+          :class="{ 'is-loading': isSubmitting }"
+          :disabled="!canSubmit"
+        >
           Create project
         </button>
       </form>
@@ -156,36 +249,34 @@ export default {
   name: "NewProject",
   components: { Uploader, FormConsentCheckbox, CollapsibleUploaderHelp },
   middleware: "auth",
-  asyncData({ $axios, error }) {
-    return $axios
-      .get("/projects/names")
-      .then((res) => {
-        if (res.status === 200 && res.data.projectsNames) {
-          return {
-            isSubmitting: false,
-            additionalUploadsComplete: true,
-            bad: {
-              nameList: res.data.projectsNames,
-            },
-            consent: false,
-            project: {
-              name: "",
-              group: "",
-              shortDesc: "",
-              longDesc: "",
-              doNotSendToEna: false,
-              doNotSendToEnaReason: null,
-              additionalFiles: [],
-            },
-          };
-        } else {
-          error({ statusCode: 501, message: "Unknown error" });
-        }
-      })
-      .catch((err) => {
-        console.error("Error fetching project names:", err); // More specific error log
+  async asyncData({ $axios, error }) {
+    try {
+      const res = await $axios.get("/projects/names");
+      if (res.status === 200 && res.data.projectsNames) {
+        return {
+          isSubmitting: false, // Added isSubmitting
+          additionalUploadsComplete: true,
+          bad: {
+            nameList: res.data.projectsNames,
+          },
+          consent: false,
+          project: {
+            name: "",
+            group: "",
+            shortDesc: "",
+            longDesc: "",
+            doNotSendToEna: false,
+            doNotSendToEnaReason: null,
+            additionalFiles: [],
+          },
+        };
+      } else {
         error({ statusCode: 501, message: "Unknown error" });
-      });
+      }
+    } catch (err) {
+      console.error("Error fetching project names:", err); // More specific error log
+      error({ statusCode: 501, message: "Unknown error" });
+    }
   },
   async fetch({ store }) {
     await store.dispatch("refreshGroups");
@@ -207,28 +298,57 @@ export default {
       return this.availableGroups.length === 1;
     },
     isWarningStyleForNameInput() {
-      return this.bad.nameList.includes(this.project.name) ? "is-danger" : "";
-    },
-    canSubmit() {
-      const allFieldsFilled =
-        (this.project.group || this.onlyOneGroup) &&
+      return this.bad &&
+        this.bad.nameList &&
+        this.project &&
         this.project.name &&
-        this.project.shortDesc &&
-        this.project.longDesc;
+        this.bad.nameList.includes(this.project.name)
+        ? "is-danger"
+        : "";
+    },
+    areStandardFieldsValid() {
+      const {
+        name,
+        shortDesc,
+        longDesc,
+        group,
+        doNotSendToEna,
+        doNotSendToEnaReason,
+      } = this.project;
 
-      const isEnaReasonValid = this.project.doNotSendToEna
-        ? this.project.doNotSendToEnaReason &&
-          this.project.doNotSendToEnaReason.length >= 50
+      const nameValid =
+        name &&
+        name.length >= 20 &&
+        name.length <= 80 &&
+        !this.bad.nameList.includes(name);
+      const groupValid = !!group || this.onlyOneGroup; // Check if group is selected, or if there's only one option which would be auto-selected
+      const shortDescValid =
+        shortDesc && shortDesc.length >= 20 && shortDesc.length <= 200;
+      const longDescValid =
+        longDesc && longDesc.length >= 100 && longDesc.length <= 1000;
+
+      const enaReasonValid = doNotSendToEna
+        ? doNotSendToEnaReason && doNotSendToEnaReason.length >= 50
         : true;
 
       return (
-        this.additionalUploadsComplete &&
-        !this.isWarningStyleForNameInput &&
-        !this.isSubmitting &&
-        allFieldsFilled &&
-        this.consent &&
-        isEnaReasonValid
+        nameValid &&
+        groupValid &&
+        shortDescValid &&
+        longDescValid &&
+        enaReasonValid
       );
+    },
+    canSubmit() {
+      const baseChecks =
+        this.additionalUploadsComplete &&
+        !this.isWarningStyleForNameInput && // Use the computed property
+        !this.isSubmitting &&
+        this.consent; // Ensure consent is given
+
+      const standardFieldsValid = this.areStandardFieldsValid;
+
+      return baseChecks && standardFieldsValid;
     },
     selectedGroup() {
       if (this.project.group) {
@@ -272,16 +392,6 @@ export default {
       },
       immediate: true,
     },
-    "project.name": {
-      // Handler is not strictly needed here as computed property handles it
-    },
-    "project.doNotSendToEna": {
-      handler(newValue) {
-        if (!newValue) {
-          this.project.doNotSendToEnaReason = null;
-        }
-      },
-    },
   },
   methods: {
     onToggleConsent(newState) {
@@ -304,9 +414,14 @@ export default {
           user: this.$auth?.user,
           errorContext: "postForm - User authentication check",
         });
-        throw new Error(
-          "Issue authenticating you. Please sign in and out of this website and try again."
-        );
+        this.$buefy.dialog.alert({
+          title: "Authentication Error",
+          message:
+            "Issue authenticating you. Please sign in and out of this website and try again.",
+          type: "is-danger",
+          hasIcon: false,
+        });
+        return;
       }
 
       this.isSubmitting = true;
@@ -332,13 +447,13 @@ export default {
               name: "project",
               query: { id: result.data.project._id },
             });
-            this.isSubmitting = false;
+            // isSubmitting will automatically be reset as component is destroyed on navigation
           }, 3000);
         })
         .catch((err) => {
           setTimeout(() => {
             console.error("Error submitting form:", err);
-            var errorMessage = err.message;
+            let errorMessage = err.message;
             if (err.message.includes("500")) {
               errorMessage =
                 "Unknown 500 error from server. Sorry about that. " +
