@@ -48,7 +48,7 @@
             size="is-small"
             class="has-text-grey"
           />
-          {{ this.enaInfo }}
+          {{ enaInfo }}
         </p>
 
         <div
