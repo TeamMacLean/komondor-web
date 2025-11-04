@@ -122,12 +122,11 @@
         What if it didn't work ? (UNSUCCESSFUL SUBMISSIONS)
       </h3>
 
-      <!-- TODO mail link for my email -->
       <p>
-        Unsuccessful form submissions will return an error. I’m hoping to
+        Unsuccessful form submissions will return an error. I'm hoping to
         improve the error handling experience for the user in the future. At the
         moment, if you run into any problems, the likely advice from the website
-        will be to contact me (george.deeks@tsl.ac.uk), so I can untangle the
+        will be to contact me (<a href="mailto:george.deeks@tsl.ac.uk">george.deeks@tsl.ac.uk</a>), so I can untangle the
         data and figure out what went wrong myself.
       </p>
 
@@ -145,11 +144,10 @@
       </p>
 
       <h3 class="subtitle-override">ANY FURTHER QUESTIONS OR PROBLEMS?</h3>
-      <!-- TODO mail link for my email -->
       <p>
         For any more questions or information, or to help solve a problem you
         have encountered, then please don't hesitate to contact me:
-        george.deeks@tsl.ac.uk.
+        <a href="mailto:george.deeks@tsl.ac.uk">george.deeks@tsl.ac.uk</a>.
       </p>
     </div>
   </div>
