@@ -53,17 +53,14 @@ export default {
 
   methods: {
     onDeleteRow() {
-      //TODO confirm
-      // if (this.deleteRow) {
       this.$buefy.dialog.confirm({
         message: "Are you sure?",
         type: "is-danger",
         onConfirm: () => {
-          //TODO: delete file from server
+          // Note: File deletion from server happens server-side when this.deleteRow is called
           this.deleteRow(this.rowID);
         }
       });
-      // }
     },
     onLeftChange(val) {
       if (typeof val === "boolean") {

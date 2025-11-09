@@ -2,8 +2,7 @@
   <div class="section">
     <div class="container">
 
-      <!-- TODO: (COULD DO:) if admin, remove 'Your' -->
-      <h1 class="title">Your Projects</h1>
+      <h1 class="title">{{ pageTitle }}</h1>
 
       <ProjectList showNewButton="true"/>
 
@@ -26,5 +25,10 @@
         store.dispatch('refreshGroups')
       ])
     },
+    computed: {
+      pageTitle() {
+        return this.$store.getters.isAdmin ? 'Projects' : 'Your Projects'
+      }
+    }
   }
 </script>

@@ -100,20 +100,23 @@ export default {
 
           const { projects, samples, runs } = res.data.results;
 
-          //TODO sort data
+          // Sort projects, samples, and runs alphabetically by name
           if (projects) {
+            projects.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
             projects.map(p => {
               p.type = "project";
               this.results.push(p);
             });
           }
           if (samples) {
+            samples.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
             samples.map(p => {
               p.type = "sample";
               this.results.push(p);
             });
           }
           if (runs) {
+            runs.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
             runs.map(p => {
               p.type = "run";
               this.results.push(p);
