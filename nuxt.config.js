@@ -1,7 +1,6 @@
 require("dotenv").config();
 
 export default {
-  mode: "universal",
   render: {
     ssr: false,
   },
@@ -55,6 +54,7 @@ export default {
     { src: "~/plugins/v-tooltip", ssr: false },
     { src: "~/plugins/v-clipboard", ssr: false },
     { src: "~/plugins/auth", ssr: false },
+    { src: "~/plugins/error-handler", ssr: false },
   ],
   modules: ["@nuxtjs/pwa", "@nuxtjs/axios", "@nuxtjs/auth", "nuxt-buefy"],
   pwa: {
@@ -112,6 +112,19 @@ export default {
       preset: {
         features: {
           customProperties: false,
+        },
+      },
+    },
+    loaders: {
+      scss: {
+        sassOptions: {
+          silenceDeprecations: [
+            "legacy-js-api",
+            "import",
+            "global-builtin",
+            "color-functions",
+            "slash-div",
+          ],
         },
       },
     },
