@@ -1,51 +1,73 @@
 <template>
   <div class="section">
     <div class="container">
-      <h1 class="title">New Run</h1>
-      <h3 class="subtitle">
-        <i> Ensure required fields (*) are filled in before submitting. </i>
-      </h3>
-      <h3>
-        If any options that you need are not listed, please contact system
-        administrator.
-      </h3>
+      <h1 class="title">New Run for {{ sample.name }}</h1>
+      <h2 class="subtitle">
+        Define the sequencing parameters and provide the raw read files for this
+        run.
+      </h2>
       <hr />
-      <form novalidate @submit.prevent="postForm">
+
+      <form @submit.prevent="submitForm">
+        <!-- Run Metadata -->
         <div class="columns">
           <div class="column">
             <b-field
-              :type="isWarningStyleForNameInput"
-              label="Name*"
-              message="A short (5-20 characters in length), informative name to identify your data set."
+              label="Run Name*"
+              :type="{ 'is-danger': validationErrors.name }"
+              :message="validationErrors.name"
             >
-              <b-input
-                id="name"
-                v-model="run.name"
-                expanded
-                name="name"
-                minlength="5"
-                maxlength="20"
-                required
-              ></b-input>
+              <b-input v-model.trim="run.name" required></b-input>
             </b-field>
           </div>
           <div class="column">
             <b-field
-              label="Library strategy*"
-              message="What kind of sequencing experiment was performed?"
+              label="Sequencing Provider*"
+              :type="{ 'is-danger': validationErrors.sequencingProvider }"
+              :message="validationErrors.sequencingProvider"
             >
-              <b-select
-                v-model="run.libraryStrategy"
-                placeholder="Select a library strategy"
+              <b-input
+                v-model.trim="run.sequencingProvider"
+                placeholder="e.g., 'Novogene', 'Earlham Institute'"
                 required
-                expanded
-              >
+              ></b-input>
+            </b-field>
+          </div>
+        </div>
+
+        <div class="columns">
+          <div class="column">
+            <b-field
+              label="Library Type*"
+              :type="{ 'is-danger': validationErrors.libraryType }"
+              :message="validationErrors.libraryType"
+            >
+              <b-select v-model="run.libraryType" expanded required>
+                <option :value="null" disabled>Select a library type</option>
                 <option
-                  v-for="option in libraryStrategies"
-                  :key="option._id"
-                  :value="option.value"
+                  v-for="opt in libraryTypes"
+                  :key="opt._id"
+                  :value="opt.value"
                 >
-                  {{ option.value }}
+                  {{ opt.value }}
+                </option>
+              </b-select>
+            </b-field>
+          </div>
+          <div class="column">
+            <b-field
+              label="Sequencing Technology*"
+              :type="{ 'is-danger': validationErrors.sequencingTechnology }"
+              :message="validationErrors.sequencingTechnology"
+            >
+              <b-select v-model="run.sequencingTechnology" expanded required>
+                <option :value="null" disabled>Select a technology</option>
+                <option
+                  v-for="opt in sequencingTechnologies"
+                  :key="opt._id"
+                  :value="opt.value"
+                >
+                  {{ opt.value }}
                 </option>
               </b-select>
             </b-field>
@@ -55,36 +77,38 @@
         <div class="columns">
           <div class="column">
             <b-field
-              label="Sequencing provider*"
-              message="Which company/institute did your sequencing? Please provide at least the name."
+              label="Library Source*"
+              :type="{ 'is-danger': validationErrors.librarySource }"
+              :message="validationErrors.librarySource"
             >
-              <b-input
-                v-model="run.sequencingProvider"
-                placeholder="This is a required field"
-                expanded
-                type="text"
-                required
-              ></b-input>
+              <b-select v-model="run.librarySource" expanded required>
+                <option :value="null" disabled>Select a source</option>
+                <option
+                  v-for="opt in librarySources"
+                  :key="opt._id"
+                  :value="opt.value"
+                >
+                  {{ opt.value }}
+                </option>
+              </b-select>
             </b-field>
           </div>
-
           <div class="column">
             <b-field
-              label="Sequencing technology*"
-              message="What was the technology used for sequencing? This should be in the communication with your provider."
+              label="Library Selection*"
+              :type="{ 'is-danger': validationErrors.librarySelection }"
+              :message="validationErrors.librarySelection"
             >
-              <b-select
-                v-model="run.sequencingTechnology"
-                placeholder="Select a sequencing technology"
-                required
-                expanded
-              >
+              <b-select v-model="run.librarySelection" expanded required>
+                <option :value="null" disabled>
+                  Select a selection method
+                </option>
                 <option
-                  v-for="option in sequencingTechnologies"
-                  :key="option._id"
-                  :value="option.value"
+                  v-for="opt in librarySelections"
+                  :key="opt._id"
+                  :value="opt.value"
                 >
-                  {{ option.value }}
+                  {{ opt.value }}
                 </option>
               </b-select>
             </b-field>
@@ -94,558 +118,337 @@
         <div class="columns">
           <div class="column">
             <b-field
-              label="Library source*"
-              message="From what kind of material was your library prepared?"
+              label="Library Strategy*"
+              :type="{ 'is-danger': validationErrors.libraryStrategy }"
+              :message="validationErrors.libraryStrategy"
             >
-              <b-select
-                v-model="run.librarySource"
-                placeholder="Select a library source"
-                required
-                expanded
-              >
+              <b-select v-model="run.libraryStrategy" expanded required>
+                <option :value="null" disabled>Select a strategy</option>
                 <option
-                  v-for="option in librarySources"
-                  :key="option._id"
-                  :value="option.value"
+                  v-for="opt in libraryStrategies"
+                  :key="opt._id"
+                  :value="opt.value"
                 >
-                  {{ option.value }}
+                  {{ opt.value }}
                 </option>
               </b-select>
             </b-field>
           </div>
-
-          <p></p>
-
           <div class="column">
             <b-field
-              label="Library selection*"
-              message="Which protocol was used when creating the library?"
+              label="Insert Size"
+              message="The insert size of the library, if applicable."
             >
-              <p></p>
-
-              <b-select
-                v-model="run.librarySelection"
-                placeholder="Select a library selection"
-                required
-                expanded
-              >
-                <option
-                  v-for="option in librarySelections"
-                  :key="option._id"
-                  :value="option.value"
-                >
-                  {{ option.value }}
-                </option>
-              </b-select>
+              <b-input v-model="run.insertSize" type="number"></b-input>
             </b-field>
           </div>
         </div>
-        <div class="columns">
-          <div class="column">
-            <b-field
-              label="Library type*"
-              message="Do you have unpaired, paired, or mate-pair reads? Please only upload compressed files - ENA only accepts these in some cases (e.g. use .fq.gz, not .fastq). Please only use 'indexed' options if you have the appropriate files (e.g., i5, i7, etc.)."
-            >
-              <b-select
-                v-model="run.libraryType"
-                placeholder="Select a library type"
-                required
-                expanded
-                :disabled="libraryTypeLocked"
-              >
-                <option
-                  v-for="option in libraryTypes"
-                  :key="option._id"
-                  :value="option.value"
-                >
-                  <span>{{ computeOptionString(option) }}</span>
-                  <span class="bold">{{ computeIndexStatus(option) }}</span>
-                </option>
-              </b-select>
-            </b-field>
-            <div v-if="libraryTypeLocked">
-              <i
-                >Cannot alter library type once HPC directory has been
-                selected.</i
-              >
-            </div>
-          </div>
 
-          <div class="column">
-            <b-field
-              v-if="!isOxfordNanopore"
-              label="Insert size*"
-              message="What is the average insert size covered by your read pairs? This should be in the communication with your provider. (Please note: this field becomes optional when Oxford Nanopore is selected.)"
-            >
-              <b-input
-                v-model="run.insertSize"
-                placeholder="Please specify a number - e.g. 13"
-                expanded
-                type="number"
-                min="0"
-                required
-              ></b-input>
-            </b-field>
-            <b-field
-              v-else
-              label="Insert size"
-              message="This field is optional for the currently-selected Oxford Nanopore. Probably leave blank."
-            >
-              <b-input
-                v-model="run.insertSize"
-                placeholder="Number"
-                expanded
-                type="number"
-                min="0"
-              ></b-input>
-            </b-field>
-          </div>
-        </div>
         <hr />
-        <label class="b-field-label-proxy">Raw reads </label>
-        <!-- TODO <div><b-icon icon="icon-warning-sign" size="is-small"></b-icon></div> -->
 
-        <b-tabs v-model="activeTab">
-          <b-tab-item key="hpc-mv-tab" value="hpc-mv" label="HPC upload">
-            <SpecifiedLocationFileSelector
-              :paired="paired"
-              :indexed="indexed"
-              :allowed-extensions="allowedExtensions"
-              :on-validation-change-status="onHpcUploadValidationChangeStatus"
-              :lockLibraryType="lockLibraryTypeToggleOn"
-            >
-              <!-- TODO: 
-              - if paired = true, ALL selections should be paired
-              - limit based on allowed extensions (plus .md5)
-              -->
-            </SpecifiedLocationFileSelector>
+        <!-- Raw Read Files -->
+        <h3 class="title is-4">Raw Read Files*</h3>
+        <p class="subtitle is-6">
+          You must provide the raw sequence files for this run.
+        </p>
+        <b-tabs v-model="activeTab" type="is-boxed">
+          <b-tab-item label="HPC Transfer" value="hpc-mv">
+            <HpcFileValidator
+              v-model="hpcValidatedFiles"
+              :sample-id="sample._id"
+            />
           </b-tab-item>
+
           <b-tab-item
-            key="local-filesystem-tab"
+            label="Local Filesystem Upload"
             value="local-filesystem"
-            label="Local filesystem upload"
-            :disabled="isLocalFileSystemDisabled"
+            :disabled="isLocalFilesystemDisabled"
           >
-            <UploadRawInfo :paired="paired" :indexed="indexed" />
-            <b-field>
-              <UploadRaw
-                v-if="paired !== null"
-                ref="rawUploader"
-                :paired="paired"
-                :indexed="indexed"
-                :on-upload-status-change="onRawUploaderChange"
-                :allowed-extensions="allowedExtensions"
-              />
-            </b-field>
+            <Uploader
+              ref="rawUploader"
+              :paired="libraryTypeObject && libraryTypeObject.paired"
+              :indexed="libraryTypeObject && libraryTypeObject.indexed"
+              :allowed-extensions="
+                libraryTypeObject && libraryTypeObject.extensions
+              "
+            />
           </b-tab-item>
         </b-tabs>
 
         <hr />
-        <b-field
-          label="Additional files"
-          message="Please upload any documentation obtained from the sequencing provider, including copies of the communication. If the documentation pertains only to a certain sample or data set, then please add it there instead. Note: this is NOT the place to upload raw sequence files."
+
+        <!-- Additional Files -->
+        <h3 class="title is-4">Additional Files</h3>
+        <p class="subtitle is-6">
+          Optionally, upload any documentation specific to this run.
+        </p>
+        <Uploader ref="additionalUploader" />
+        <CollapsibleUploaderHelp />
+
+        <hr />
+
+        <!-- Submission Area -->
+        <FormConsentCheckbox v-model="consent" />
+        <hr />
+        <b-button
+          type="submit"
+          native-type="submit"
+          class="is-success"
+          :loading="isSubmitting"
+          :disabled="!canSubmit"
         >
-          <Uploader
-            ref="additionalUploader"
-            :on-upload-status-change="onUploaderChange"
-          />
-        </b-field>
-
-        <hr />
-        <FormConsentCheckbox :on-toggle="onToggleFormConsentCheckbox" />
-
-        <b-checkbox v-model="checkFiles" type="checkbox">
-          *I confirm that I will check my raw read files have moved successfully
-          to their correct location on the HPC, and keep a backup copy of these
-          files until I confirm.
-        </b-checkbox>
-
-        <hr />
-
-        <button type="submit" class="button is-success" :disabled="!canSubmit">
-          Create run
-        </button>
-        <div v-if="shouldShowAllUploadRawMsg" class="errorMessage">
-          Please complete all upload raw files fields.
-        </div>
+          Create Run
+        </b-button>
       </form>
     </div>
   </div>
 </template>
 
 <script>
+import { mapState } from "vuex";
 import Uploader from "~/components/uploads/Uploader.vue";
-import UploadRaw from "~/components/uploads/UploaderRaw.vue";
-import UploadRawInfo from "~/components/uploads/UploadRawInfo.vue";
-import FormConsentCheckbox from "~/components/formHelpers/FormConsentCheckbox";
-import SpecifiedLocationFileSelector from "~/components/uploads/SpecifiedLocationFileSelector.vue";
+import HpcFileValidator from "~/components/uploads/HpcFileValidator.vue";
+import FormConsentCheckbox from "~/components/formHelpers/FormConsentCheckbox.vue";
+import CollapsibleUploaderHelp from "~/components/formHelpers/CollapsibleUploaderHelp.vue";
+
 export default {
   name: "NewRun",
   components: {
     Uploader,
-    UploadRaw,
+    HpcFileValidator,
     FormConsentCheckbox,
-    UploadRawInfo,
-    SpecifiedLocationFileSelector,
+    CollapsibleUploaderHelp,
   },
   middleware: "auth",
-  async asyncData({ route, $axios, error, app }) {
-    if (!route.query.sample) {
-      return error({ statusCode: 500, message: "Sample not found" });
-    }
 
+  async asyncData({ $axios, params, error, route }) {
     try {
-      const res = await $axios.get("/sample", {
-        params: { id: route.query.sample },
+      const sampleResponse = await $axios.get("/sample", {
+        params: { id: params.id || route.query.sampleId },
       });
-
-      if (res.status === 200 && res.data.sample) {
-        const existingRunNamesForThisSample = res.data.sample.runs.map(
-          (r) => r.name
-        );
-
-        let returnObj = {
-          additionalUploadsComplete: true,
-          isSubmitting: false,
-          rawUploadsComplete: false,
-          sample: res.data.sample,
-          invalidRunNames: existingRunNamesForThisSample,
-          checkFiles: false,
-          run: {
-            sample: res.data.sample._id,
-            name: "",
-            libraryType: null,
-            sequencingProvider: "",
-            sequencingTechnology: null,
-            librarySource: null,
-            librarySelection: null,
-            libraryStrategy: null,
-            insertSize: null,
-            rawFiles: [],
-            additionalFiles: [],
-          },
-          isAnyRawReadFileFieldIncomplete: true,
-          activeTab: "hpc-mv",
-          tabs: ["hpc-mv", "local-filesystem"],
-          validatedHpcUploads: false,
-          formConsentCheckbox: false,
-          libraryTypeLocked: false,
-        };
-
-        if (route.query.clonedRunId) {
-          const clonedRunId = route.query.clonedRunId;
-          try {
-            const clonedRunResponse = await $axios.get("/run", {
-              params: { id: clonedRunId },
-            });
-
-            if (
-              clonedRunResponse.status === 200 &&
-              clonedRunResponse.data.run
-            ) {
-              let clonedRun = clonedRunResponse.data.run;
-
-              const plusOneClonedRunName = clonedRun.name
-                ? `${clonedRun.name}_clone`
-                : "";
-
-              returnObj.run.name = plusOneClonedRunName || "";
-              returnObj.run.libraryStrategy = clonedRun.libraryStrategy || null;
-              returnObj.run.sequencingProvider =
-                clonedRun.sequencingProvider || "";
-              // could check dropdowns for valid values, but db wont care regardless
-              returnObj.run.sequencingTechnology =
-                clonedRun.sequencingTechnology || null;
-              returnObj.run.librarySource = clonedRun.librarySource || null;
-              returnObj.run.librarySelection =
-                clonedRun.librarySelection || null;
-              returnObj.run.libraryType = clonedRun.libraryType || null;
-              returnObj.run.insertSize = clonedRun.insertSize || null;
-            }
-          } catch (cloneErr) {
-            console.error("Error fetching cloned run data:", cloneErr);
-            if (app.$buefy && app.$buefy.toast) {
-              app.$buefy.toast.open({
-                message: "Could not pre-fill data from cloned run.",
-                type: "is-warning",
-              });
-            }
-          }
-        }
-
-        return returnObj;
-      } else {
-        return error({ statusCode: 500, message: "Parent sample not found" });
-      }
+      const namesResponse = await $axios.get(
+        `/runs/names/${sampleResponse.data.sample._id}`
+      );
+      return {
+        sample: sampleResponse.data.sample,
+        existingRunNames: namesResponse.data.runNames || [],
+      };
     } catch (err) {
-      console.error(err);
-      return error({ statusCode: 500, message: "Parent sample not found" });
+      console.error("Failed to load initial data for new run page:", err);
+      return error({
+        statusCode: 404,
+        message: "Parent sample not found or API error.",
+      });
     }
   },
+
+  data() {
+    return {
+      run: {
+        name: "",
+        sequencingProvider: "",
+        libraryType: null,
+        sequencingTechnology: null,
+        librarySource: null,
+        librarySelection: null,
+        libraryStrategy: null,
+        insertSize: null,
+      },
+      activeTab: "hpc-mv", // 'hpc-mv' or 'local-filesystem'
+      hpcValidatedFiles: [], // From HpcFileValidator component
+      consent: false,
+      isSubmitting: false,
+    };
+  },
+
+  async created() {
+    await this.$store.dispatch("refreshOptions");
+    if (this.$route.query.clonedRunId) {
+      await this.initializeFromClonedRun(this.$route.query.clonedRunId);
+    }
+  },
+
   computed: {
-    // COULD DO: make more robust
-    isOxfordNanopore() {
-      return this.run.libraryType
-        ? this.run.libraryType.toLowerCase().includes("oxford nanopore")
-        : false;
-    },
-    isLocalFileSystemDisabled() {
-      const found = this.libraryTypes.filter(
-        (lt) => lt.value == this.run.libraryType
-      );
-      this.activeTab = "hpc-mv";
-      return !!(found.length && found[0].indexed);
-    },
-    shouldShowAllUploadRawMsg() {
-      return (
-        this.activeTab !== "hpc-mv" && this.isAnyRawReadFileFieldIncomplete
-      );
-    },
-    getSpecifiedLocation() {
-      return "hello";
-    },
-    isWarningStyleForNameInput() {
-      return this.invalidRunNames &&
-        this.invalidRunNames.length &&
-        this.invalidRunNames.includes(this.run.name)
-        ? "is-danger"
-        : "";
-    },
-    rawReadsValidated() {
-      if (this.activeTab === "hpc-mv") {
-        return this.validatedHpcUploads;
-      } else {
-        return this.rawUploadsComplete && !this.isAnyRawReadFileFieldIncomplete;
-      }
-    },
-    canSubmit() {
-      if (
-        this.additionalUploadsComplete &&
-        this.rawReadsValidated &&
-        !this.isWarningStyleForNameInput &&
-        this.formConsentCheckbox &&
-        !this.isSubmitting &&
-        this.checkFiles
-      ) {
-        return true;
-      } else {
-        return false;
-      }
-    },
-    paired() {
-      return this.libraryTypeObject ? this.libraryTypeObject.paired : null;
-    },
-    indexed() {
-      return this.libraryTypeObject ? this.libraryTypeObject.indexed : null;
-    },
-    allowedExtensions() {
-      if (
-        !this.libraryTypeObject ||
-        !this.libraryTypeObject.extensions ||
-        !this.libraryTypeObject.extensions.length
-      ) {
-        return [];
-      }
-      return this.libraryTypeObject.extensions;
-    },
+    ...mapState([
+      "libraryTypes",
+      "sequencingTechnologies",
+      "librarySources",
+      "librarySelections",
+      "libraryStrategies",
+    ]),
+
     libraryTypeObject() {
-      if (this.run.libraryType) {
-        const found = this.libraryTypes.filter(
-          (lt) => lt.value == this.run.libraryType
-        );
-        if (found.length) {
-          return found[0];
-        } else {
-          return null;
-        }
+      if (!this.run.libraryType) return null;
+      return this.libraryTypes.find((lt) => lt.value === this.run.libraryType);
+    },
+
+    isLocalFilesystemDisabled() {
+      return this.libraryTypeObject?.indexed || false;
+    },
+
+    uploadsAreComplete() {
+      const additionalComplete =
+        this.$refs.additionalUploader?.isUploadComplete() ?? true;
+
+      let rawComplete = false;
+      if (this.activeTab === "hpc-mv") {
+        rawComplete =
+          this.hpcValidatedFiles && this.hpcValidatedFiles.length > 0;
       } else {
-        return null;
+        rawComplete = this.$refs.rawUploader?.isUploadComplete() ?? false;
       }
+
+      return additionalComplete && rawComplete;
     },
-    libraryTypes() {
-      return JSON.parse(JSON.stringify(this.$store.state.libraryTypes));
+
+    validationErrors() {
+      const errors = {};
+      const { run } = this;
+
+      if (!run.name) errors.name = "Run name is required.";
+      else if (run.name.length < 3 || run.name.length > 80)
+        errors.name = "Name must be between 3 and 80 characters.";
+      else if (this.existingRunNames.includes(run.name))
+        errors.name = "This run name is already in use for this sample.";
+
+      if (!run.sequencingProvider)
+        errors.sequencingProvider = "Sequencing provider is required.";
+      if (!run.libraryType) errors.libraryType = "Library type is required.";
+      if (!run.sequencingTechnology)
+        errors.sequencingTechnology = "Sequencing technology is required.";
+      if (!run.librarySource)
+        errors.librarySource = "Library source is required.";
+      if (!run.librarySelection)
+        errors.librarySelection = "Library selection is required.";
+      if (!run.libraryStrategy)
+        errors.libraryStrategy = "Library strategy is required.";
+
+      // Raw files validation
+      if (this.activeTab === "hpc-mv" && this.hpcValidatedFiles.length === 0) {
+        errors.rawFiles = "HPC files must be selected and validated.";
+      } else if (this.activeTab === "local-filesystem") {
+        const rawUploader = this.$refs.rawUploader;
+        if (!rawUploader || rawUploader.getFiles().length === 0) {
+          errors.rawFiles = "At least one raw read file must be uploaded.";
+        }
+      }
+
+      return errors;
     },
-    sequencingProviders() {
-      return JSON.parse(JSON.stringify(this.$store.state.sequencingProviders));
-    },
-    sequencingTechnologies() {
-      return JSON.parse(
-        JSON.stringify(this.$store.state.sequencingTechnologies)
+
+    canSubmit() {
+      if (this.isSubmitting) return false;
+      return (
+        Object.keys(this.validationErrors).length === 0 &&
+        this.consent &&
+        this.uploadsAreComplete
       );
     },
-    librarySources() {
-      return JSON.parse(JSON.stringify(this.$store.state.librarySources));
-    },
-    librarySelections() {
-      return JSON.parse(JSON.stringify(this.$store.state.librarySelections));
-    },
-    libraryStrategies() {
-      return JSON.parse(JSON.stringify(this.$store.state.libraryStrategies));
-    },
   },
-  mounted() {
-    this.$store.dispatch("refreshOptions");
-  },
+
   methods: {
-    lockLibraryTypeToggleOn() {
-      this.libraryTypeLocked = true;
-    },
-    onToggleFormConsentCheckbox(newVal) {
-      this.formConsentCheckbox = newVal;
-    },
-    onHpcUploadValidationChangeStatus(newValue) {
-      if (newValue) {
-        // truthy results
-        this.validatedHpcUploads = true;
-        this.run.hpcRawFiles = newValue;
-      } else {
-        this.validatedHpcUploads = false;
+    async initializeFromClonedRun(clonedRunId) {
+      try {
+        const { data } = await this.$axios.get("/run", {
+          params: { id: clonedRunId },
+        });
+        const clonedRun = data.run;
+        if (clonedRun) {
+          this.run.name = `${clonedRun.name || ""}_clone`;
+          this.run.sequencingProvider = clonedRun.sequencingProvider || "";
+          this.run.libraryType = clonedRun.libraryType || null;
+          this.run.sequencingTechnology =
+            clonedRun.sequencingTechnology || null;
+          this.run.librarySource = clonedRun.librarySource || null;
+          this.run.librarySelection = clonedRun.librarySelection || null;
+          this.run.libraryStrategy = clonedRun.libraryStrategy || null;
+          this.run.insertSize = clonedRun.insertSize || null;
+          this.$buefy.toast.open({
+            message: "Form pre-filled from cloned run.",
+            type: "is-info",
+          });
+        }
+      } catch (err) {
+        console.error("Error fetching cloned run:", err);
+        this.$buefy.toast.open({
+          message: "Could not fetch data for cloning.",
+          type: "is-warning",
+        });
       }
     },
-    computeOptionString(option) {
-      const typesSupported = !option.extensions.length
-        ? " (any file type allowed)"
-        : " (" +
-          option.extensions.map((ext, index) =>
-            index === 0 ? ext : " " + ext
-          ) +
-          ")";
-      return option.value + typesSupported;
-    },
-    computeIndexStatus(option) {
-      return option.indexed ? " - STRICT INDEXING REQUIRED" : "";
-    },
-    onUploaderChange(val) {
-      if (typeof val === "boolean") {
-        this.additionalUploadsComplete = val;
+
+    async submitForm() {
+      if (!this.canSubmit) {
+        this.$buefy.toast.open({
+          message: "Please correct the errors before submitting.",
+          type: "is-warning",
+        });
+        return;
       }
-      this.updateAdditionalFiles();
-    },
-    onRawUploaderChange(val) {
-      if (typeof val === "boolean") {
-        this.rawUploadsComplete = val;
-      }
-      this.updateRawFiles();
-    },
-    calculateIsAnyRawReadFileFieldIncomplete() {
-      var incompleteFieldDetected = this.run.rawFiles.some((rawFile) => {
-        // must have md5 and more than md5+rowId; md5 already handled by UI
-        var thisRawFileIsIncomplete =
-          /**!rawFile.md5 || */ Object.keys(rawFile).length < 3;
-        return thisRawFileIsIncomplete;
-      });
-      this.isAnyRawReadFileFieldIncomplete = incompleteFieldDetected;
-    },
-    updateAdditionalFiles() {
-      if (this.$refs["additionalUploader"]) {
-        this.run.additionalFiles = this.$refs["additionalUploader"].getFiles();
-      }
-    },
-    updateRawFiles() {
-      if (this.$refs["rawUploader"]) {
-        this.run.rawFiles = this.$refs["rawUploader"].getFiles();
-      }
-      this.calculateIsAnyRawReadFileFieldIncomplete();
-    },
-    postForm() {
       this.isSubmitting = true;
 
-      this.updateAdditionalFiles();
-      this.updateRawFiles();
-
-      this.run.owner = this.$auth.user.username; //required
-      this.run.group = this.sample.group._id;
-      this.run.sample = this.sample._id; //required
-
-      this.run.paired = this.paired;
-      this.run.indexed = this.indexed;
+      let rawFilesPayload = [];
+      let rawFilesUploadInfo = { method: this.activeTab };
 
       if (this.activeTab === "hpc-mv") {
-        this.run.rawFiles = this.run.hpcRawFiles.files;
+        rawFilesPayload = this.hpcValidatedFiles;
+        // relativePath might be part of hpcValidatedFiles, assuming it's structured correctly
+        rawFilesUploadInfo.relativePath =
+          this.hpcValidatedFiles[0]?.relativePath;
+      } else {
+        rawFilesPayload = this.$refs.rawUploader.getFiles();
       }
 
-      // conditionally add info about hpc mv if applicable
-      // otherwise just the method of transfer
-      const hpcMvInfo =
-        this.activeTab === "hpc-mv"
-          ? {
-              relativePath: this.run.hpcRawFiles.relativePath,
-            }
-          : {};
-      this.run.rawFilesUploadInfo = {
-        method: this.activeTab,
-        ...hpcMvInfo,
+      const payload = {
+        ...this.run,
+        sample: this.sample._id,
+        group: this.sample.project.group,
+        owner: this.$auth.user.username,
+        additionalFiles: this.$refs.additionalUploader?.getFiles() || [],
+        rawFiles: rawFilesPayload,
+        rawFilesUploadInfo,
       };
 
-      this.$axios
-        .post("/runs/new", this.run)
-        .then((result) => {
-          setTimeout(() => {
-            this.$buefy.toast.open({
-              message: "Run created!",
-              type: "is-success",
-            });
-            this.$router.push({
-              name: "run",
-              query: {
-                id: result.data.run._id,
-                /**, justCreated: true // in case we want to tell user large uploads will take time */
-              },
-            });
-            this.isSubmitting = false;
-          }, 4000);
-        })
-        .catch((err) => {
-          console.error(err);
-          var errorMessage = err.message;
-          if (err.message.includes("500")) {
-            const type = "Run";
-            errorMessage =
-              "Unknown 500 error from server. Sorry about that." +
-              "\n" +
-              type +
-              " info may have registered in database." +
-              "\nUploads are on remote server, but may not have been registered in database and/or moved to HPC." +
-              "\nPlease check all this using this website, and notify system admin of when this happened, and which data you need cleaning up.";
-          }
-          setTimeout(() => {
-            this.$buefy.dialog.alert({
-              title: "Error",
-              message: errorMessage,
-              type: "is-danger",
-              hasIcon: false,
-            });
-            this.isSubmitting = false;
-          }, 3000);
+      try {
+        const response = await this.$axios.post("/runs/new", payload);
+        this.$buefy.toast.open({
+          message: "Run created successfully!",
+          type: "is-success",
         });
+        this.$router.push({
+          name: "run",
+          query: { id: response.data.run._id },
+        });
+      } catch (err) {
+        console.error("Error creating run:", err);
+        this.$buefy.dialog.alert({
+          title: "Submission Failed",
+          message: err.response?.data?.error || "An unexpected error occurred.",
+          type: "is-danger",
+        });
+      } finally {
+        this.isSubmitting = false;
+      }
+    },
+  },
+
+  watch: {
+    "run.libraryType"(newValue, oldValue) {
+      if (newValue !== oldValue) {
+        // Reset raw uploader if library type changes, as constraints might change
+        if (this.$refs.rawUploader) {
+          this.$refs.rawUploader.clear();
+        }
+        // If the new type forces HPC, switch to it
+        if (this.isLocalFilesystemDisabled) {
+          this.activeTab = "hpc-mv";
+        }
+      }
     },
   },
 };
 </script>
 
 <style scoped>
-.errorMessage {
-  color: #f14668;
-  display: block;
-  font-size: 0.75rem;
-  margin-top: 0.25rem;
-}
-.b-field-label-proxy {
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
-  text-size-adjust: 100%;
-  font-family: BlinkMacSystemFont, -apple-system, "Segoe UI", "Roboto", "Oxygen",
-    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
-    "Helvetica", "Arial", sans-serif;
-  line-height: 1.5;
-  box-sizing: inherit;
-  color: #363636;
-  display: block;
-  font-size: 1rem;
-  font-weight: 700;
-  margin-bottom: 0.5em;
-}
-.bold {
-  font-weight: bold;
-}
+/* Add any specific styles for this page here */
 </style>

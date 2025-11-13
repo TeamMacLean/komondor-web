@@ -1,18 +1,15 @@
+// ===================================================================================
+//                                    STATE
+// ===================================================================================
+
 export const state = () => ({
-  // stock: null,
   user: null,
   users: [],
-  // refreshingUsers: false,
   groups: [],
-  // refreshingGroups: false,
   projects: [],
-  // refreshingProjects: false,
   samples: [],
-  // refreshingSamples: false,
   runs: [],
-  // refreshingRuns: false,
   news: [],
-  // refreshingNews: false,
   libraryTypes: [],
   sequencingTechnologies: [],
   librarySources: [],
@@ -21,76 +18,46 @@ export const state = () => ({
   hasReceivedMD5Warning: false,
 });
 
+// ===================================================================================
+//                                    GETTERS
+// ===================================================================================
+
 export const getters = {
-  // isAuthenticated: state => {
-  //   return !!state.auth.loggedIn
-  // },
   isAdmin: (state) => {
     return !!(state.auth && state.auth.loggedIn && state.auth.user.isAdmin);
   },
   filteredProjects: (state) => (filterText) => {
     if (filterText && filterText.length) {
-      return state.projects.filter(
-        (p) => p.name.toLowerCase().indexOf(filterText.toLowerCase()) > -1
+      const lowerCaseFilter = filterText.toLowerCase();
+      return state.projects.filter((p) =>
+        p.name.toLowerCase().includes(lowerCaseFilter)
       );
-    } else {
-      return state.projects;
     }
+    return state.projects;
   },
   filteredSamples: (state) => (filterText) => {
     if (filterText && filterText.length) {
-      return state.samples.filter(
-        (p) => p.name.toLowerCase().indexOf(filterText.toLowerCase()) > -1
+      const lowerCaseFilter = filterText.toLowerCase();
+      return state.samples.filter((p) =>
+        p.name.toLowerCase().includes(lowerCaseFilter)
       );
-    } else {
-      return state.samples;
     }
+    return state.samples;
   },
   filteredRuns: (state) => (filterText) => {
     if (filterText && filterText.length) {
-      return state.runs.filter(
-        (p) => p.name.toLowerCase().indexOf(filterText.toLowerCase()) > -1
+      const lowerCaseFilter = filterText.toLowerCase();
+      return state.runs.filter((p) =>
+        p.name.toLowerCase().includes(lowerCaseFilter)
       );
-    } else {
-      return state.runs;
     }
+    return state.runs;
   },
-
-  // getCachedProjectById: state => (id) => {
-  //   const found = state.projects.filter(p => {
-  //     return p.id === id;
-  //   });
-  //   if (found.length) {
-  //     return found[0];
-  //   } else {
-  //     return null;
-  //   }
-  // },
-  // getCachedSampleById: state => (id) => {
-  //   const found = state.samples.filter(p => {
-  //     return p.id === id;
-  //   });
-  //   if (found.length) {
-  //     return found[0];
-  //   } else {
-  //     return null;
-  //   }
-  // }
-  // filteredGroups: state => (filterText) => {
-  //   if (filterText && filterText.length) {
-  //     return state.projects.filter(p => p.name.toLowerCase().indexOf(filterText.toLowerCase()) > -1)
-  //   } else {
-  //     return state.projects;
-  //   }
-  // },
-  // filteredUsers: state => (filterText) => {
-  //   if (filterText && filterText.length) {
-  //     return state.projects.filter(p => p.name.toLowerCase().indexOf(filterText.toLowerCase()) > -1)
-  //   } else {
-  //     return state.projects;
-  //   }
-  // }
 };
+
+// ===================================================================================
+//                                    MUTATIONS
+// ===================================================================================
 
 export const mutations = {
   setUsers(state, users) {
@@ -134,131 +101,132 @@ export const mutations = {
   },
 };
 
+// ===================================================================================
+//                                    ACTIONS
+// ===================================================================================
+
 export const actions = {
-  async nuxtServerInit() {},
+  async nuxtServerInit() {
+    // This action is kept for potential future server-side initializations.
+  },
+
+  // --- DATA REFRESH ACTIONS ---
+
   async refreshNews({ commit }) {
-    return this.$axios
-      .get("/news")
-      .then(({ data }) => {
-        commit("setNews", data.news);
-      })
-      .catch((err) => {
-        console.error(err);
-      });
+    try {
+      const { data } = await this.$axios.get("/news");
+      commit("setNews", data.news || []);
+    } catch (error) {
+      console.error("Failed to refresh news:", error);
+      // Optionally, you could commit an error state to be handled by the UI.
+    }
   },
   async refreshUsers({ commit }) {
-    return this.$axios
-      .get("/users")
-      .then(({ data }) => {
-        commit("setUsers", data.users);
-      })
-      .catch((err) => {
-        console.error(err);
-      });
+    try {
+      const { data } = await this.$axios.get("/users");
+      commit("setUsers", data.users || []);
+    } catch (error) {
+      console.error("Failed to refresh users:", error);
+    }
   },
   async refreshGroups({ commit }) {
-    return this.$axios
-      .get("/groups")
-      .then(({ data }) => {
-        commit("setGroups", data.groups);
-      })
-      .catch((err) => {
-        console.error(err);
-      });
+    try {
+      const { data } = await this.$axios.get("/groups");
+      commit("setGroups", data.groups || []);
+    } catch (error) {
+      console.error("Failed to refresh groups:", error);
+    }
   },
   async refreshProjects({ commit }) {
-    return this.$axios
-      .get("/projects")
-      .then(({ data }) => {
-        commit("setProjects", data.projects);
-      })
-      .catch((err) => {
-        console.error(err);
-      });
+    try {
+      const { data } = await this.$axios.get("/projects");
+      commit("setProjects", data.projects || []);
+    } catch (error) {
+      console.error("Failed to refresh projects:", error);
+    }
   },
   async refreshSamples({ commit }) {
-    return this.$axios
-      .get("/samples")
-      .then(({ data }) => {
-        commit("setSamples", data.samples);
-      })
-      .catch((err) => {
-        console.error(err);
-      });
+    try {
+      const { data } = await this.$axios.get("/samples");
+      commit("setSamples", data.samples || []);
+    } catch (error) {
+      console.error("Failed to refresh samples:", error);
+    }
   },
   async refreshRuns({ commit }) {
-    return this.$axios
-      .get("/runs")
-      .then(({ data }) => {
-        commit("setRuns", data.runs);
-      })
-      .catch((err) => {
-        console.error(err);
-      });
+    try {
+      const { data } = await this.$axios.get("/runs");
+      commit("setRuns", data.runs || []);
+    } catch (error) {
+      console.error("Failed to refresh runs:", error);
+    }
   },
+
+  // --- FORM OPTIONS ACTIONS ---
 
   async refreshLibraryTypes({ commit }) {
-    return this.$axios
-      .get("/options/librarytype")
-      .then(({ data }) => {
-        commit("setLibraryTypes", data.options);
-      })
-      .catch((err) => {
-        console.error(err);
-      });
+    try {
+      const { data } = await this.$axios.get("/options/librarytype");
+      commit("setLibraryTypes", data.options || []);
+    } catch (error) {
+      console.error("Failed to refresh library types:", error);
+    }
   },
   async refreshSequencingTechnologies({ commit }) {
-    return this.$axios
-      .get("/options/sequencingtechnology")
-      .then(({ data }) => {
-        commit("setSequencingTechnologies", data.options);
-      })
-      .catch((err) => {
-        console.error(err);
-      });
+    try {
+      const { data } = await this.$axios.get("/options/sequencingtechnology");
+      commit("setSequencingTechnologies", data.options || []);
+    } catch (error) {
+      console.error("Failed to refresh sequencing technologies:", error);
+    }
   },
   async refreshLibrarySources({ commit }) {
-    return this.$axios
-      .get("/options/librarysource")
-      .then(({ data }) => {
-        commit("setLibrarySources", data.options);
-      })
-      .catch((err) => {
-        console.error(err);
-      });
+    try {
+      const { data } = await this.$axios.get("/options/librarysource");
+      commit("setLibrarySources", data.options || []);
+    } catch (error) {
+      console.error("Failed to refresh library sources:", error);
+    }
   },
   async refreshLibrarySelections({ commit }) {
-    return this.$axios
-      .get("/options/libraryselection")
-      .then(({ data }) => {
-        commit("setLibrarySelections", data.options);
-      })
-      .catch((err) => {
-        console.error(err);
-      });
+    try {
+      const { data } = await this.$axios.get("/options/libraryselection");
+      commit("setLibrarySelections", data.options || []);
+    } catch (error) {
+      console.error("Failed to refresh library selections:", error);
+    }
   },
   async refreshLibraryStrategies({ commit }) {
-    return this.$axios
-      .get("/options/librarystrategy")
-      .then(({ data }) => {
-        commit("setLibraryStrategies", data.options);
-      })
-      .catch((err) => {
-        console.error(err);
-      });
+    try {
+      const { data } = await this.$axios.get("/options/librarystrategy");
+      commit("setLibraryStrategies", data.options || []);
+    } catch (error) {
+      console.error("Failed to refresh library strategies:", error);
+    }
   },
 
+  /**
+   * Dispatches all actions related to fetching form options in parallel.
+   */
   async refreshOptions({ dispatch }) {
-    return Promise.all([
-      dispatch("refreshLibraryTypes"),
-      dispatch("refreshSequencingTechnologies"),
-      dispatch("refreshLibrarySources"),
-      dispatch("refreshLibrarySelections"),
-      dispatch("refreshLibraryStrategies"),
-    ]);
+    try {
+      await Promise.all([
+        dispatch("refreshLibraryTypes"),
+        dispatch("refreshSequencingTechnologies"),
+        dispatch("refreshLibrarySources"),
+        dispatch("refreshLibrarySelections"),
+        dispatch("refreshLibraryStrategies"),
+      ]);
+    } catch (error) {
+      // The individual actions already log their errors,
+      // so this is a fallback for any Promise.all specific issues.
+      console.error("An error occurred while refreshing form options:", error);
+    }
   },
-  async setHasReceivedMD5Warning({ commit }) {
-    // this.hasReceivedMD5Warning=false,
-    return commit("setHasReceivedMD5WarningMutation", true);
+
+  // --- MISC ACTIONS ---
+
+  setHasReceivedMD5Warning({ commit }) {
+    commit("setHasReceivedMD5WarningMutation", true);
   },
 };

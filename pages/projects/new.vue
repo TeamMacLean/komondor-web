@@ -2,41 +2,38 @@
   <div class="section">
     <div class="container">
       <h1 class="title">New Project</h1>
-      <h3 class="subtitle">
-        <i> Ensure required fields (*) are filled in before submitting. </i>
-      </h3>
+      <h2 class="subtitle">
+        Ensure required fields (*) are filled in before submitting.
+      </h2>
       <hr />
-      <form @submit.prevent="postForm">
+
+      <form @submit.prevent="submitForm">
+        <!-- Project Name & Group -->
         <div class="columns">
           <div class="column">
-            <!--Name-->
             <b-field
               label="Name*"
-              :type="isWarningStyleForNameInput"
-              message="Find a suitable short name for your project, 20-80 characters in length, something that you can memorise and that also works reasonably well to present your study to the public"
+              :type="{ 'is-danger': validationErrors.name }"
+              :message="validationErrors.name || nameMessage"
             >
               <b-input
-                id="name"
-                v-model="project.name"
-                name="name"
+                v-model.trim="project.name"
                 minlength="20"
                 maxlength="80"
                 required
               ></b-input>
             </b-field>
           </div>
-
           <div class="column">
-            <!--Group-->
             <b-field
-              v-if="areMultipleAvailableGroups"
               label="Group*"
-              message="The group that this project belongs to."
+              message="The group this project belongs to."
             >
               <b-select
                 v-model="project.group"
                 placeholder="Select a group"
                 required
+                :disabled="availableGroups.length <= 1"
               >
                 <option
                   v-for="group in availableGroups"
@@ -47,453 +44,339 @@
                 </option>
               </b-select>
             </b-field>
-            <b-field
-              v-else-if="onlyOneGroup"
-              label="Group*"
-              message="The group that this project belongs to. (Defaulted as the only group available to you. Contact system admin to create new groups if required.)"
-            >
-              <div class="onlyOneSelectOption">
-                <!-- <input v-model="project.group" type="hidden" /> -->
-                {{ availableGroups[0].name }}
-              </div>
-            </b-field>
-            <b-field v-else>
-              <div class="errorMessage">
-                Error: no groups found. Please contact your system administrator
-                to proceed.
-              </div>
-            </b-field>
           </div>
         </div>
-        <!--Short desc-->
+
+        <!-- Descriptions -->
         <b-field
           label="Short description*"
-          message="One to three short descriptive sentences, 20-200 characters in length, that provide information about the study."
+          :type="{ 'is-danger': validationErrors.shortDesc }"
+          :message="validationErrors.shortDesc || shortDescMessage"
         >
           <b-input
-            id="shortDesc"
-            v-model="project.shortDesc"
-            name="shortDesc"
+            v-model.trim="project.shortDesc"
             minlength="20"
             maxlength="200"
             required
           ></b-input>
         </b-field>
 
-        <!--Long desc-->
         <b-field
           label="Long description*"
-          message="Provide an abstract about the study, 100-1000 characters in length. It is a required field for ENA and if you already have an abstract for a publication ready, then by all  means use it. If not, simply copy or embellish the short description and paste it here."
+          :type="{ 'is-danger': validationErrors.longDesc }"
+          :message="validationErrors.longDesc || longDescMessage"
         >
           <b-input
-            id="longDesc"
-            v-model="project.longDesc"
+            v-model.trim="project.longDesc"
             type="textarea"
             minlength="100"
             maxlength="1000"
             required
-            name="longDesc"
           ></b-input>
         </b-field>
 
         <hr />
 
+        <!-- File Uploader -->
         <b-field
           label="Additional files"
-          message="Please upload any documentation obtained from the sequencing provider, including copies of the communication. If the documentation pertains only to a certain sample or data set, then please add it there instead. Note: this is NOT the place to upload raw sequence files."
+          message="Upload documentation from the sequencing provider here. Do NOT upload raw sequence files."
         >
-          <Uploader
-            ref="additionalUploader"
-            :on-upload-status-change="onUploaderChange"
-          />
+          <Uploader ref="additionalUploader" />
         </b-field>
         <CollapsibleUploaderHelp />
+
         <hr />
 
-        <!--<div class="buttons is-right">-->
+        <!-- ENA Submission Options -->
         <div v-if="selectedGroup && selectedGroup.sendToEna">
-          <div class="field">
-            <b-checkbox v-model="project.doNotSendToEna"
-              >Request that this not be sent to ENA</b-checkbox
-            >
-            <p v-if="!project.doNotSendToEna" class="help">
-              Checking this will require you to give a reason why. It will also
-              mean you cannot submit Samples or Runs until this has been
-              resolved between yourself and the Bioinformatics department. In
-              nearly every use case, you do not want to check this box!
-            </p>
-          </div>
+          <b-field>
+            <b-checkbox v-model="project.doNotSendToEna">
+              Request that this project is NOT sent to ENA
+            </b-checkbox>
+          </b-field>
 
-          <div v-if="project.doNotSendToEna" class="field">
+          <b-field
+            v-if="project.doNotSendToEna"
+            :type="{ 'is-danger': validationErrors.enaReason }"
+            :message="validationErrors.enaReason"
+            class="mt-4"
+          >
             <b-input
-              v-model="project.doNotSendToEnaReason"
+              v-model.trim="project.doNotSendToEnaReason"
               type="textarea"
               minlength="50"
-              placeholder="I believe this project should not be submitted to ENA because..."
+              placeholder="Provide a clear reason why this project should be exempt from ENA submission..."
               required
             ></b-input>
-          </div>
-
+          </b-field>
           <hr />
         </div>
 
-        <div v-if="!canSubmit && !isSubmitting" class="box is-warning mt-5">
+        <!-- Validation Summary -->
+        <div
+          v-if="!canSubmit && formIsDirty"
+          class="box has-background-warning-light"
+        >
           <p class="title is-6 has-text-warning-dark">
-            Submission Disabled - Check these items:
+            Submission Requirements
           </p>
           <ul>
-            <li>
-              Consent Given:
+            <li v-for="(error, key) in validationErrors" :key="key">
               <b-icon
-                :icon="consent ? 'check-circle' : 'alert-circle'"
-                :type="consent ? 'is-success' : 'is-danger'"
+                icon="alert-circle"
+                type="is-danger"
+                size="is-small"
               ></b-icon>
+              {{ error }}
             </li>
-            <!-- <li>
-              Uploads Complete:
+            <li v-if="!uploadsAreComplete">
               <b-icon
-                :icon="
-                  additionalUploadsComplete ? 'check-circle' : 'alert-circle'
-                "
-                :type="additionalUploadsComplete ? 'is-success' : 'is-danger'"
+                icon="alert-circle"
+                type="is-danger"
+                size="is-small"
               ></b-icon>
+              All file uploads must be complete or cancelled.
             </li>
-            <li>
-              Not Submitting:
+            <li v-if="!consent">
               <b-icon
-                :icon="!isSubmitting ? 'check-circle' : 'alert-circle'"
-                :type="!isSubmitting ? 'is-success' : 'is-danger'"
+                icon="alert-circle"
+                type="is-danger"
+                size="is-small"
               ></b-icon>
-            </li> -->
-            <li>
-              Standard Fields Valid:
-              <b-icon
-                :icon="areStandardFieldsValid ? 'check-circle' : 'alert-circle'"
-                :type="areStandardFieldsValid ? 'is-success' : 'is-danger'"
-              ></b-icon>
-              <ul v-if="!areStandardFieldsValid" class="ml-4">
-                <li
-                  v-if="
-                    !project.name ||
-                    project.name.length < 20 ||
-                    project.name.length > 80
-                  "
-                >
-                  Name length (20-80 chars)
-                </li>
-                <li
-                  v-if="
-                    project &&
-                    project.name &&
-                    bad.nameList.includes(project.name)
-                  "
-                >
-                  Name already exists
-                </li>
-                <li v-if="!project.group && !onlyOneGroup">Group selected</li>
-                <li
-                  v-if="
-                    !project.shortDesc ||
-                    project.shortDesc.length < 20 ||
-                    project.shortDesc.length > 200
-                  "
-                >
-                  Short Description (20-200 chars)
-                </li>
-                <li
-                  v-if="
-                    !project.longDesc ||
-                    project.longDesc.length < 100 ||
-                    project.longDesc.length > 1000
-                  "
-                >
-                  Long Description (100-1000 chars)
-                </li>
-                <li
-                  v-if="
-                    project.doNotSendToEna &&
-                    (!project.doNotSendToEnaReason ||
-                      project.doNotSendToEnaReason.length < 50)
-                  "
-                >
-                  Reason for not sending to ENA (min 50 chars)
-                </li>
-              </ul>
+              You must consent to the terms before submitting.
             </li>
           </ul>
         </div>
 
-        <FormConsentCheckbox :initial="consent" :on-toggle="onToggleConsent" />
-
+        <!-- Consent & Submission -->
+        <FormConsentCheckbox v-model="consent" />
         <hr />
-
-        <button
+        <b-button
           type="submit"
-          class="button is-success"
-          :class="{ 'is-loading': isSubmitting }"
+          native-type="submit"
+          class="is-success"
+          :loading="isSubmitting"
           :disabled="!canSubmit"
         >
-          Create project
-        </button>
+          Create Project
+        </b-button>
       </form>
     </div>
   </div>
 </template>
 
 <script>
+import { mapState } from "vuex";
 import Uploader from "~/components/uploads/Uploader.vue";
-import FormConsentCheckbox from "~/components/formHelpers/FormConsentCheckbox";
-import CollapsibleUploaderHelp from "~/components/formHelpers/CollapsibleUploaderHelp";
+import FormConsentCheckbox from "~/components/formHelpers/FormConsentCheckbox.vue";
+import CollapsibleUploaderHelp from "~/components/formHelpers/CollapsibleUploaderHelp.vue";
 
 export default {
   name: "NewProject",
   components: { Uploader, FormConsentCheckbox, CollapsibleUploaderHelp },
   middleware: "auth",
+
   async asyncData({ $axios, error }) {
     try {
-      const res = await $axios.get("/projects/names");
-      if (res.status === 200 && res.data.projectsNames) {
-        return {
-          isSubmitting: false, // Added isSubmitting
-          additionalUploadsComplete: true,
-          bad: {
-            nameList: res.data.projectsNames,
-          },
-          consent: false,
-          project: {
-            name: "",
-            group: "",
-            shortDesc: "",
-            longDesc: "",
-            doNotSendToEna: false,
-            doNotSendToEnaReason: null,
-            additionalFiles: [],
-          },
-        };
-      } else {
-        error({ statusCode: 501, message: "Unknown error" });
-      }
+      const response = await $axios.get("/projects/names");
+      return { existingProjectNames: response.data.projectNames || [] };
     } catch (err) {
-      console.error("Error fetching project names:", err); // More specific error log
-      error({ statusCode: 501, message: "Unknown error" });
+      console.error("Failed to fetch existing project names:", err);
+      error({
+        statusCode: 500,
+        message: "Could not load initial data. Please try again later.",
+      });
+      return { existingProjectNames: [] };
     }
   },
+
   async fetch({ store }) {
-    await store.dispatch("refreshGroups");
+    if (store.state.groups.length === 0) {
+      await store.dispatch("refreshGroups");
+    }
   },
+
+  data() {
+    return {
+      project: {
+        name: "",
+        group: "",
+        shortDesc: "",
+        longDesc: "",
+        doNotSendToEna: false,
+        doNotSendToEnaReason: "",
+      },
+      consent: false,
+      isSubmitting: false,
+      formIsDirty: false, // Tracks if user has interacted with the form
+    };
+  },
+
   computed: {
-    user() {
-      return this.$auth?.user || null;
+    ...mapState(["groups"]),
+
+    // --- Form Field Messages ---
+    nameMessage() {
+      return "A short, memorable name for your project (20-80 characters).";
     },
+    shortDescMessage() {
+      return "A one-sentence description of the study (20-200 characters).";
+    },
+    longDescMessage() {
+      return "An abstract for the study, suitable for public archives like ENA (100-1000 characters).";
+    },
+
+    // --- Data Sources & Selections ---
     availableGroups() {
-      const availableGroupsResult = this.$store.state.groups.filter(
-        (f) => !f.deleted
-      );
-      return availableGroupsResult;
-    },
-    areMultipleAvailableGroups() {
-      return this.availableGroups.length > 1;
-    },
-    onlyOneGroup() {
-      return this.availableGroups.length === 1;
-    },
-    isWarningStyleForNameInput() {
-      return this.bad &&
-        this.bad.nameList &&
-        this.project &&
-        this.project.name &&
-        this.bad.nameList.includes(this.project.name)
-        ? "is-danger"
-        : "";
-    },
-    areStandardFieldsValid() {
-      const {
-        name,
-        shortDesc,
-        longDesc,
-        group,
-        doNotSendToEna,
-        doNotSendToEnaReason,
-      } = this.project;
-
-      const nameValid =
-        name &&
-        name.length >= 20 &&
-        name.length <= 80 &&
-        !this.bad.nameList.includes(name);
-      const groupValid = !!group || this.onlyOneGroup; // Check if group is selected, or if there's only one option which would be auto-selected
-      const shortDescValid =
-        shortDesc && shortDesc.length >= 20 && shortDesc.length <= 200;
-      const longDescValid =
-        longDesc && longDesc.length >= 100 && longDesc.length <= 1000;
-
-      const enaReasonValid = doNotSendToEna
-        ? doNotSendToEnaReason && doNotSendToEnaReason.length >= 50
-        : true;
-
-      return (
-        nameValid &&
-        groupValid &&
-        shortDescValid &&
-        longDescValid &&
-        enaReasonValid
-      );
-    },
-    canSubmit() {
-      const baseChecks =
-        this.additionalUploadsComplete &&
-        !this.isWarningStyleForNameInput && // Use the computed property
-        !this.isSubmitting &&
-        this.consent; // Ensure consent is given
-
-      const standardFieldsValid = this.areStandardFieldsValid;
-
-      return baseChecks && standardFieldsValid;
+      return this.groups.filter((g) => !g.deleted);
     },
     selectedGroup() {
-      if (this.project.group) {
-        const found = this.availableGroups.filter(
-          (f) => f._id === this.project.group
-        );
-        if (found.length) {
-          return found[0];
-        } else {
-          // --- DEBUGGING: Log error if selected group ID doesn't match any found group ---
-          // This might indicate an issue with the stored group ID or the filtering.
-          console.error("Selected group ID not found in available groups.", {
-            selectedGroupId: this.project.group,
-            availableGroupsCount: this.availableGroups.length,
-            errorContext: "selectedGroup computed property",
-            currentUser: this.$auth?.user,
-          });
-          return null;
-        }
-      } else {
-        return null;
+      if (!this.project.group) return null;
+      return this.availableGroups.find((g) => g._id === this.project.group);
+    },
+    uploadsAreComplete() {
+      if (this.$refs.additionalUploader) {
+        return this.$refs.additionalUploader.isUploadComplete();
       }
+      return true; // Assume complete if uploader isn't mounted
+    },
+
+    // --- Validation Logic ---
+    validationErrors() {
+      const errors = {};
+
+      // Name validation
+      if (!this.project.name) errors.name = "Project name is required.";
+      else if (this.project.name.length < 20 || this.project.name.length > 80)
+        errors.name = "Name must be between 20 and 80 characters.";
+      else if (this.existingProjectNames.includes(this.project.name))
+        errors.name = "This project name is already in use.";
+
+      // Group validation
+      if (!this.project.group) errors.group = "A group must be selected.";
+
+      // Description validation
+      if (!this.project.shortDesc)
+        errors.shortDesc = "Short description is required.";
+      else if (
+        this.project.shortDesc.length < 20 ||
+        this.project.shortDesc.length > 200
+      )
+        errors.shortDesc =
+          "Short description must be between 20 and 200 characters.";
+
+      if (!this.project.longDesc)
+        errors.longDesc = "Long description is required.";
+      else if (
+        this.project.longDesc.length < 100 ||
+        this.project.longDesc.length > 1000
+      )
+        errors.longDesc =
+          "Long description must be between 100 and 1000 characters.";
+
+      // ENA reason validation
+      if (
+        this.project.doNotSendToEna &&
+        (!this.project.doNotSendToEnaReason ||
+          this.project.doNotSendToEnaReason.length < 50)
+      )
+        errors.enaReason =
+          "A reason for not sending to ENA (min 50 chars) is required.";
+
+      return errors;
+    },
+
+    canSubmit() {
+      if (this.isSubmitting) return false;
+      return (
+        Object.keys(this.validationErrors).length === 0 &&
+        this.consent &&
+        this.uploadsAreComplete
+      );
     },
   },
+
   watch: {
+    // Auto-select group if only one is available
     availableGroups: {
       handler(newGroups) {
-        if (newGroups.length === 0) {
-          console.error(
-            "No groups found for project creation. Cannot proceed without a group.",
-            {
-              currentUser: this.$auth?.user,
-              groupsInStore: this.availableGroups,
-              filteredGroups: newGroups,
-              errorContext: "Group selection watcher",
-            }
-          );
-        } else if (newGroups.length === 1 && !this.project.group) {
+        if (newGroups.length === 1 && !this.project.group) {
           this.project.group = newGroups[0]._id;
         }
       },
       immediate: true,
     },
+    // Watch any project property to mark the form as "dirty"
+    "project.name": function () {
+      this.formIsDirty = true;
+    },
+    "project.group": function () {
+      this.formIsDirty = true;
+    },
+    "project.shortDesc": function () {
+      this.formIsDirty = true;
+    },
+    "project.longDesc": function () {
+      this.formIsDirty = true;
+    },
   },
+
   methods: {
-    onToggleConsent(newState) {
-      this.consent = newState;
-    },
-    onUploaderChange() {
-      this.updateAdditionalFiles();
-    },
-    updateAdditionalFiles() {
-      if (this.$refs["additionalUploader"]) {
-        this.project.additionalFiles =
-          this.$refs["additionalUploader"].getFiles();
-      }
-    },
-    postForm() {
-      const targetUsername = this.$auth?.user?.username;
-      if (!targetUsername) {
-        console.error("Authentication Error: User or username missing.", {
-          auth: this.$auth,
-          user: this.$auth?.user,
-          errorContext: "postForm - User authentication check",
-        });
-        this.$buefy.dialog.alert({
-          title: "Authentication Error",
-          message:
-            "Issue authenticating you. Please sign in and out of this website and try again.",
-          type: "is-danger",
-          hasIcon: false,
+    async submitForm() {
+      if (!this.canSubmit) {
+        this.formIsDirty = true; // Show validation errors if trying to submit an invalid form
+        this.$buefy.toast.open({
+          message: "Please correct the errors before submitting.",
+          type: "is-warning",
+          position: "is-bottom",
         });
         return;
       }
-
       this.isSubmitting = true;
-      this.updateAdditionalFiles();
 
-      // Handle group selection logic if only one group is available
-      if (this.onlyOneGroup) {
-        this.project.group = this.availableGroups[0]._id;
-      }
+      const additionalFiles = this.$refs.additionalUploader?.getFiles() || [];
+      const payload = {
+        ...this.project,
+        additionalFiles,
+        owner: this.$auth.user.username,
+      };
 
-      // Assign the owner of the project
-      this.project.owner = targetUsername;
-
-      this.$axios
-        .post("/projects/new", this.project)
-        .then((result) => {
-          setTimeout(() => {
-            this.$buefy.toast.open({
-              message: "Project created!",
-              type: "is-success",
-            });
-            this.$router.push({
-              name: "project",
-              query: { id: result.data.project._id },
-            });
-            // isSubmitting will automatically be reset as component is destroyed on navigation
-          }, 3000);
-        })
-        .catch((err) => {
-          setTimeout(() => {
-            console.error("Error submitting form:", err);
-            let errorMessage = err.message;
-            if (err.message.includes("500")) {
-              errorMessage =
-                "Unknown 500 error from server. Sorry about that. " +
-                "Your project details might have been partially saved. " +
-                "Uploads may exist on the server but might not be linked to the project. " +
-                "Please check the website and notify the system admin of the time this error occurred.";
-            } else if (err.response?.data?.error) {
-              errorMessage = err.response.data.error;
-            } else {
-              errorMessage =
-                "An unexpected error occurred. Please try again or contact support.";
-            }
-
-            this.$buefy.dialog.alert({
-              title: "Error",
-              message: errorMessage,
-              type: "is-danger",
-              hasIcon: false,
-            });
-            this.isSubmitting = false;
-          }, 2000);
+      try {
+        const response = await this.$axios.post("/projects/new", payload);
+        this.$buefy.toast.open({
+          message: "Project created successfully!",
+          type: "is-success",
+          duration: 3000,
         });
+        // Redirect to the newly created project page
+        this.$router.push({
+          name: "project",
+          query: { id: response.data.project._id },
+        });
+      } catch (err) {
+        console.error("Error creating project:", err);
+        const errorMessage =
+          err.response?.data?.error ||
+          "An unexpected error occurred. Please check the details and try again.";
+
+        this.$buefy.dialog.alert({
+          title: "Submission Failed",
+          message: errorMessage,
+          type: "is-danger",
+          hasIcon: true,
+          icon: "alert-circle-outline",
+          ariaRole: "alertdialog",
+          ariaModal: true,
+        });
+      } finally {
+        this.isSubmitting = false;
+      }
     },
   },
 };
 </script>
 
-<style>
-.checkbox-label {
-  padding-left: 0.5rem;
-}
-
-.onlyOneSelectOption {
-  height: 35px;
-  display: flex;
-  align-items: center;
-}
-
-.errorMessage {
-  color: #f14668;
-  display: block;
-}
+<style scoped>
+/* Scoped styles can go here if needed */
 </style>

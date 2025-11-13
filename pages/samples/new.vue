@@ -1,715 +1,400 @@
 <template>
   <div class="section">
     <div class="container">
-      <h1 class="title">New Sample</h1>
-      <h3 class="subtitle">
-        <i> Ensure required fields (*) are filled in before submitting. </i>
-      </h3>
+      <h1 class="title">New Sample for {{ project.name }}</h1>
+      <h2 class="subtitle">
+        Create a single sample or upload a CSV for multiple TPlex samples.
+      </h2>
       <hr />
-      <form @submit.prevent="postForm">
-        <!-- Conditional rendering for project field -->
-        <b-field v-if="project && project.name" label="Project*">{{
-          project.name
-        }}</b-field>
-        <b-field v-else label="Project*">Loading Project...</b-field>
 
-        <hr />
+      <b-field>
+        <b-checkbox v-model="isTplexChecked" :disabled="isSubmitting">
+          Create samples from TPlex CSV file
+        </b-checkbox>
+      </b-field>
+      <hr />
 
-        <!-- Rest of your template content.
-             Wrap the rest of your form in v-if="project" if many fields depend on it -->
-        <div v-if="project">
-          <!-- TPLEX SECTION (ADMIN ONLY) -->
-          <div v-if="isAdmin" class="box" style="border: 2px solid #336699">
-            <h2 class="title is-5">Tplex Data (Admin-only)</h2>
-            <b-field>
-              <b-checkbox v-model="isTplexChecked">
-                Is Tplex sample?
-              </b-checkbox>
-            </b-field>
-
-            <div v-if="isTplexChecked">
-              <ul class="tplex-instructions-list">
-                <li>
-                  Please upload a single .csv file containing the Tplex data for
-                  this sample.
-                </li>
-                <li>
-                  Click 'Done' to remove an uploaded file and try again, or
-                  untick the checkbox to remove the tplex option from the
-                  submission.
-                </li>
-                <li>
-                  This is a once-only submission where edits cannot be made
-                  afterwards, so please triple-check all the data is correct
-                  before uploading.
-                </li>
-                <li>
-                  Please ensure the first row has the heading columns in order
-                  as follows:
-                  <p class="has-text-weight-bold ml-4 mt-1 mb-1">
-                    Sample Name, Scientific Name, Common Name, NCBI Taxonomy ID,
-                    Conditions
+      <form @submit.prevent="submitForm">
+        <!-- == TPLEX CSV UPLOAD FORM == -->
+        <template v-if="isTplexChecked">
+          <b-field
+            label="TPlex CSV File*"
+            :type="{ 'is-danger': validationErrors.tplexCsv }"
+            :message="validationErrors.tplexCsv"
+          >
+            <b-upload v-model="tplexCsvFile" drag-drop>
+              <section class="section">
+                <div class="content has-text-centered">
+                  <p>
+                    <b-icon icon="upload" size="is-large"></b-icon>
                   </p>
-                </li>
-                <li>
-                  Please also ensure you have at least one entry below the
-                  header row.
-                </li>
-                <li>
-                  Once uploaded, please press the 'Validate CSV' button to check
-                  the data is correct. Only when validated can you submit the
-                  tplex sample.
-                </li>
-                <li>
-                  The name of this Tplex sample will be automatically generated,
-                  using the last 6 characters of its Project ID (e.g.,
-                  'tplex_sample_<code>xxxxxx</code>'). Subsequent Tplex samples
-                  in the same project will have a number added to ensure
-                  uniqueness (e.g., 'tplex_sample_<code>xxxxxx</code>_2').
-                </li>
-              </ul>
-
-              <br />
-
-              <b-field label="Upload Tplex CSV File">
-                <UploaderTslPlex
-                  ref="tplexCsvUploader"
-                  :on-upload-status-change="onTplexUploaderChange"
-                />
-              </b-field>
-            </div>
-            <div
-              v-if="isTplexChecked"
-              class="field is-flex is-justify-content-space-between mt-4"
-            >
-              <p class="control">
-                <b-button
-                  type="is-info"
-                  icon-left="check"
-                  :disabled="!sample.tplexCsv"
-                  @click="validateTplexCsv"
-                >
-                  Validate CSV
-                </b-button>
-              </p>
-              <p class="control">
-                <b-icon
-                  v-if="validatedCsv"
-                  icon="check-circle"
-                  type="is-success"
-                  size="is-large"
-                ></b-icon>
-                <span v-if="validatedCsv" class="has-text-success ml-2"
-                  >Validated!</span
-                >
-              </p>
-            </div>
-          </div>
-
-          <div v-if="!isTplexChecked">
-            <div class="columns">
-              <div class="column">
-                <b-field
-                  label="Name*"
-                  :class="isWarningStyleForNameInput"
-                  message="A choose a short, informative name to identify your sample, ideally between 10 and 80 characters."
-                >
-                  <b-input
-                    id="name"
-                    v-model="sample.name"
-                    name="name"
-                    minlength="3"
-                    maxlength="80"
-                    required
-                  ></b-input>
-                </b-field>
-              </div>
-              <div class="column"></div>
-            </div>
-
-            <div class="columns">
-              <div class="column">
-                <b-field
-                  label="Scientific Name*"
-                  message="The scientific name of your sample organism as it appears in NCBI Taxonomy. E.g. Solanum lycopersicum."
-                >
-                  <b-input
-                    id="scientificName"
-                    v-model="sample.scientificName"
-                    name="scientificName"
-                    minlength="5"
-                    required
-                  ></b-input>
-                </b-field>
-              </div>
-              <div class="column">
-                <b-field
-                  label="Common Name*"
-                  message="The common name of your sample organism if known (optional). E.g. Tomato."
-                >
-                  <b-input
-                    id="commonName"
-                    v-model="sample.commonName"
-                    name="commonName"
-                    minlength="3"
-                    required
-                  ></b-input>
-                </b-field>
-              </div>
-              <div class="column">
-                <b-field
-                  label="NCBI Taxonomy ID*"
-                  message="The Taxonomy ID for your sample's organism. (Choose the host if you're investigating host - pathogen interactions.)"
-                >
-                  <b-input
-                    id="ncbi"
-                    v-model="sample.ncbi"
-                    name="ncbi"
-                    type="number"
-                    required
-                  ></b-input>
-                </b-field>
-              </div>
-            </div>
-
-            <b-field
-              label="Conditions*"
-              message="Information (required, minimum 50 characters) about the sample conditions (environmental conditions, is it a pathogen interaction?, what pathogen? etc.)"
-            >
-              <b-input
-                id="conditions"
-                v-model="sample.conditions"
-                type="textarea"
-                minlength="50"
-                required
-                name="conditions"
-              ></b-input>
-            </b-field>
-
-            <hr />
-
-            <b-field
-              label="Additional files"
-              message="Please upload any documentation obtained from the sequencing provider, including copies of the communication. If the documentation pertains to the whole project or only to a certain data set, then please add it there instead. Note: this is NOT the place to upload raw sequence files."
-            >
-              <Uploader
-                ref="additionalUploader"
-                :on-upload-status-change="onUploaderChange"
-              />
-            </b-field>
-            <CollapsibleUploaderHelp />
-          </div>
-
-          <br />
-
-          <div v-if="!canSubmit && !isSubmitting" class="box is-warning mt-5">
-            <p class="title is-6 has-text-warning-dark">
-              Submission Disabled - Check these items:
+                  <p v-if="tplexCsvFile">{{ tplexCsvFile.name }}</p>
+                  <p v-else>Drop your CSV here or click to upload</p>
+                </div>
+              </section>
+            </b-upload>
+          </b-field>
+          <b-button @click="validateTplexCsv" :disabled="!tplexCsvFile">
+            Validate CSV
+          </b-button>
+          <div v-if="validatedCsvData.length" class="mt-4 content">
+            <p class="has-text-success">
+              <b-icon icon="check-circle" size="is-small"></b-icon>
+              CSV is valid. Found {{ validatedCsvData.length }} samples.
             </p>
-            <ul>
-              <li>
-                Consent Given:
-                <b-icon
-                  :icon="consentGiven ? 'check-circle' : 'alert-circle'"
-                  :type="consentGiven ? 'is-success' : 'is-danger'"
-                ></b-icon>
+            <ul class="tplex-list">
+              <li
+                v-for="(item, index) in validatedCsvData.slice(0, 5)"
+                :key="index"
+              >
+                {{ item.name }}
               </li>
-              <li>
-                Uploads Complete:
-                <b-icon
-                  :icon="
-                    additionalUploadsComplete ? 'check-circle' : 'alert-circle'
-                  "
-                  :type="additionalUploadsComplete ? 'is-success' : 'is-danger'"
-                ></b-icon>
-              </li>
-              <li>
-                Not Submitting:
-                <b-icon
-                  :icon="!isSubmitting ? 'check-circle' : 'alert-circle'"
-                  :type="!isSubmitting ? 'is-success' : 'is-danger'"
-                ></b-icon>
-              </li>
-
-              <li v-if="!isTplexChecked">
-                Standard Fields Valid:
-                <b-icon
-                  :icon="
-                    areStandardFieldsValid ? 'check-circle' : 'alert-circle'
-                  "
-                  :type="areStandardFieldsValid ? 'is-success' : 'is-danger'"
-                ></b-icon>
-                <ul v-if="!areStandardFieldsValid" class="ml-4">
-                  <li
-                    v-if="
-                      !sample.name ||
-                      sample.name.length < 3 ||
-                      sample.name.length > 80
-                    "
-                  >
-                    Name length (3-80 chars)
-                  </li>
-                  <li v-if="invalidSampleNames.includes(sample.name)">
-                    Name already exists
-                  </li>
-                  <li
-                    v-if="
-                      !sample.scientificName || sample.scientificName.length < 5
-                    "
-                  >
-                    Scientific Name (min 5 chars)
-                  </li>
-                  <li v-if="!sample.commonName || sample.commonName.length < 3">
-                    Common Name (min 3 chars)
-                  </li>
-                  <li
-                    v-if="
-                      sample.ncbi === null ||
-                      sample.ncbi === '' ||
-                      isNaN(sample.ncbi)
-                    "
-                  >
-                    NCBI ID (must be number)
-                  </li>
-                  <li
-                    v-if="!sample.conditions || sample.conditions.length < 50"
-                  >
-                    Conditions (min 50 chars)
-                  </li>
-                </ul>
-              </li>
-
-              <li v-if="!isTplexChecked">
-                Name not in warning state:
-                <b-icon
-                  :icon="
-                    !isWarningStyleForNameInput
-                      ? 'check-circle'
-                      : 'alert-circle'
-                  "
-                  :type="
-                    !isWarningStyleForNameInput ? 'is-success' : 'is-danger'
-                  "
-                ></b-icon>
-              </li>
-
-              <li v-if="isTplexChecked">
-                Tplex CSV Uploaded:
-                <b-icon
-                  :icon="!!sample.tplexCsv ? 'check-circle' : 'alert-circle'"
-                  :type="!!sample.tplexCsv ? 'is-success' : 'is-danger'"
-                ></b-icon>
-              </li>
-              <li v-if="isTplexChecked">
-                Tplex CSV Validated:
-                <b-icon
-                  :icon="validatedCsv ? 'check-circle' : 'alert-circle'"
-                  :type="validatedCsv ? 'is-success' : 'is-danger'"
-                ></b-icon>
+              <li v-if="validatedCsvData.length > 5">
+                ...and {{ validatedCsvData.length - 5 }} more.
               </li>
             </ul>
           </div>
+        </template>
 
-          <FormConsentCheckbox
-            :initial="consentGiven"
-            :on-toggle="onToggleConsent"
-          />
+        <!-- == STANDARD SAMPLE FORM == -->
+        <template v-else>
+          <div class="columns">
+            <div class="column">
+              <b-field
+                label="Sample Name*"
+                :type="{ 'is-danger': validationErrors.name }"
+                :message="validationErrors.name"
+              >
+                <b-input v-model.trim="sample.name" required></b-input>
+              </b-field>
+            </div>
+            <div class="column">
+              <b-field
+                label="Scientific Name*"
+                :type="{ 'is-danger': validationErrors.scientificName }"
+                :message="validationErrors.scientificName"
+              >
+                <b-input
+                  v-model.trim="sample.scientificName"
+                  required
+                ></b-input>
+              </b-field>
+            </div>
+          </div>
+          <div class="columns">
+            <div class="column">
+              <b-field
+                label="Common Name*"
+                :type="{ 'is-danger': validationErrors.commonName }"
+                :message="validationErrors.commonName"
+              >
+                <b-input v-model.trim="sample.commonName" required></b-input>
+              </b-field>
+            </div>
+            <div class="column">
+              <b-field
+                label="NCBI Taxonomy ID*"
+                :type="{ 'is-danger': validationErrors.ncbi }"
+                :message="validationErrors.ncbi"
+              >
+                <b-input v-model="sample.ncbi" type="number" required></b-input>
+              </b-field>
+            </div>
+          </div>
+
+          <b-field
+            label="Conditions*"
+            :type="{ 'is-danger': validationErrors.conditions }"
+            :message="validationErrors.conditions"
+          >
+            <b-input
+              v-model.trim="sample.conditions"
+              type="textarea"
+              minlength="50"
+              placeholder="Describe the experimental conditions for this sample (min 50 characters)."
+              required
+            ></b-input>
+          </b-field>
 
           <hr />
 
-          <button
-            type="submit"
-            class="button is-success"
-            :class="{ 'is-loading': isSubmitting }"
-            :disabled="!canSubmit || isSubmitting"
+          <b-field
+            label="Additional files"
+            message="Upload any documentation specific to this sample."
           >
-            Create sample
-          </button>
-        </div>
+            <Uploader ref="additionalUploader" />
+          </b-field>
+          <CollapsibleUploaderHelp />
+        </template>
+
+        <hr />
+
+        <!-- == SUBMISSION AREA == -->
+        <FormConsentCheckbox v-model="consent" />
+        <hr />
+        <b-button
+          type="submit"
+          native-type="submit"
+          class="is-success"
+          :loading="isSubmitting"
+          :disabled="!canSubmit"
+        >
+          Create Sample(s)
+        </b-button>
       </form>
     </div>
   </div>
 </template>
 
 <script>
-import UploaderTslPlex from "~/components/uploads/UploaderTslPlex.vue";
+import Papa from "papaparse";
 import Uploader from "~/components/uploads/Uploader.vue";
-import CollapsibleUploaderHelp from "~/components/formHelpers/CollapsibleUploaderHelp";
 import FormConsentCheckbox from "~/components/formHelpers/FormConsentCheckbox.vue";
-import Papa from "papaparse"; // Import papaparse for CSV parsing
+import CollapsibleUploaderHelp from "~/components/formHelpers/CollapsibleUploaderHelp.vue";
 
 export default {
   name: "NewSample",
-  components: {
-    UploaderTslPlex,
-    Uploader,
-    CollapsibleUploaderHelp,
-    FormConsentCheckbox,
-  },
+  components: { Uploader, FormConsentCheckbox, CollapsibleUploaderHelp },
   middleware: "auth",
-  async asyncData({ route, $axios, error, app }) {
-    if (!route.query.project) {
-      return error({ statusCode: 500, message: "Project not found" });
-    }
 
+  async asyncData({ $axios, params, error, route }) {
     try {
-      const res = await $axios.get("/project", {
-        params: { id: route.query.project },
+      const projectResponse = await $axios.get("/project", {
+        params: { id: params.id || route.query.projectId },
       });
-
-      if (res.status === 200) {
-        // Project data and validation checks
-        if (
-          res.data.project &&
-          res.data.project.group &&
-          res.data.project.doNotSendToEna &&
-          res.data.project.group.sendToEna
-        ) {
-          return error({
-            message:
-              "You have requested that this data not go to ENA, you cannot add any samples until this is resolved.",
-          });
-        }
-
-        const existingSampleNamesForThisProject = res.data.project.samples.map(
-          (s) => s.name
-        );
-
-        const loggedInUsername = app?.$auth?.user?.username;
-        const isAdmin =
-          loggedInUsername &&
-          process?.env?.ENA_ADMINS?.length &&
-          process.env.ENA_ADMINS.includes(loggedInUsername);
-
-        // Base object for the component data
-        let returnObj = {
-          isAdmin,
-          isSubmitting: false,
-          additionalUploadsComplete: true,
-          tplexCsvUploadComplete: true,
-          project: res.data.project,
-          invalidSampleNames: existingSampleNamesForThisProject,
-          isTplexChecked: false,
-          consentGiven: false,
-          validatedCsv: false,
-          sample: {
-            name: "",
-            scientificName: "",
-            commonName: "",
-            ncbi: null,
-            conditions: "",
-            tplexCsv: null,
-            project: res.data.project.id,
-            additionalFiles: [],
-          },
-        };
-
-        // Handle cloning if clonedSampleId is present in the query
-        if (route.query.clonedSampleId) {
-          const clonedSampleId = route.query.clonedSampleId;
-          try {
-            const clonedSampleResponse = await $axios.get("/sample", {
-              params: { id: clonedSampleId },
-            });
-            if (
-              clonedSampleResponse.status === 200 &&
-              clonedSampleResponse.data.sample
-            ) {
-              let clonedSample = clonedSampleResponse.data.sample;
-
-              const plusOneClonedSampleName = clonedSample.name
-                ? `${clonedSample.name}_clone`
-                : "";
-
-              returnObj.sample.name = plusOneClonedSampleName || "";
-              returnObj.sample.scientificName =
-                clonedSample.scientificName || "";
-              returnObj.sample.commonName = clonedSample.commonName || "";
-              returnObj.sample.ncbi = clonedSample.ncbi || null;
-              returnObj.sample.conditions = clonedSample.conditions || "";
-            }
-          } catch (cloneErr) {
-            console.error("Error fetching cloned sample data:", cloneErr);
-            // Optionally show a toast to the user that cloning failed for this field
-            if (app.$buefy && app.$buefy.toast) {
-              app.$buefy.toast.open({
-                message: "Could not pre-fill data from cloned sample.",
-                type: "is-warning",
-              });
-            }
-            // We still want to let the user fill out the form when errored, so we just log the error.
-          }
-        }
-
-        return returnObj;
-      } // End of if (res.status === 200)
-
-      // If project fetch failed
-      return error({ statusCode: 500, message: "Project not found" });
+      const namesResponse = await $axios.get(
+        `/samples/names/${projectResponse.data.project._id}`
+      );
+      return {
+        project: projectResponse.data.project,
+        existingSampleNames: namesResponse.data.sampleNames || [],
+      };
     } catch (err) {
-      // Catch block for the initial project fetch or other errors
-      console.error(err);
-      return error({ statusCode: 500, message: "Project not found" });
+      console.error("Failed to load initial data for new sample page:", err);
+      return error({
+        statusCode: 404,
+        message: "Project not found or API error.",
+      });
     }
   },
+
+  data() {
+    return {
+      sample: {
+        name: "",
+        scientificName: "",
+        commonName: "",
+        ncbi: null,
+        conditions: "",
+        project: this.$route.query.projectId,
+      },
+      isTplexChecked: false,
+      tplexCsvFile: null,
+      validatedCsvData: [],
+      consent: false,
+      isSubmitting: false,
+    };
+  },
+
+  async created() {
+    if (this.$route.query.clonedSampleId) {
+      await this.initializeFromClonedSample(this.$route.query.clonedSampleId);
+    }
+  },
+
   computed: {
-    isWarningStyleForNameInput() {
-      if (this.isTplexChecked) {
-        return "";
-      }
-      return this.invalidSampleNames.includes(this.sample.name)
-        ? "is-danger"
-        : "";
-    },
-    areStandardFieldsValid() {
-      if (this.isTplexChecked) {
+    uploadsAreComplete() {
+      if (this.isTplexChecked || !this.$refs.additionalUploader) {
         return true;
       }
+      return this.$refs.additionalUploader.isUploadComplete();
+    },
 
-      const { name, scientificName, commonName, ncbi, conditions } =
-        this.sample;
+    validationErrors() {
+      const errors = {};
 
-      const nameValid =
-        name &&
-        name.length >= 3 &&
-        name.length <= 80 &&
-        !this.invalidSampleNames.includes(name);
-      const scientificNameValid = scientificName && scientificName.length >= 5;
-      const commonNameValid = commonName && commonName.length >= 3;
-      const ncbiValid = ncbi !== null && ncbi !== "" && !isNaN(ncbi);
-      const conditionsValid = conditions && conditions.length >= 50;
+      if (this.isTplexChecked) {
+        if (this.validatedCsvData.length === 0) {
+          errors.tplexCsv = "A valid and validated TPlex CSV file is required.";
+        }
+      } else {
+        // Standard Sample Validation
+        if (!this.sample.name) errors.name = "Sample name is required.";
+        else if (this.sample.name.length < 3 || this.sample.name.length > 80)
+          errors.name = "Name must be between 3 and 80 characters.";
+        else if (this.existingSampleNames.includes(this.sample.name))
+          errors.name = "This sample name is already in use for this project.";
 
+        if (
+          !this.sample.scientificName ||
+          this.sample.scientificName.length < 5
+        )
+          errors.scientificName =
+            "Scientific name is required (min 5 characters).";
+
+        if (!this.sample.commonName || this.sample.commonName.length < 3)
+          errors.commonName = "Common name is required (min 3 characters).";
+
+        const ncbi = Number(this.sample.ncbi);
+        if (!this.sample.ncbi || isNaN(ncbi) || ncbi <= 0)
+          errors.ncbi = "A valid, positive NCBI Taxonomy ID is required.";
+
+        if (!this.sample.conditions || this.sample.conditions.length < 50)
+          errors.conditions = "Conditions are required (min 50 characters).";
+      }
+
+      return errors;
+    },
+
+    canSubmit() {
+      if (this.isSubmitting) return false;
       return (
-        nameValid &&
-        scientificNameValid &&
-        commonNameValid &&
-        ncbiValid &&
-        conditionsValid
+        Object.keys(this.validationErrors).length === 0 &&
+        this.consent &&
+        this.uploadsAreComplete
       );
     },
-    canSubmit() {
-      const baseChecks = this.additionalUploadsComplete && !this.isSubmitting;
-      const consentCheck = this.consentGiven;
+  },
 
-      if (!consentCheck) {
-        console.log("canSubmit: Blocked by consentGiven");
-        return false;
+  methods: {
+    async initializeFromClonedSample(clonedSampleId) {
+      try {
+        const { data } = await this.$axios.get("/sample", {
+          params: { id: clonedSampleId },
+        });
+        const clonedSample = data.sample;
+        if (clonedSample) {
+          this.sample.name = `${clonedSample.name || ""}_clone`;
+          this.sample.scientificName = clonedSample.scientificName || "";
+          this.sample.commonName = clonedSample.commonName || "";
+          this.sample.ncbi = clonedSample.ncbi || null;
+          this.sample.conditions = clonedSample.conditions || "";
+          this.$buefy.toast.open({
+            message: "Form pre-filled from cloned sample.",
+            type: "is-info",
+          });
+        }
+      } catch (err) {
+        console.error("Error fetching cloned sample:", err);
+        this.$buefy.toast.open({
+          message: "Could not fetch data for cloning.",
+          type: "is-warning",
+        });
       }
+    },
 
-      if (this.isTplexChecked) {
-        // Tplex specific checks
-        const tplexValid =
-          baseChecks &&
-          this.tplexCsvUploadComplete &&
-          !!this.sample.tplexCsv &&
-          this.validatedCsv;
-        console.log(
-          `canSubmit (Tplex): baseChecks=${baseChecks}, tplexCsvUploadComplete=${
-            this.tplexCsvUploadComplete
-          }, hasTplexCsv=${!!this.sample.tplexCsv}, validatedCsv=${
-            this.validatedCsv
-          }, result=${tplexValid}`
-        );
-        return tplexValid;
-      } else {
-        // Non-Tplex specific checks
-        const standardFieldsValid = this.areStandardFieldsValid;
-        const nameWarning = this.isWarningStyleForNameInput; // This should be a boolean now
-        const nonTplexValid = baseChecks && standardFieldsValid && !nameWarning;
-        console.log(
-          `canSubmit (Non-Tplex): baseChecks=${baseChecks}, areStandardFieldsValid=${standardFieldsValid}, isWarningStyleForNameInput=${nameWarning}, !isWarningStyleForNameInput=${!nameWarning}, result=${nonTplexValid}`
-        );
-        return nonTplexValid;
+    validateTplexCsv() {
+      if (!this.tplexCsvFile) return;
+
+      Papa.parse(this.tplexCsvFile, {
+        header: true,
+        skipEmptyLines: true,
+        complete: (results) => {
+          const expectedHeaders = [
+            "name",
+            "scientificName",
+            "commonName",
+            "ncbi",
+            "conditions",
+          ];
+          const actualHeaders = results.meta.fields;
+
+          if (!expectedHeaders.every((h) => actualHeaders.includes(h))) {
+            this.validatedCsvData = [];
+            this.$buefy.dialog.alert({
+              title: "Invalid CSV Headers",
+              message: `CSV headers are incorrect. Expected: <strong>${expectedHeaders.join(
+                ", "
+              )}</strong>`,
+              type: "is-danger",
+            });
+            return;
+          }
+
+          this.validatedCsvData = results.data;
+          this.$buefy.toast.open({
+            message: "CSV validated successfully!",
+            type: "is-success",
+          });
+        },
+        error: (err) => {
+          console.error("CSV parsing error:", err);
+          this.validatedCsvData = [];
+          this.$buefy.dialog.alert({
+            title: "CSV Error",
+            message: `Failed to parse CSV file: ${err.message}`,
+            type: "is-danger",
+          });
+        },
+      });
+    },
+
+    async submitForm() {
+      if (!this.canSubmit) {
+        this.$buefy.toast.open({
+          message: "Please correct the errors before submitting.",
+          type: "is-warning",
+        });
+        return;
+      }
+      this.isSubmitting = true;
+
+      const payload = {
+        ...this.sample,
+        project: this.project._id,
+        group: this.project.group._id,
+        owner: this.$auth.user.username,
+        tplexCsv: this.isTplexChecked ? this.validatedCsvData : null,
+        additionalFiles: this.isTplexChecked
+          ? []
+          : this.$refs.additionalUploader?.getFiles() || [],
+      };
+
+      try {
+        const response = await this.$axios.post("/samples/new", payload);
+        const createdSample = response.data.sample;
+
+        this.$buefy.toast.open({
+          message: `Successfully created ${
+            this.isTplexChecked ? this.validatedCsvData.length : 1
+          } sample(s)!`,
+          type: "is-success",
+        });
+
+        // If not tplex, redirect to the single sample page
+        if (!this.isTplexChecked) {
+          this.$router.push({
+            name: "sample",
+            query: { id: createdSample._id },
+          });
+        } else {
+          // if tplex, redirect to the project page
+          this.$router.push({
+            name: "project",
+            query: { id: this.project._id },
+          });
+        }
+      } catch (err) {
+        console.error("Error creating sample(s):", err);
+        this.$buefy.dialog.alert({
+          title: "Submission Failed",
+          message: err.response?.data?.error || "An unexpected error occurred.",
+          type: "is-danger",
+        });
+      } finally {
+        this.isSubmitting = false;
       }
     },
   },
-  methods: {
-    onToggleConsent(newState) {
-      this.consentGiven = newState;
+  watch: {
+    isTplexChecked() {
+      // Reset validation when switching modes
+      this.validatedCsvData = [];
+      this.tplexCsvFile = null;
     },
-    onUploaderChange(val) {
-      if (typeof val === "boolean") {
-        this.additionalUploadsComplete = val;
-      }
-      this.updateAdditionalFiles();
-    },
-    updateAdditionalFiles() {
-      if (this.$refs["additionalUploader"]) {
-        this.sample.additionalFiles =
-          this.$refs["additionalUploader"].getFiles();
-      }
-    },
-    async onTplexUploaderChange(isComplete, file) {
-      this.tplexCsvUploadComplete = isComplete; // Update the boolean status
-      this.validatedCsv = false; // NEW: Reset validation status when file changes
-
-      if (isComplete && file) {
-        try {
-          const csvContent = await this.readFileAsText(file);
-          this.sample.tplexCsv = csvContent;
-        } catch (e) {
-          console.error("Error reading Tplex CSV file:", e);
-          this.$buefy.toast.open({
-            message: "Failed to read Tplex CSV file.",
-            type: "is-danger",
-          });
-          this.sample.tplexCsv = null;
-        }
-      } else if (!file) {
-        this.sample.tplexCsv = null;
-      }
-    },
-    onConsentToggle(consent) {
-      this.consentGiven = consent;
-    },
-    readFileAsText(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (e) => resolve(e.target.result);
-        reader.onerror = (e) => reject(e);
-        reader.readAsText(file);
-      });
-    },
-    validateTplexCsv() {
-      this.validatedCsv = false; // Reset validation state
-
-      if (!this.sample.tplexCsv) {
-        this.$buefy.toast.open({
-          message: "No CSV file content to validate.",
-          type: "is-warning",
-        });
-        return false;
-      }
-      // Define expected headers (case-sensitive as per your request)
-      const expectedHeaders = [
-        "Sample Name",
-        "Scientific Name",
-        "Common Name",
-        "NCBI Taxonomy ID",
-        "Conditions",
-      ];
-
-      try {
-        const parsedResult = Papa.parse(this.sample.tplexCsv, {
-          header: false, // We'll manually check headers
-          skipEmptyLines: true,
-        });
-
-        if (parsedResult.errors.length) {
-          throw new Error(
-            `CSV parsing error: ${parsedResult.errors
-              .map((e) => e.message)
-              .join("; ")}`
-          );
-        }
-
-        const data = parsedResult.data;
-
-        if (data.length === 0) {
-          throw new Error("CSV file is empty.");
-        }
-
-        // Check headers
-        const actualHeaders = data[0].map((h) => h.trim()); // Trim whitespace
-        const headerMatch = expectedHeaders.every((expectedHeader, index) => {
-          return actualHeaders[index] === expectedHeader;
-        });
-
-        if (!headerMatch) {
-          // const missingOrMismatch = expectedHeaders.filter(
-          //   (expected, index) => actualHeaders[index] !== expected
-          // );
-          throw new Error(
-            `Header mismatch. Expected first 5 columns to be: ${expectedHeaders.join(
-              ", "
-            )}. Found: ${actualHeaders.slice(0, 5).join(", ")}.`
-          );
-        }
-
-        // Check for at least one data row below the header
-        if (data.length < 2) {
-          // If only 1 row (header) or less
-          throw new Error(
-            "CSV must contain at least one data entry row below the header."
-          );
-        }
-
-        // If all checks pass
-        this.validatedCsv = true;
-        this.$buefy.toast.open({
-          message: "Tplex CSV validated successfully!",
-          type: "is-success",
-        });
-        return true;
-      } catch (error) {
-        console.error("Tplex CSV Validation Error:", error.message);
-        this.$buefy.dialog.alert({
-          title: "CSV Validation Error",
-          message: error.message,
-          type: "is-danger",
-          hasIcon: false,
-        });
-        this.validatedCsv = false; // Ensure it's false on failure
-        return false;
-      }
-    },
-    postForm() {
-      this.isSubmitting = true;
-      this.updateAdditionalFiles();
-
-      // Don't modify sample data here - wait for success
-
-      const sampleData = { ...this.sample }; // Create a copy
-
-      if (this.isTplexChecked) {
-        // For Tplex samples, clear these fields in the copy
-        sampleData.name = null;
-        sampleData.scientificName = null;
-        sampleData.commonName = null;
-        sampleData.ncbi = null;
-        sampleData.conditions = null;
-      } else {
-        sampleData.tplexCsv = null;
-      }
-
-      sampleData.owner = this.$auth.user.username;
-      sampleData.group = this.project.group;
-      sampleData.project = this.project._id;
-
-      this.$axios
-        .post("/samples/new", sampleData)
-        .then((result) => {
-          this.$buefy.toast.open({
-            message: "Sample created!",
-            type: "is-success",
-          });
-          this.$router.push({
-            name: "sample",
-            query: { id: result.data.sample._id },
-          });
-          // No need to set isSubmitting = false here as we're navigating away
-        })
-        .catch((err) => {
-          console.error(err);
-          let errorMessage = err.message;
-          if (err.message.includes("500")) {
-            const type = "Sample";
-            errorMessage =
-              "Unknown 500 error from server. Sorry about that." +
-              "\n" +
-              type +
-              " info may have registered in database." +
-              "\nUploads are on remote server, but may not have been registered in database and/or moved to HPC." +
-              "\nPlease check all this using this website, and notify system admin of when this happened, and which data you need cleaning up.";
-          }
-          this.$buefy.dialog.alert({
-            title: "Error",
-            message: errorMessage,
-            type: "is-danger",
-            hasIcon: false,
-          });
-          this.isSubmitting = false; // Reset loading state on error
-        });
+    tplexCsvFile() {
+      // Invalidate previous validation if file changes
+      this.validatedCsvData = [];
     },
   },
 };
@@ -717,12 +402,9 @@ export default {
 
 <style scoped>
 .tplex-list {
-  list-style-type: disc;
-  list-style-position: inside;
-  margin: 1rem 0;
-}
-
-.validate-csv-button {
-  margin-bottom: 1rem;
+  font-family: monospace;
+  font-size: 0.85em;
+  list-style-type: square;
+  margin-left: 20px;
 }
 </style>
