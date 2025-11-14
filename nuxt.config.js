@@ -111,7 +111,7 @@ export default {
     postcss: {
       preset: {
         features: {
-          customProperties: false,
+          "custom-properties": false,
         },
       },
     },
