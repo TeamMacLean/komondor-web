@@ -3,18 +3,26 @@
     <div class="container">
       <div v-if="run">
         <div class="title-wrapper">
-          <div class="title">
-            {{ run.name }}
+          <div class="is-flex is-align-items-center">
+            <h1 class="title mb-0">{{ run.name }}</h1>
+            <b-tag
+              v-if="runStatus"
+              :type="runStatus.type"
+              :icon="runStatus.icon"
+              size="is-medium"
+              class="ml-4"
+              >{{ runStatus.text }}</b-tag
+            >
           </div>
           <AddAccessionModal
-            v-if="!!showAddAcession"
+            v-if="showAddAcession"
             type="run"
             :type-id="run._id"
             :initial-accessions="run.accessions"
           />
         </div>
 
-        <p class="subtitle">
+        <p class="subtitle mt-2">
           <b-icon
             icon="account-outline"
             size="is-small"
@@ -47,7 +55,24 @@
           }}
         </p>
 
-        <div class="columns"></div>
+        <div
+          v-if="run.status === 'pending'"
+          class="notification is-info is-light"
+        >
+          <b-icon icon="sync" custom-class="fa-spin"></b-icon>
+          This run is currently being processed, and backend MD5 checksum
+          validation is in progress. This page will automatically refresh when
+          complete.
+        </div>
+        <div
+          v-if="run.status === 'error'"
+          class="notification is-danger is-light"
+        >
+          <b-icon icon="alert-circle-outline"></b-icon>
+          An error occurred during file processing or MD5 checksum validation.
+          Please review the raw file statuses below and contact a system
+          administrator for assistance.
+        </div>
 
         <div class="buttons-wrapper">
           <b-button
@@ -102,7 +127,7 @@
           <div class="column">
             <b-field label="Insert Size">
               <p class="bottomPadding">
-                {{ this.insertSizeString }}
+                {{ insertSizeString }}
               </p>
             </b-field>
           </div>
@@ -114,8 +139,6 @@
 
         <div class="bottomPadding"></div>
 
-        <!-- TODO additioanlfilelist and readlist could be recombined again -->
-
         <b-field label="Additional Files">
           <AdditionalFileList
             :files="additionalFiles"
@@ -126,18 +149,15 @@
         <div class="bottomPadding"></div>
 
         <b-field label="Raw Files">
-          <ReadList :reads="reads" :run-path="run.path" />
+          <ReadList :reads="run.rawFiles" :run-path="run.path" />
         </b-field>
         <hr />
-        <!-- <p class="title is-4">Runs</p>
-        <RunList :sample="sample" :samples="sample.runs"></RunList>-->
       </div>
     </div>
   </div>
 </template>
 
 <script>
-// import RunList from "../components/runs/RunList";
 import AdditionalFileList from "../components/AdditionalFileList";
 import ReadList from "../components/ReadList";
 import AddAccessionModal from "../components/AddAccessionModal";
@@ -149,93 +169,49 @@ export default {
     AddAccessionModal,
   },
   middleware: ["auth"],
-  asyncData({ route, $axios, error }) {
-    //TODO check if can view
-
+  async asyncData({ route, $axios, error }) {
     if (!route.query.id) {
-      error({ statusCode: 404, message: "Run not found" });
+      return error({ statusCode: 404, message: "Run ID not provided" });
     }
-
-    //use cached project if available
-    // const cachedProject = store.getters.getCachedSampleById(route.query.id);
-    // if (cachedProject) {
-    //   return Promise.resolve({
-    //     project: cachedProject
-    //   })
-    // }
-
-    return $axios
-      .get("/run", { params: { id: route.query.id } })
-      .then((res) => {
-        if (res.status === 200 && res.data.run) {
-          const dbReadFileEntries = res.data.run.rawFiles;
-
-          //console.log("db reads", dbReadFileEntries);
-
-          const verifiedRawFileNames = dbReadFileEntries.map(
-            (rf) => rf.file.originalName
-          );
-
-          const verifiedAdditionalFileNames = res.data.run.additionalFiles.map(
-            (rf) => rf.file.originalName
-          );
-          // TODO check this works with empty addFiles and empty raw files
-
-          //console.log("hpc reads", res.data.actualReads);
-
-          const actualReadFileNames = res.data.actualReads
-            ? JSON.parse(JSON.stringify(res.data.actualReads))
-            : [];
-          const actualAdditionalFileNames = res.data.actualAdditionalFiles
-            ? JSON.parse(JSON.stringify(res.data.actualAdditionalFiles))
-            : [];
-          const verifiedReads = actualReadFileNames.map((readFileName) => {
-            const readInfo = dbReadFileEntries.find(
-              (entry) => entry.file.originalName === readFileName
-            );
-
-            if (!readInfo) {
-              console.log("no db read info found for: ", readFileName);
-            }
-
-            const res = {
-              _id:
-                (readInfo && readInfo._id) ||
-                Math.random().toString(16).substr(2, 12),
-              fileName: readFileName,
-              paired: (readInfo && readInfo.paired) || false,
-              sibling: (readInfo && readInfo.sibling) || false,
-              verified: !!verifiedRawFileNames.includes(readFileName),
-            };
-            // console.log('res', res);
-            return res;
-          });
-
-          const addFileRes = actualAdditionalFileNames.map(
-            (additionalFileName) => ({
-              fileName: additionalFileName,
-              verified:
-                !!verifiedAdditionalFileNames.includes(additionalFileName),
-            })
-          );
-
-          const result = {
-            run: res.data.run,
-            reads: verifiedReads,
-            additionalFiles: addFileRes,
-          };
-
-          //console.log("result run", result.run.insertSize);
-
-          return result;
-        } else {
-          error({ statusCode: 501, message: "Run not found" });
-        }
-      })
-      .catch((err) => {
-        console.error(err);
-        error({ statusCode: 501, message: "Run not found" });
+    try {
+      const response = await $axios.get("/run", {
+        params: { id: route.query.id },
       });
+      const runData = response.data.run;
+
+      // This logic compares DB records with actual files on disk.
+      // It's useful for detecting orphaned files but can be simplified if the API is the single source of truth.
+      const verifiedAdditionalFileNames = runData.additionalFiles.map(
+        (af) => af.file.originalName
+      );
+      const actualAdditionalFileNames =
+        response.data.actualAdditionalFiles || [];
+      const additionalFiles = actualAdditionalFileNames.map((fileName) => ({
+        fileName,
+        verified: verifiedAdditionalFileNames.includes(fileName),
+      }));
+
+      return {
+        run: runData,
+        additionalFiles: additionalFiles,
+      };
+    } catch (err) {
+      console.error("Failed to fetch run data:", err);
+      return error({ statusCode: 500, message: "Could not retrieve run." });
+    }
+  },
+  data() {
+    return {
+      polling: null,
+    };
+  },
+  mounted() {
+    if (this.run && this.run.status === "pending") {
+      this.startPolling();
+    }
+  },
+  beforeDestroy() {
+    this.stopPolling();
   },
   methods: {
     cloneRun() {
@@ -243,26 +219,87 @@ export default {
         path: "/runs/new",
         query: {
           clonedRunId: this.run._id,
-          sample: this.run.sample._id,
+          sampleId: this.run.sample._id,
         },
       });
     },
+    startPolling() {
+      // Poll every 5 seconds
+      this.polling = setInterval(() => {
+        this.fetchRunStatus();
+      }, 5000);
+    },
+    stopPolling() {
+      if (this.polling) {
+        clearInterval(this.polling);
+        this.polling = null;
+      }
+    },
+    async fetchRunStatus() {
+      try {
+        const response = await this.$axios.get("/run", {
+          params: { id: this.run._id },
+        });
+        const updatedRun = response.data.run;
+        if (updatedRun.status !== "pending") {
+          this.run = updatedRun;
+          this.stopPolling();
+          this.$buefy.toast.open({
+            message: `Run status updated to: ${updatedRun.status}`,
+            type: "is-success",
+          });
+        }
+      } catch (err) {
+        console.error("Polling error:", err);
+        this.stopPolling(); // Stop polling on error to avoid spamming requests
+      }
+    },
   },
   computed: {
+    runStatus() {
+      if (!this.run || !this.run.status) {
+        return { text: "Unknown", type: "is-light", icon: "help-circle" };
+      }
+      switch (this.run.status) {
+        case "pending":
+          return {
+            text: "Processing",
+            type: "is-info",
+            icon: "sync",
+          };
+        case "complete":
+          return {
+            text: "Complete",
+            type: "is-success",
+            icon: "check-circle",
+          };
+        case "error":
+          return {
+            text: "Error",
+            type: "is-danger",
+            icon: "alert-circle",
+          };
+        default:
+          return {
+            text: this.run.status,
+            type: "is-light",
+            icon: "help-circle",
+          };
+      }
+    },
     insertSizeString() {
       const insertSize = this.run.insertSize;
       return insertSize == null ? "(not set)" : insertSize.toString();
     },
     showAddAcession() {
-      if (this?.$auth?.$state?.user?.username && process?.env?.ENA_ADMINS) {
-        return process.env.ENA_ADMINS.includes(this.$auth.$state.user.username);
-      } else {
-        return false;
-      }
+      const username = this?.$auth?.$state?.user?.username;
+      const admins = process?.env?.ENA_ADMINS || "";
+      return username && admins.includes(username);
     },
   },
 };
 </script>
+
 <style scoped>
 .bottomPadding {
   margin-bottom: 2rem;
@@ -272,7 +309,6 @@ export default {
   justify-content: space-between;
   align-items: center;
 }
-
 .buttons-wrapper {
   margin-bottom: 2rem;
 }

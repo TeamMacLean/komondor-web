@@ -53,7 +53,7 @@
               <b-icon :icon="active ? 'menu-up' : 'menu-down'"></b-icon>
             </button>
 
-            <!-- 
+            <!--
               HACKY using 'close-on-click' and css to have easier modal close functionaliyt
               TODO consider reading buefy modal docs
             -->
@@ -88,6 +88,13 @@
             </b-dropdown-item>
 
             <hr class="dropdown-divider" />
+
+            <b-dropdown-item v-if="!$nuxt.context.isProd" aria-role="listitem">
+              <nuxt-link to="/md5-benchmark" class="dropdown-item">
+                <b-icon icon="flask-outline" size="is-small"></b-icon>MD5
+                Benchmark
+              </nuxt-link>
+            </b-dropdown-item>
 
             <b-dropdown-item aria-role="listitem">
               <nuxt-link to="/help" class="dropdown-item">

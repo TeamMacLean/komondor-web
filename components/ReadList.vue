@@ -1,122 +1,172 @@
 <template>
-  <div v-if="!reads.length">
-    <p>
-      No read files detected in HPC. (Try refreshing after a while if recently uploaded.)
-    </p>
-    <p>
-      If you think this is in error, please
-      <a :href="emailLink">contact admin</a>
-      to resolve this issue. 
-    </p>
-  </div>
-  <div v-else>
-    <div>
-      <!-- TODO sort paired -->
-      <div v-for="read in sortedReads" :key="read._id">
-        <div class="fileInfo">
-
-          <b-tooltip v-if="read.verified" position="is-right" label='Raw read file verified in database'>
-            <b-icon type="is-success" icon="check" size="is-small"></b-icon>
-          </b-tooltip>
-          <!-- <b-tooltip v-else label='File unver'>
-            <b-icon icon="close" type="is-danger" size="is-small"></b-icon>
-          </b-tooltip> -->
-          <b-icon v-else icon="close" type="is-white" size="is-small"></b-icon>
-
-
-          <b-icon icon="file-outline" size="is-small"></b-icon>
-
-          <div class="fileNamePadding">{{read.fileName}}</div>
-          <div v-if="read && read.readInfo && read.readInfo.paired" class="fileNamePadding">
-            <div v-if="read && read.readInfo && read.readInfo.sibling">
-              (PAIRED with {{getSiblingFileName(read.readInfo.sibling)}})
-            </div>
-            <div v-else>
-              (PAIRED)
-            </div>
-            
-          </div>
-
-          <b-button type="button"
-            v-clipboard:copy="getFullFilePath(read.fileName)"
-            v-clipboard:success="onCopy"
-            v-clipboard:error="onError"
-          >
-            Copy HPC filepath
-          </b-button>
-        </div> 
-      </div>
+  <div>
+    <div v-if="!reads || !reads.length">
+      <p>
+        No read files found for this run. This may be because processing is
+        still in progress.
+      </p>
+      <p>
+        If you believe this is an error, please
+        <a :href="emailLink">contact an administrator</a>.
+      </p>
     </div>
-    <!-- if sequences cards -->
+    <div v-else>
+      <table class="table is-fullwidth is-striped is-hoverable is-size-7">
+        <thead>
+          <tr>
+            <th>File Name</th>
+            <th>MD5 Checksum Status</th>
+            <th class="monospace-column">Original MD5</th>
+            <th class="monospace-column">Destination MD5</th>
+            <th class="has-text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="read in sortedReads" :key="read._id">
+            <td>
+              <b-icon icon="file-outline" size="is-small"></b-icon>
+              <span class="ml-2">{{ read.file.originalName }}</span>
+            </td>
+            <td class="status-cell">
+              <b-tooltip :label="md5Status(read).tooltip" position="is-top">
+                <b-icon
+                  :icon="md5Status(read).icon"
+                  :type="md5Status(read).type"
+                  size="is-small"
+                ></b-icon>
+                <span :class="`has-text-${md5Status(read).type.split('-')[1]}`">
+                  {{ md5Status(read).text }}
+                </span>
+              </b-tooltip>
+            </td>
+            <td class="monospace-column">
+              {{ read.md5 || "N/A" }}
+            </td>
+            <td class="monospace-column">
+              {{ read.destinationMd5 || "Pending..." }}
+            </td>
+            <td class="has-text-right">
+              <b-button
+                size="is-small"
+                icon-left="clipboard-text-outline"
+                @click="copyPath(read.file.originalName)"
+              >
+                Copy Path
+              </b-button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </template>
 
 <script>
-import path from 'path'
 export default {
+  props: {
+    reads: {
+      type: Array,
+      default: () => [],
+    },
+    runPath: {
+      type: String,
+      required: true,
+    },
+  },
   data() {
     return {
-      datastoreRoot: ""
+      datastoreRoot:
+        process.env.HPC_DATASTORE_ROOT?.replace(/['"]+/g, "") || "",
     };
   },
-  mounted() {
-    this.datastoreRoot = process.env.HPC_DATASTORE_ROOT.replace(/['"]+/g, '');    
-  },
-  methods: {
-    onCopy: function (e) {
-      alert('You just copied onto your clipboard: ' + e.text)
-    },
-    onError: function (e) {
-      alert('Failed to copy texts')
-    },
-    getFullFilePath: function (fileName) {
-      const unixDirConverter = fileName.replace(/\s/g, '\\ ');
-      return path.join(this.datastoreRoot, this.runPath, 'raw', unixDirConverter);      
-    },
-    getSiblingFileName(siblingId){
-      return this.reads.find(read => read && read.readInfo && read.readInfo._id === siblingId).fileName
-    }
-  },
-  props: ["runPath", "reads"],
   computed: {
     sortedReads() {
-      // console.log('this.file', this.reads);
-      
-      // TODO pair based on sibling ID (this however will work 90% of the time)
-      
-      return this.reads.sort((a, b) => (a.fileName > b.fileName) ? 1 : -1 );
+      // Create a shallow copy before sorting to avoid mutating props
+      if (!this.reads) return [];
+      return [...this.reads].sort((a, b) => {
+        const nameA = a.file?.originalName || "";
+        const nameB = b.file?.originalName || "";
+        return nameA.localeCompare(nameB);
+      });
     },
     emailLink() {
       const { path, query } = this.$route;
       const { id } = query;
-      const trimmedPath = path.replace('\/', '');
+      const trimmedPath = path.replace("/", "");
 
-      const bodyTextUnformatted = 
-        'I am looking at a ' + trimmedPath + ' with an ID of ' + id + '. '
-        + 'I am concerned with the ' 
-        + `${this.reads.length ? '' : 'lack of'} read files listed. `
-        + ' Could you investigate this please?'
-      ;
+      const bodyTextUnformatted =
+        `I am looking at a ${trimmedPath} with an ID of ${id}. ` +
+        `I am concerned with the ${
+          this.reads.length ? "" : "lack of "
+        }read files listed. ` +
+        `Could you investigate this please?`;
 
-      const bodyText = bodyTextUnformatted.replace(' ', '%20');
-      const result = 'mailto:george.deeks@tsl.ac.uk?subject=Issue%20with%20missing%20Komondor%20files&body=' + bodyText;
-      return result;
-    }
+      const subject = "Issue with Komondor Files";
+      const body = encodeURIComponent(bodyTextUnformatted);
+      return `mailto:george.deeks@tsl.ac.uk?subject=${subject}&body=${body}`;
+    },
+  },
+  methods: {
+    md5Status(read) {
+      if (!read.destinationMd5) {
+        return {
+          icon: "sync",
+          type: "is-info",
+          text: "Pending",
+          tooltip: "Backend validation is in progress.",
+        };
+      }
+      if (read.md5Mismatch) {
+        return {
+          icon: "alert-circle",
+          type: "is-danger",
+          text: "Mismatch",
+          tooltip: "Checksums do not match. Contact an administrator.",
+        };
+      }
+      return {
+        icon: "check-circle",
+        type: "is-success",
+        text: "Match",
+        tooltip: "Checksums match.",
+      };
+    },
+    getFullFilePath(fileName) {
+      // Simple path joining for browser environment
+      const safeFileName = fileName.replace(/\s/g, "\\ ");
+      return `${this.datastoreRoot}${this.runPath}/raw/${safeFileName}`;
+    },
+    copyPath(fileName) {
+      const fullPath = this.getFullFilePath(fileName);
+      this.$copyText(fullPath).then(
+        () => {
+          this.$buefy.toast.open({
+            message: "File path copied to clipboard!",
+            type: "is-success",
+            position: "is-bottom",
+          });
+        },
+        () => {
+          this.$buefy.toast.open({
+            message: "Failed to copy file path.",
+            type: "is-danger",
+            position: "is-bottom",
+          });
+        }
+      );
+    },
   },
 };
 </script>
 
-<style>
-
-.fileInfo {
-  display: flex;
-  align-items: center;
-  margin-bottom: 10px;
+<style scoped>
+.monospace-column {
+  font-family: monospace;
+  word-break: break-all;
 }
-
-.fileNamePadding {
-  margin-right: 15px;
-  margin-left: 5px;
+.status-cell span {
+  vertical-align: middle;
+  margin-left: 0.5em;
+  font-weight: bold;
 }
-
 </style>
