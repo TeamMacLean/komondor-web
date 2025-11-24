@@ -148,8 +148,8 @@ const ModalForm = {
           <b-button
             label="Send"
             :disabled="isUpdateAccessionsDisabled"
-            type="is-primary" 
-            @click="postForm"  
+            type="is-primary"
+            @click="postForm"
           />
         </footer>
       </div>
@@ -176,9 +176,28 @@ const ModalForm = {
         })
         .catch((err) => {
           this.$emit("close");
+
+          // Extract error message from various possible error structures
+          let errorMessage = "Failed to update accessions. Please try again.";
+
+          if (err.response?.data?.message) {
+            errorMessage = err.response.data.message;
+          } else if (err.response?.data?.error) {
+            errorMessage =
+              typeof err.response.data.error === "string"
+                ? err.response.data.error
+                : "Failed to update accessions. Please check your input.";
+          } else if (err.message) {
+            errorMessage =
+              err.message === "Network Error"
+                ? "Unable to connect to server. Please ensure the API is running."
+                : err.message;
+          }
+
           this.$buefy.toast.open({
-            message: err,
+            message: errorMessage,
             type: "is-danger",
+            duration: 5000,
           });
         });
     },

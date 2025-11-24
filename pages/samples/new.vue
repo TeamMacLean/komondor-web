@@ -207,7 +207,12 @@ export default {
       if (this.isTplexChecked || !this.$refs.additionalUploader) {
         return true;
       }
-      return this.$refs.additionalUploader.isUploadComplete();
+      if (
+        typeof this.$refs.additionalUploader.isUploadComplete === "function"
+      ) {
+        return this.$refs.additionalUploader.isUploadComplete();
+      }
+      return true; // Assume complete if method not available
     },
 
     validationErrors() {

@@ -80,7 +80,7 @@
         <!-- File Uploader -->
         <b-field
           label="Additional files"
-          message="Upload documentation from the sequencing provider here. Do NOT upload raw sequence files."
+          message="Upload documentation from the sequencing provider here. Do NOT upload raw sequence files. Do not click 'Done' when finished, it will cancel your upload instead."
         >
           <Uploader ref="additionalUploader" />
         </b-field>
@@ -210,6 +210,10 @@ export default {
       consent: false,
       isSubmitting: false,
       formIsDirty: false, // Tracks if user has interacted with the form
+      existingProjectNames: [], // Fallback if asyncData doesn't provide it
+      bad: {
+        nameList: [], // Stores existing project names for validation
+      },
     };
   },
 
@@ -247,68 +251,18 @@ export default {
     onlyOneGroup() {
       return this.availableGroups.length === 1;
     },
-    isWarningStyleForNameInput() {
-      return this.bad &&
-        this.bad.nameList &&
-        this.project &&
-        this.project.name &&
-        this.bad.nameList.includes(this.project.name)
-        ? "is-danger"
-        : "";
-    },
-    areStandardFieldsValid() {
-      const {
-        name,
-        shortDesc,
-        longDesc,
-        group,
-        doNotSendToEna,
-        doNotSendToEnaReason,
-      } = this.project;
-
-      const nameValid =
-        name &&
-        name.length >= 20 &&
-        name.length <= 80 &&
-        !this.bad.nameList.includes(name);
-      const groupValid = !!group || this.onlyOneGroup; // Check if group is selected, or if there's only one option which would be auto-selected
-      const shortDescValid =
-        shortDesc && shortDesc.length >= 20 && shortDesc.length <= 200;
-      const longDescValid =
-        longDesc && longDesc.length >= 100 && longDesc.length <= 1000;
-
-      const enaReasonValid = doNotSendToEna
-        ? doNotSendToEnaReason && doNotSendToEnaReason.length >= 50
-        : true;
-
-      return (
-        nameValid &&
-        groupValid &&
-        shortDescValid &&
-        longDescValid &&
-        enaReasonValid
-      );
-    },
-    canSubmit() {
-      const baseChecks =
-        this.additionalUploadsComplete &&
-        !this.isWarningStyleForNameInput && // Use the computed property
-        !this.isSubmitting &&
-        this.consent; // Ensure consent is given
-
-      const standardFieldsValid = this.areStandardFieldsValid;
-
-      return baseChecks && standardFieldsValid;
-    },
     selectedGroup() {
       if (!this.project.group) return null;
       return this.availableGroups.find((g) => g._id === this.project.group);
     },
     uploadsAreComplete() {
-      if (this.$refs.additionalUploader) {
+      if (
+        this.$refs.additionalUploader &&
+        typeof this.$refs.additionalUploader.isUploadComplete === "function"
+      ) {
         return this.$refs.additionalUploader.isUploadComplete();
       }
-      return true; // Assume complete if uploader isn't mounted
+      return true; // Assume complete if uploader isn't mounted or method not available
     },
 
     // --- Validation Logic ---
@@ -319,7 +273,10 @@ export default {
       if (!this.project.name) errors.name = "Project name is required.";
       else if (this.project.name.length < 20 || this.project.name.length > 80)
         errors.name = "Name must be between 20 and 80 characters.";
-      else if (this.existingProjectNames.includes(this.project.name))
+      else if (
+        this.existingProjectNames &&
+        this.existingProjectNames.includes(this.project.name)
+      )
         errors.name = "This project name is already in use.";
 
       // Group validation
@@ -389,6 +346,14 @@ export default {
     "project.longDesc": function () {
       this.formIsDirty = true;
     },
+    consent: function () {
+      this.formIsDirty = true;
+    },
+  },
+
+  mounted() {
+    // Initialize bad.nameList with existing project names
+    this.bad.nameList = this.existingProjectNames || [];
   },
 
   methods: {

@@ -326,12 +326,19 @@ export default {
 
     uploadsAreComplete() {
       const additionalComplete =
-        this.$refs.additionalUploader?.isUploadComplete() ?? true;
+        this.$refs.additionalUploader &&
+        typeof this.$refs.additionalUploader.isUploadComplete === "function"
+          ? this.$refs.additionalUploader.isUploadComplete()
+          : true;
       let rawComplete = false;
       if (this.activeTab === "hpc-mv") {
         rawComplete = true; // HPC uploads are handled pre-validation
       } else {
-        rawComplete = this.$refs.rawUploader?.isUploadComplete() ?? true;
+        rawComplete =
+          this.$refs.rawUploader &&
+          typeof this.$refs.rawUploader.isUploadComplete === "function"
+            ? this.$refs.rawUploader.isUploadComplete()
+            : true;
       }
       return additionalComplete && rawComplete;
     },

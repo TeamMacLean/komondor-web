@@ -19,7 +19,7 @@ const MockUploader = {
 const MockFormConsentCheckbox = {
   name: "FormConsentCheckbox",
   template: "<div class='mock-consent'></div>",
-  props: ["initial", "onToggle"],
+  props: ["value"],
 };
 
 const MockCollapsibleUploaderHelp = {
@@ -459,8 +459,8 @@ describe("NewProject.vue", () => {
       });
     });
 
-    describe("areStandardFieldsValid", () => {
-      it("should return false when name is too short", () => {
+    describe("validationErrors", () => {
+      it("should have name error when name is too short", () => {
         wrapper = createWrapper({
           data() {
             return {
@@ -482,16 +482,17 @@ describe("NewProject.vue", () => {
           },
         });
 
-        expect(wrapper.vm.areStandardFieldsValid).toBe(false);
+        expect(wrapper.vm.validationErrors.name).toBeTruthy();
       });
 
-      it("should return false when name already exists", () => {
+      it("should have name error when name already exists", () => {
         wrapper = createWrapper({
           data() {
             return {
               isSubmitting: false,
               additionalUploadsComplete: true,
-              bad: { nameList: ["duplicate-project-name"] },
+              bad: { nameList: [] },
+              existingProjectNames: ["duplicate-project-name"],
               consent: false,
               project: {
                 name: "duplicate-project-name",
@@ -507,10 +508,10 @@ describe("NewProject.vue", () => {
           },
         });
 
-        expect(wrapper.vm.areStandardFieldsValid).toBe(false);
+        expect(wrapper.vm.validationErrors.name).toBeTruthy();
       });
 
-      it("should return false when short description is too short", () => {
+      it("should have shortDesc error when short description is too short", () => {
         wrapper = createWrapper({
           data() {
             return {
@@ -532,10 +533,10 @@ describe("NewProject.vue", () => {
           },
         });
 
-        expect(wrapper.vm.areStandardFieldsValid).toBe(false);
+        expect(wrapper.vm.validationErrors.shortDesc).toBeTruthy();
       });
 
-      it("should return false when long description is too short", () => {
+      it("should have longDesc error when long description is too short", () => {
         wrapper = createWrapper({
           data() {
             return {
@@ -556,10 +557,10 @@ describe("NewProject.vue", () => {
           },
         });
 
-        expect(wrapper.vm.areStandardFieldsValid).toBe(false);
+        expect(wrapper.vm.validationErrors.longDesc).toBeTruthy();
       });
 
-      it("should return true when all fields are valid", () => {
+      it("should have no errors when all fields are valid", () => {
         wrapper = createWrapper({
           data() {
             return {
@@ -581,10 +582,10 @@ describe("NewProject.vue", () => {
           },
         });
 
-        expect(wrapper.vm.areStandardFieldsValid).toBe(true);
+        expect(Object.keys(wrapper.vm.validationErrors).length).toBe(0);
       });
 
-      it("should validate ENA reason when doNotSendToEna is checked", () => {
+      it("should have enaReason error when doNotSendToEna is checked but reason is too short", () => {
         wrapper = createWrapper({
           data() {
             return {
@@ -606,7 +607,7 @@ describe("NewProject.vue", () => {
           },
         });
 
-        expect(wrapper.vm.areStandardFieldsValid).toBe(false);
+        expect(wrapper.vm.validationErrors.enaReason).toBeTruthy();
       });
     });
 
@@ -685,49 +686,15 @@ describe("NewProject.vue", () => {
 
         expect(wrapper.vm.canSubmit).toBe(true);
       });
-    });
-  });
 
-  describe("Methods", () => {
-    describe("onToggleConsent", () => {
-      it("should update consent state", () => {
+      it("should toggle canSubmit when consent checkbox changes", async () => {
         wrapper = createWrapper({
           data() {
             return {
               isSubmitting: false,
-              additionalUploadsComplete: true,
               bad: { nameList: [] },
               consent: false,
-              project: {
-                name: "",
-                group: "",
-                shortDesc: "",
-                longDesc: "",
-                doNotSendToEna: false,
-                doNotSendToEnaReason: null,
-                additionalFiles: [],
-              },
-            };
-          },
-        });
-
-        expect(wrapper.vm.consent).toBe(false);
-        wrapper.vm.onToggleConsent(true);
-        expect(wrapper.vm.consent).toBe(true);
-      });
-    });
-
-    describe("postForm", () => {
-      it("should show error when user is not authenticated", () => {
-        mockAuth.user = null;
-
-        wrapper = createWrapper({
-          data() {
-            return {
-              isSubmitting: false,
-              additionalUploadsComplete: true,
-              bad: { nameList: [] },
-              consent: true,
+              formIsDirty: true,
               project: {
                 name: "Valid project name here",
                 group: "group1",
@@ -736,23 +703,75 @@ describe("NewProject.vue", () => {
                   "Valid long description that meets the minimum character requirement for this field to be considered valid and ready for submission",
                 doNotSendToEna: false,
                 doNotSendToEnaReason: null,
-                additionalFiles: [],
               },
             };
           },
         });
 
-        wrapper.vm.postForm();
+        // Mock the uploader to return complete status
+        wrapper.vm.$refs.additionalUploader = {
+          isUploadComplete: () => true,
+        };
 
-        expect(mockBuefy.dialog.alert).toHaveBeenCalledWith(
+        // Initially consent is false, so canSubmit should be false
+        expect(wrapper.vm.consent).toBe(false);
+        expect(wrapper.vm.canSubmit).toBe(false);
+
+        // Change consent to true
+        wrapper.vm.consent = true;
+        await wrapper.vm.$nextTick();
+
+        // Now canSubmit should be true
+        expect(wrapper.vm.consent).toBe(true);
+        expect(wrapper.vm.canSubmit).toBe(true);
+
+        // Change consent back to false
+        wrapper.vm.consent = false;
+        await wrapper.vm.$nextTick();
+
+        // canSubmit should be false again
+        expect(wrapper.vm.consent).toBe(false);
+        expect(wrapper.vm.canSubmit).toBe(false);
+      });
+    });
+  });
+
+  describe("Methods", () => {
+    describe("submitForm", () => {
+      it("should show toast warning when form is invalid", async () => {
+        mockAuth.user = null;
+        wrapper = createWrapper({
+          data() {
+            return {
+              isSubmitting: false,
+              bad: { nameList: [] },
+              consent: false,
+              formIsDirty: false,
+              project: {
+                name: "Short", // Invalid - too short
+                group: "group1",
+                shortDesc: "Valid short description that meets requirements",
+                longDesc:
+                  "Valid long description that meets the minimum character requirement for this field to be considered valid and ready for submission",
+                doNotSendToEna: false,
+                doNotSendToEnaReason: null,
+              },
+            };
+          },
+        });
+
+        await wrapper.vm.submitForm();
+
+        expect(mockBuefy.toast.open).toHaveBeenCalledWith(
           expect.objectContaining({
-            title: "Authentication Error",
-            type: "is-danger",
+            message: "Please correct the errors before submitting.",
+            type: "is-warning",
           })
         );
+        expect(wrapper.vm.formIsDirty).toBe(true);
       });
 
-      it("should set isSubmitting to true during submission", () => {
+      it("should set isSubmitting to true during submission", async () => {
         mockAxios.post.mockResolvedValue({
           data: {
             project: { _id: "new-project-id" },
@@ -763,9 +782,9 @@ describe("NewProject.vue", () => {
           data() {
             return {
               isSubmitting: false,
-              additionalUploadsComplete: true,
               bad: { nameList: [] },
               consent: true,
+              formIsDirty: true,
               project: {
                 name: "Valid project name here",
                 group: "group1",
@@ -774,18 +793,25 @@ describe("NewProject.vue", () => {
                   "Valid long description that meets the minimum character requirement for this field to be considered valid and ready for submission",
                 doNotSendToEna: false,
                 doNotSendToEnaReason: null,
-                additionalFiles: [],
               },
             };
           },
         });
 
-        wrapper.vm.postForm();
+        // Mock the uploader
+        wrapper.vm.$refs.additionalUploader = {
+          isUploadComplete: () => true,
+          getFiles: () => [],
+        };
+
+        const submitPromise = wrapper.vm.submitForm();
 
         expect(wrapper.vm.isSubmitting).toBe(true);
+
+        await submitPromise;
       });
 
-      it("should auto-select group when only one is available", () => {
+      it("should auto-select group when only one is available", async () => {
         store.state.groups = [
           { _id: "single-group", name: "Only Group", deleted: false },
         ];
@@ -800,9 +826,9 @@ describe("NewProject.vue", () => {
           data() {
             return {
               isSubmitting: false,
-              additionalUploadsComplete: true,
               bad: { nameList: [] },
               consent: true,
+              formIsDirty: true,
               project: {
                 name: "Valid project name here",
                 group: "",
@@ -811,18 +837,17 @@ describe("NewProject.vue", () => {
                   "Valid long description that meets the minimum character requirement for this field to be considered valid and ready for submission",
                 doNotSendToEna: false,
                 doNotSendToEnaReason: null,
-                additionalFiles: [],
               },
             };
           },
         });
 
-        wrapper.vm.postForm();
+        await wrapper.vm.$nextTick();
 
         expect(wrapper.vm.project.group).toBe("single-group");
       });
 
-      it("should assign owner to project", () => {
+      it("should call axios post with correct data", async () => {
         mockAxios.post.mockResolvedValue({
           data: {
             project: { _id: "new-project-id" },
@@ -833,9 +858,9 @@ describe("NewProject.vue", () => {
           data() {
             return {
               isSubmitting: false,
-              additionalUploadsComplete: true,
               bad: { nameList: [] },
               consent: true,
+              formIsDirty: true,
               project: {
                 name: "Valid project name here",
                 group: "group1",
@@ -844,52 +869,24 @@ describe("NewProject.vue", () => {
                   "Valid long description that meets the minimum character requirement for this field to be considered valid and ready for submission",
                 doNotSendToEna: false,
                 doNotSendToEnaReason: null,
-                additionalFiles: [],
               },
             };
           },
         });
 
-        wrapper.vm.postForm();
+        // Mock the uploader
+        wrapper.vm.$refs.additionalUploader = {
+          isUploadComplete: () => true,
+          getFiles: () => [],
+        };
 
-        expect(wrapper.vm.project.owner).toBe("testuser");
-      });
-
-      it("should call axios post with correct data", () => {
-        mockAxios.post.mockResolvedValue({
-          data: {
-            project: { _id: "new-project-id" },
-          },
-        });
-
-        wrapper = createWrapper({
-          data() {
-            return {
-              isSubmitting: false,
-              additionalUploadsComplete: true,
-              bad: { nameList: [] },
-              consent: true,
-              project: {
-                name: "Valid project name here",
-                group: "group1",
-                shortDesc: "Valid short description that meets requirements",
-                longDesc:
-                  "Valid long description that meets the minimum character requirement for this field to be considered valid and ready for submission",
-                doNotSendToEna: false,
-                doNotSendToEnaReason: null,
-                additionalFiles: [],
-              },
-            };
-          },
-        });
-
-        wrapper.vm.postForm();
+        await wrapper.vm.submitForm();
 
         expect(mockAxios.post).toHaveBeenCalledWith(
           "/projects/new",
           expect.objectContaining({
-            name: "Valid project name here",
-            group: "group1",
+            name: wrapper.vm.project.name,
+            group: wrapper.vm.project.group,
             owner: "testuser",
           })
         );
@@ -909,7 +906,8 @@ describe("NewProject.vue", () => {
             isSubmitting: false,
             additionalUploadsComplete: true,
             bad: { nameList: [] },
-            consent: false,
+            consent: true,
+            formIsDirty: true,
             project: {
               name: "",
               group: "",
@@ -917,7 +915,6 @@ describe("NewProject.vue", () => {
               longDesc: "",
               doNotSendToEna: false,
               doNotSendToEnaReason: null,
-              additionalFiles: [],
             },
           };
         },
