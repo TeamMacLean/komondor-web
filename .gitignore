@@ -96,3 +96,6 @@ sw.*
 # Work in progress
 /wip
 components/projects/ProjectList.vue
+
+# Test results
+test-results
