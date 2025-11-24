@@ -229,7 +229,76 @@ export default {
 
     // --- Data Sources & Selections ---
     availableGroups() {
-      return this.groups.filter((g) => !g.deleted);
+      const groups = this.$store.state.groups;
+      if (!groups || !Array.isArray(groups)) {
+        console.error("Groups not loaded or not an array", {
+          groups,
+          storeState: this.$store.state,
+          errorContext: "availableGroups computed property",
+        });
+        return [];
+      }
+      const availableGroupsResult = groups.filter((f) => !f.deleted);
+      return availableGroupsResult;
+    },
+    areMultipleAvailableGroups() {
+      return this.availableGroups.length > 1;
+    },
+    onlyOneGroup() {
+      return this.availableGroups.length === 1;
+    },
+    isWarningStyleForNameInput() {
+      return this.bad &&
+        this.bad.nameList &&
+        this.project &&
+        this.project.name &&
+        this.bad.nameList.includes(this.project.name)
+        ? "is-danger"
+        : "";
+    },
+    areStandardFieldsValid() {
+      const {
+        name,
+        shortDesc,
+        longDesc,
+        group,
+        doNotSendToEna,
+        doNotSendToEnaReason,
+      } = this.project;
+
+      const nameValid =
+        name &&
+        name.length >= 20 &&
+        name.length <= 80 &&
+        !this.bad.nameList.includes(name);
+      const groupValid = !!group || this.onlyOneGroup; // Check if group is selected, or if there's only one option which would be auto-selected
+      const shortDescValid =
+        shortDesc && shortDesc.length >= 20 && shortDesc.length <= 200;
+      const longDescValid =
+        longDesc && longDesc.length >= 100 && longDesc.length <= 1000;
+
+      const enaReasonValid = doNotSendToEna
+        ? doNotSendToEnaReason && doNotSendToEnaReason.length >= 50
+        : true;
+
+      return (
+        nameValid &&
+        groupValid &&
+        shortDescValid &&
+        longDescValid &&
+        enaReasonValid
+      );
+    },
+    canSubmit() {
+      const baseChecks =
+        this.additionalUploadsComplete &&
+        !this.isWarningStyleForNameInput && // Use the computed property
+        !this.isSubmitting &&
+        this.consent; // Ensure consent is given
+
+      const standardFieldsValid = this.areStandardFieldsValid;
+
+      return baseChecks && standardFieldsValid;
     },
     selectedGroup() {
       if (!this.project.group) return null;

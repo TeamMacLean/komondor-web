@@ -169,6 +169,27 @@ test('should load the page', async ({ page }) => {
   - URL parameters
   - Hash fragments
 
+- ✅ `tests/e2e/projects-new.spec.js` - New Project page
+  - Page loads without errors
+  - Form fields are visible and functional
+  - Validation messages display correctly
+  - Submit button disabled without consent
+  - Group selection handling
+  - API error handling
+  - Authentication redirects
+  - Form state persistence
+
+### Page Tests
+- ✅ `tests/unit/pages/projects-new.test.js` - New Project page unit tests
+  - Component rendering
+  - Computed properties (availableGroups, canSubmit, etc.)
+  - Form validation logic
+  - Group selection (single/multiple/none)
+  - Consent checkbox handling
+  - Form submission logic
+  - Error handling for undefined/null groups
+  - Auto-selection of single group
+
 ## 🔧 Configuration
 
 ### Vitest Configuration
