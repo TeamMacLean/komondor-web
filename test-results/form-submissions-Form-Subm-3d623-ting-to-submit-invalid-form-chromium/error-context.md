@@ -1,0 +1,6 @@
+# Page snapshot
+
+```yaml
+- status [ref=e1]:
+  - generic [ref=e2]: Loading...
+```
