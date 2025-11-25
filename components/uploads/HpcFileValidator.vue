@@ -109,37 +109,292 @@
       </div>
     </div>
 
+    <!-- File selection with MD5 input -->
     <div v-if="foundFiles.length > 0" class="mt-4">
-      <h3 class="subtitle is-6">Files Found in '{{ directoryName }}'</h3>
+      <h3 class="subtitle is-6">
+        Non-checksum Files Found in '{{ directoryName }}'
+      </h3>
+      <p class="mb-3 has-text-grey">
+        Select the read files you want to include and enter the expected MD5
+        checksum for each.
+      </p>
+
       <div
-        v-for="file in foundFiles"
+        class="box"
+        v-for="(file, index) in selectableFiles"
         :key="file.name"
-        class="mb-2 control"
-        style="display: block"
       >
-        <b-checkbox v-model="selectedFiles" :native-value="file">
-          {{ file.name }}
-        </b-checkbox>
+        <div class="columns is-vcentered is-mobile">
+          <div class="column is-narrow">
+            <b-checkbox
+              v-model="selectedFiles"
+              :native-value="file"
+              :disabled="validationComplete"
+              @input="onFileSelectionChange(file, $event)"
+            ></b-checkbox>
+          </div>
+          <div class="column">
+            <p class="has-text-weight-medium">{{ file.name }}</p>
+          </div>
+        </div>
+
+        <!-- MD5 input (all selectable files require MD5) -->
+        <div v-if="isFileSelected(file)" class="mt-2">
+          <b-field
+            :type="getMd5FieldType(file.name)"
+            :message="getMd5FieldMessage(file.name)"
+          >
+            <b-input
+              v-model="fileMd5Inputs[file.name]"
+              placeholder="Enter expected MD5 checksum (32 hex characters)"
+              :disabled="isValidating || validationComplete"
+              @input="onMd5Input(file.name)"
+            ></b-input>
+          </b-field>
+        </div>
+
+        <!-- Validation status -->
+        <div v-if="fileValidationStatus[file.name]" class="mt-2">
+          <span :class="getStatusClass(fileValidationStatus[file.name].status)">
+            <b-icon
+              :icon="getStatusIcon(fileValidationStatus[file.name].status)"
+              size="is-small"
+            ></b-icon>
+            {{ fileValidationStatus[file.name].message }}
+          </span>
+        </div>
       </div>
-      <b-button
-        @click="validateSelectedFiles"
-        :loading="isValidating"
-        :disabled="selectedFiles.length === 0"
-        class="mt-4 is-success"
+
+      <!-- Indexing Section (for indexed library types) -->
+      <div
+        v-if="indexed && selectedNonChecksumFiles.length > 0"
+        class="box mt-4"
+        style="background-color: #fff8e6; border: 1px solid #ffe08a"
       >
-        Use {{ selectedFiles.length }} Selected File(s)
-      </b-button>
+        <h4 class="title is-5 mb-3">
+          <b-icon icon="file-star" size="is-small" class="mr-2"></b-icon>
+          Index File Selection
+        </h4>
+        <p class="mb-3 has-text-grey">
+          Select which file is the index file. There must be at least one
+          non-index file.
+        </p>
+        <b-field label="Index File">
+          <b-select
+            v-model="indexFile"
+            placeholder="Select the index file"
+            :disabled="validationComplete"
+            expanded
+          >
+            <option :value="null">-- Select index file --</option>
+            <option
+              v-for="file in getFilesForIndexSelect()"
+              :key="file.name"
+              :value="file.name"
+            >
+              {{ file.name }}
+            </option>
+          </b-select>
+        </b-field>
+        <p v-if="indexFile" class="help is-success">
+          <b-icon icon="check" size="is-small"></b-icon>
+          Index file selected: {{ indexFile }}
+        </p>
+        <p
+          v-if="!indexFile && selectedNonChecksumFiles.length > 0"
+          class="help is-danger"
+        >
+          You must select an index file.
+        </p>
+        <p
+          v-if="indexFile && selectedNonChecksumFiles.length <= 1"
+          class="help is-danger"
+        >
+          You must have at least one non-index file selected.
+        </p>
+      </div>
+
+      <!-- Pairing Section (for paired library types) -->
+      <div
+        v-if="paired && selectedNonChecksumFiles.length >= 2"
+        class="box mt-4"
+        style="background-color: #e8f4f8; border: 1px solid #3e8ed0"
+      >
+        <h4 class="title is-5 mb-3">
+          <b-icon icon="link-variant" size="is-small" class="mr-2"></b-icon>
+          File Pairing
+        </h4>
+        <p class="mb-3 has-text-grey">
+          Link paired-end read files together. At least one pairing is required.
+          Files used as index cannot be paired.
+        </p>
+
+        <!-- Existing pairings -->
+        <div
+          v-for="(pairing, index) in filePairings"
+          :key="index"
+          class="box mb-3"
+          style="background-color: white"
+        >
+          <div class="columns is-vcentered">
+            <div class="column">
+              <b-field label="File 1">
+                <b-select
+                  v-model="pairing.file1"
+                  placeholder="Select first file"
+                  :disabled="validationComplete"
+                  expanded
+                >
+                  <option :value="null">-- Select file --</option>
+                  <option
+                    v-for="file in getFilesForPairingSelect(pairing, false)"
+                    :key="file.name"
+                    :value="file.name"
+                  >
+                    {{ file.name }}
+                  </option>
+                </b-select>
+              </b-field>
+            </div>
+            <div class="column is-narrow has-text-centered">
+              <b-icon
+                icon="link-variant"
+                size="is-medium"
+                class="has-text-info"
+              ></b-icon>
+            </div>
+            <div class="column">
+              <b-field label="File 2">
+                <b-select
+                  v-model="pairing.file2"
+                  placeholder="Select second file"
+                  :disabled="validationComplete || !pairing.file1"
+                  expanded
+                >
+                  <option :value="null">-- Select file --</option>
+                  <option
+                    v-for="file in getFilesForPairingSelect(pairing, true)"
+                    :key="file.name"
+                    :value="file.name"
+                  >
+                    {{ file.name }}
+                  </option>
+                </b-select>
+              </b-field>
+            </div>
+            <div class="column is-narrow">
+              <b-button
+                type="is-danger"
+                icon-left="delete"
+                :disabled="validationComplete"
+                @click="removePairing(index)"
+              >
+              </b-button>
+            </div>
+          </div>
+          <p v-if="pairing.file1 && pairing.file2" class="help is-success">
+            <b-icon icon="check" size="is-small"></b-icon>
+            Pairing complete
+          </p>
+        </div>
+
+        <!-- Add pairing button -->
+        <b-button
+          v-if="filesAvailableForPairing.length >= 2"
+          type="is-info"
+          icon-left="plus"
+          :disabled="validationComplete"
+          @click="addPairing"
+        >
+          Add Pairing
+        </b-button>
+
+        <p v-if="filePairings.length === 0" class="help is-danger mt-2">
+          At least one file pairing is required for paired library types.
+        </p>
+        <p v-else-if="isPairingValid" class="help is-success mt-2">
+          <b-icon icon="check" size="is-small"></b-icon>
+          {{ filePairings.length }} pairing(s) configured.
+        </p>
+      </div>
+
+      <!-- Validation button -->
+      <div class="mt-4">
+        <b-button
+          v-if="!validationComplete"
+          @click="validateChecksums"
+          :loading="isValidating"
+          :disabled="!canStartValidation"
+          type="is-info"
+        >
+          {{ validationButtonText }}
+        </b-button>
+        <b-button
+          v-if="validationComplete"
+          @click="resetValidation"
+          type="is-warning"
+          icon-left="refresh"
+        >
+          Start Over (Reset Validation)
+        </b-button>
+        <p
+          v-if="
+            !canStartValidation &&
+            selectedNonChecksumFiles.length > 0 &&
+            !validationComplete
+          "
+          class="help is-danger mt-2"
+        >
+          <span v-if="!allMd5sEntered"
+            >Please enter a valid MD5 checksum for all selected files.</span
+          >
+          <span v-else-if="paired && !isPairingValid">
+            At least one file pairing is required.</span
+          >
+          <span v-else-if="indexed && !isIndexingValid">
+            Please select an index file and ensure there is at least one
+            non-index file.</span
+          >
+        </p>
+      </div>
+
+      <!-- Validation progress -->
+      <div v-if="isValidating" class="mt-4">
+        <p class="has-text-weight-semibold mb-2">
+          Validating checksums... ({{ validationProgress }}/{{
+            selectedNonChecksumFiles.length
+          }})
+        </p>
+        <progress
+          class="progress is-primary"
+          :value="validationProgress"
+          :max="selectedNonChecksumFiles.length"
+        ></progress>
+      </div>
     </div>
 
     <div
-      v-if="validatedFiles.length > 0"
-      class="mt-4 notification is-success is-light"
+      v-if="validatedFiles.length > 0 && validationComplete"
+      class="mt-4 notification is-success"
     >
-      <p>
-        Successfully validated and selected
-        <strong>{{ validatedFiles.length }}</strong> file(s). You can now
-        proceed with the form submission.
-      </p>
+      <div class="is-flex is-align-items-center">
+        <b-icon icon="lock-check" size="is-medium" class="mr-3"></b-icon>
+        <div>
+          <p class="has-text-weight-semibold is-size-5">
+            <strong>{{ validatedFiles.length }}</strong> file(s) validated and
+            locked for submission
+          </p>
+          <p class="mt-2">
+            All MD5 checksums have been verified.
+            <span v-if="paired">
+              {{ filePairings.length }} file pairing(s) configured.</span
+            >
+            <span v-if="indexed"> Index file: {{ indexFile }}.</span>
+            Files are now locked to prevent accidental changes. Click "Start
+            Over" above if you need to modify your selection.
+          </p>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -147,6 +402,9 @@
 <script>
 import { CHECKSUM_EXTENSIONS } from "~/utils/constants";
 import { getMatchingExtension } from "~/utils/validators";
+
+// MD5 is 32 hexadecimal characters
+const MD5_REGEX = /^[a-fA-F0-9]{32}$/;
 
 export default {
   name: "HpcFileValidator",
@@ -181,20 +439,32 @@ export default {
       directoryName: "",
       isFinding: false,
       isValidating: false,
+      validationComplete: false,
       foundFiles: [],
       selectedFiles: [],
       validatedFiles: [],
       error: null,
       invalidFiles: [],
       allFilesFromServer: [],
+      // MD5 validation state
+      fileMd5Inputs: {}, // { fileName: 'user entered md5' }
+      fileValidationStatus: {}, // { fileName: { status: 'pending'|'validating'|'valid'|'invalid'|'error', message: '' } }
+      validationProgress: 0,
+      // Pairing state (for paired library types)
+      filePairings: [], // Array of { file1: fileName, file2: fileName }
+      // Indexing state (for indexed library types)
+      indexFile: null, // fileName of the selected index file
     };
   },
   computed: {
+    selectableFiles() {
+      // Only show non-checksum files for selection
+      return this.foundFiles.filter((file) => !this.isChecksumFile(file.name));
+    },
     hpcPrefix() {
       let prefix =
         process.env.HPC_DIRECTORY_PREFIX ||
         "/tsl/data/tempWebUploadToSequences/";
-      // Ensure trailing slash
       if (!prefix.endsWith("/")) {
         prefix += "/";
       }
@@ -204,15 +474,13 @@ export default {
       return this.directoryName ? `${this.hpcPrefix}${this.directoryName}` : "";
     },
     allowedFileTypes() {
-      // Always allow checksum files in addition to the allowed extensions
       if (this.allowedExtensions && this.allowedExtensions.length > 0) {
         return [...this.allowedExtensions, ...CHECKSUM_EXTENSIONS];
       }
-      return null; // No restrictions if not provided
+      return null;
     },
     fileCountRules() {
       if (!this.allowedExtensions) return "";
-
       if (this.paired) {
         return "Paired library: Must have at least 2 files (excluding checksum files).";
       } else {
@@ -221,15 +489,85 @@ export default {
     },
     errorMessage() {
       if (!this.error) return "";
-      // Don't replace if already has HTML link
       if (this.error.includes('<a href="mailto:')) {
         return this.error;
       }
-      // Convert plain email to clickable link
       return this.error.replace(
         /george\.deeks@tsl\.ac\.uk/g,
         '<a href="mailto:george.deeks@tsl.ac.uk">george.deeks@tsl.ac.uk</a>'
       );
+    },
+    selectedNonChecksumFiles() {
+      return this.selectedFiles.filter((f) => !this.isChecksumFile(f.name));
+    },
+    // Files available for pairing (selected, not already paired, not index file)
+    filesAvailableForPairing() {
+      const pairedFileNames = this.filePairings.flatMap((p) => [
+        p.file1,
+        p.file2,
+      ]);
+      return this.selectedNonChecksumFiles.filter(
+        (f) => !pairedFileNames.includes(f.name) && f.name !== this.indexFile
+      );
+    },
+    // Check if pairing requirements are met
+    isPairingValid() {
+      if (!this.paired) return true;
+      // Must have at least one pairing
+      return this.filePairings.length > 0;
+    },
+    // Check if indexing requirements are met
+    isIndexingValid() {
+      if (!this.indexed) return true;
+      // Must have an index file selected
+      if (!this.indexFile) return false;
+      // Must have at least one non-index file
+      const nonIndexFiles = this.selectedNonChecksumFiles.filter(
+        (f) => f.name !== this.indexFile
+      );
+      return nonIndexFiles.length > 0;
+    },
+    // Dynamic validation button text
+    validationButtonText() {
+      const parts = ["Validate MD5"];
+      if (this.paired) parts.push("Pairing");
+      if (this.indexed) parts.push("Indexing");
+      return parts.join(" & ");
+    },
+    // Check if all MD5s are entered (valid format)
+    allMd5sEntered() {
+      return this.selectedNonChecksumFiles.every((file) => {
+        const md5 = this.fileMd5Inputs[file.name];
+        return md5 && MD5_REGEX.test(md5.trim());
+      });
+    },
+    canStartValidation() {
+      if (this.selectedFiles.length === 0) return false;
+      if (this.isValidating) return false;
+
+      // All selected non-checksum files must have valid MD5 format
+      const allMd5Valid = this.selectedNonChecksumFiles.every((file) => {
+        const md5 = this.fileMd5Inputs[file.name];
+        return md5 && MD5_REGEX.test(md5.trim());
+      });
+      if (!allMd5Valid) return false;
+
+      // Check pairing requirements
+      if (!this.isPairingValid) return false;
+
+      // Check indexing requirements
+      if (!this.isIndexingValid) return false;
+
+      return true;
+    },
+    allChecksumsValidated() {
+      if (this.selectedFiles.length === 0) return false;
+
+      // All selected non-checksum files must have 'valid' status
+      return this.selectedNonChecksumFiles.every((file) => {
+        const status = this.fileValidationStatus[file.name];
+        return status && status.status === "valid";
+      });
     },
   },
   methods: {
@@ -237,31 +575,53 @@ export default {
       this.foundFiles = [];
       this.selectedFiles = [];
       this.validatedFiles = [];
+      this.validationComplete = false;
       this.error = null;
       this.invalidFiles = [];
       this.allFilesFromServer = [];
+      this.fileMd5Inputs = {};
+      this.fileValidationStatus = {};
+      this.validationProgress = 0;
+      this.filePairings = [];
+      this.indexFile = null;
       this.$emit("input", []);
+    },
+    resetStateKeepDirectory() {
+      // Reset everything except directoryName
+      const savedDirectoryName = this.directoryName;
+      this.resetState();
+      this.directoryName = savedDirectoryName;
+
+      // Show a toast to inform the user
+      if (savedDirectoryName) {
+        this.$buefy.toast.open({
+          message:
+            "Library type changed. Please click 'Find Files' again to re-validate.",
+          type: "is-info",
+          duration: 4000,
+        });
+      }
     },
     validateFileExtension(fileName) {
       if (!this.allowedFileTypes || this.allowedFileTypes.length === 0) {
-        return true; // No restrictions
+        return true;
       }
-
       return getMatchingExtension(fileName, this.allowedFileTypes) !== null;
     },
     isChecksumFile(fileName) {
       const lowerFileName = fileName.toLowerCase();
       return CHECKSUM_EXTENSIONS.some((ext) => lowerFileName.endsWith(ext));
     },
+    isFileSelected(file) {
+      return this.selectedFiles.some((f) => f.name === file.name);
+    },
     validateFileCount(files) {
-      // Filter out checksum files for counting
       const nonChecksumFiles = files.filter(
         (file) => !this.isChecksumFile(file.name)
       );
       const count = nonChecksumFiles.length;
 
       if (this.paired) {
-        // At least 2 files
         if (count < 2) {
           return {
             valid: false,
@@ -271,7 +631,6 @@ export default {
           };
         }
       } else {
-        // At least 1 file
         if (count < 1) {
           return {
             valid: false,
@@ -282,93 +641,170 @@ export default {
 
       return { valid: true, message: "" };
     },
+    isValidMd5Format(md5) {
+      return md5 && MD5_REGEX.test(md5.trim());
+    },
+    getMd5FieldType(fileName) {
+      const md5 = this.fileMd5Inputs[fileName];
+      if (!md5) return "";
+      if (this.isValidMd5Format(md5)) return "is-success";
+      return "is-danger";
+    },
+    getMd5FieldMessage(fileName) {
+      const md5 = this.fileMd5Inputs[fileName];
+      if (!md5) return "Required: 32 hexadecimal characters";
+      if (this.isValidMd5Format(md5)) return "Valid MD5 format";
+      return "Invalid format: MD5 must be exactly 32 hexadecimal characters (0-9, a-f)";
+    },
+    getStatusClass(status) {
+      switch (status) {
+        case "valid":
+          return "has-text-success";
+        case "invalid":
+          return "has-text-danger";
+        case "error":
+          return "has-text-danger";
+        case "validating":
+          return "has-text-info";
+        default:
+          return "has-text-grey";
+      }
+    },
+    getStatusIcon(status) {
+      switch (status) {
+        case "valid":
+          return "check-circle";
+        case "invalid":
+          return "close-circle";
+        case "error":
+          return "alert-circle";
+        case "validating":
+          return "sync";
+        default:
+          return "clock-outline";
+      }
+    },
+    onFileSelectionChange(file, isSelected) {
+      if (!isSelected) {
+        // Clear MD5 input and status when deselected
+        this.$delete(this.fileMd5Inputs, file.name);
+        this.$delete(this.fileValidationStatus, file.name);
+      }
+    },
+    onMd5Input(fileName) {
+      // Clear validation status when MD5 input changes
+      this.$delete(this.fileValidationStatus, fileName);
+    },
+    resetValidation() {
+      this.validationComplete = false;
+      this.fileValidationStatus = {};
+      this.validationProgress = 0;
+      this.validatedFiles = [];
+      this.$emit("input", []);
+      this.$buefy.toast.open({
+        message: "Validation reset. You can now modify your selections.",
+        type: "is-info",
+      });
+    },
+    // Pairing methods
+    addPairing() {
+      this.filePairings.push({ file1: null, file2: null });
+    },
+    removePairing(index) {
+      this.filePairings.splice(index, 1);
+    },
+    getFilesForPairingSelect(currentPairing, isFile2 = false) {
+      // Get files not used in other pairings
+      const usedInOtherPairings = this.filePairings
+        .filter((p) => p !== currentPairing)
+        .flatMap((p) => [p.file1, p.file2])
+        .filter(Boolean);
+
+      // Also exclude the other file in this pairing
+      const otherFileInPairing = isFile2
+        ? currentPairing.file1
+        : currentPairing.file2;
+
+      return this.selectedNonChecksumFiles.filter(
+        (f) =>
+          !usedInOtherPairings.includes(f.name) &&
+          f.name !== otherFileInPairing &&
+          f.name !== this.indexFile
+      );
+    },
+    isFilePaired(fileName) {
+      return this.filePairings.some(
+        (p) => p.file1 === fileName || p.file2 === fileName
+      );
+    },
+    // Indexing methods
+    getFilesForIndexSelect() {
+      // Index file cannot be part of a pairing
+      const pairedFileNames = this.filePairings
+        .flatMap((p) => [p.file1, p.file2])
+        .filter(Boolean);
+      return this.selectedNonChecksumFiles.filter(
+        (f) => !pairedFileNames.includes(f.name)
+      );
+    },
     async findFiles() {
       if (!this.directoryName) return;
       this.resetState();
       this.isFinding = true;
       try {
         console.log("Searching for directory:", this.directoryName);
-        console.log("Full path will be:", this.fullDirectoryPath);
         const response = await this.$axios.get(
           `/directory-files?targetDirectoryName=${encodeURIComponent(
             this.directoryName
           )}`
         );
-        console.log("API response:", response.data);
 
-        // Check if API returned an error in the response body
         if (response.data.error) {
-          console.log("API returned error:", response.data.error);
           let errorMessage = "";
-
           if (response.data.error === "Issue reading target directory") {
-            errorMessage = `Cannot access directory: The path "${this.fullDirectoryPath}" could not be read. This may be due to:<br>
-            • The directory does not exist<br>
-            • Insufficient permissions to access this path<br>
-            • The parent directory structure is incorrect<br><br>
-            <strong>Path attempted:</strong> ${this.fullDirectoryPath}`;
+            errorMessage = `Cannot access directory: The path "${this.fullDirectoryPath}" could not be read.`;
           } else if (response.data.error === "Directory does not exist") {
-            errorMessage = `Directory not found: The path "${this.fullDirectoryPath}" does not exist.<br><br>
-            <strong>Path attempted:</strong> ${this.fullDirectoryPath}<br><br>
-            Please verify:<br>
-            • The directory name is spelled correctly<br>
-            • The directory exists in ${this.hpcPrefix}`;
+            errorMessage = `Directory not found: The path "${this.fullDirectoryPath}" does not exist.`;
           } else if (
             response.data.error === "No files found in target directory"
           ) {
-            errorMessage = `Empty directory: The directory "${this.fullDirectoryPath}" exists but contains no files.<br><br>
-            Please ensure you have uploaded files to this directory before attempting to use them.`;
+            errorMessage = `Empty directory: The directory "${this.fullDirectoryPath}" exists but contains no files.`;
           } else {
-            errorMessage = `Error: ${response.data.error}<br><br>
-            <strong>Path attempted:</strong> ${this.fullDirectoryPath}`;
+            errorMessage = `Error: ${response.data.error}`;
           }
-
-          errorMessage += `<br><br>If you believe this is incorrect, please contact <a href="mailto:george.deeks@tsl.ac.uk" style="text-decoration: underline">george.deeks@tsl.ac.uk</a> with the path information above.`;
-
+          errorMessage += ` If you believe this is incorrect, please contact george.deeks@tsl.ac.uk`;
           this.error = errorMessage;
           this.isFinding = false;
           return;
         }
 
-        // API returns filesResults as array of filenames
         const fileNames = response.data.filesResults || [];
-
-        // Convert filenames to file objects with name property for consistency
         const allFiles = fileNames.map((name) => ({ name }));
-        this.allFilesFromServer = allFiles; // Store for error display
+        this.allFilesFromServer = allFiles;
 
         if (allFiles.length === 0) {
-          console.log(
-            "allFiles.length is 0, filesResults was:",
-            response.data.filesResults
-          );
           this.error = "No files found in that directory.";
           this.isFinding = false;
           return;
         }
 
-        // Validate file types if restrictions are in place
         if (this.allowedFileTypes && this.allowedFileTypes.length > 0) {
           this.invalidFiles = allFiles.filter(
             (file) => !this.validateFileExtension(file.name)
           );
 
           if (this.invalidFiles.length > 0) {
-            const invalidFileNames = this.invalidFiles
-              .map((f) => f.name)
-              .join(", ");
-            this.error = `Invalid file types found in directory: ${invalidFileNames}. Only the following extensions are allowed: ${this.allowedFileTypes.join(
+            this.error = `Invalid file types found. Only the following extensions are allowed: ${this.allowedFileTypes.join(
               ", "
-            )}. If you believe this is incorrect, please contact <a href="mailto:george.deeks@tsl.ac.uk" style="text-decoration: underline">george.deeks@tsl.ac.uk</a>`;
+            )}`;
             this.foundFiles = [];
             this.isFinding = false;
             return;
           }
 
-          // Validate file count
           const countValidation = this.validateFileCount(allFiles);
           if (!countValidation.valid) {
-            this.error = `${countValidation.message} If you believe this is incorrect, please contact <a href="mailto:george.deeks@tsl.ac.uk" style="text-decoration: underline">george.deeks@tsl.ac.uk</a>`;
+            this.error = countValidation.message;
             this.foundFiles = [];
             this.isFinding = false;
             return;
@@ -380,84 +816,135 @@ export default {
         }
       } catch (e) {
         console.error("Error finding HPC files:", e);
-        console.error("Error response:", e.response);
-
-        // Build detailed error message
-        let errorMessage = "";
-
-        if (e.response) {
-          // Server responded with an error
-          const status = e.response.status;
-          const serverMessage =
-            e.response.data?.message || e.response.statusText;
-
-          if (status === 404) {
-            errorMessage = `Directory not found: The path "${this.fullDirectoryPath}" does not exist on the server. Please check the directory name.`;
-          } else if (status === 403) {
-            errorMessage = `Permission denied: You do not have access to "${this.fullDirectoryPath}". Please check the directory permissions or contact your administrator.`;
-          } else if (status === 500) {
-            errorMessage = `Server error: ${
-              serverMessage ||
-              "An internal server error occurred while accessing the directory."
-            }`;
-          } else {
-            errorMessage = `Error (${status}): ${serverMessage}`;
-          }
-
-          // Add the full path attempted
-          errorMessage += `<br><br><strong>Path attempted:</strong> ${this.fullDirectoryPath}`;
-        } else if (e.request) {
-          // Request was made but no response received
-          errorMessage = `Network error: Unable to reach the server. Please check your internet connection.`;
-        } else {
-          // Something else happened
-          errorMessage = `Error: ${
-            e.message || "An unexpected error occurred."
-          }`;
-        }
-
-        // Add contact info
-        errorMessage += `<br><br>If you believe this is incorrect, please contact <a href="mailto:george.deeks@tsl.ac.uk" style="text-decoration: underline">george.deeks@tsl.ac.uk</a> with the path information above.`;
-
-        this.error = errorMessage;
+        this.error =
+          e.response?.data?.error ||
+          e.message ||
+          "An unexpected error occurred.";
       } finally {
         this.isFinding = false;
       }
     },
-    async validateSelectedFiles() {
-      if (this.selectedFiles.length === 0) return;
+    async validateChecksums() {
+      if (!this.canStartValidation) return;
+
       this.isValidating = true;
+      this.validationProgress = 0;
       this.error = null;
 
-      // This component will currently assume the files are valid.
-      // A future implementation could add MD5 checks or other validation steps here.
-      try {
-        // Simulate validation delay
-        await new Promise((resolve) => setTimeout(resolve, 300));
+      const filesToValidate = this.selectedNonChecksumFiles;
 
-        const formattedFiles = this.selectedFiles.map((file) => ({
-          ...file,
-          MD5: file.md5 || null, // API might provide md5
-          relativePath: this.fullDirectoryPath,
-        }));
+      for (let i = 0; i < filesToValidate.length; i++) {
+        const file = filesToValidate[i];
+        const expectedMd5 = this.fileMd5Inputs[file.name]?.trim();
 
-        this.validatedFiles = formattedFiles;
-        this.$emit("input", this.validatedFiles);
-      } catch (e) {
-        console.error("Error during validation:", e);
-        this.error = "An unexpected error occurred during file validation.";
-        this.$emit("input", []);
-      } finally {
-        this.isValidating = false;
+        // Set status to validating
+        this.$set(this.fileValidationStatus, file.name, {
+          status: "validating",
+          message: "Calculating checksum...",
+        });
+
+        try {
+          const response = await this.$axios.post(
+            "/directory-files/verify-md5",
+            {
+              directoryName: this.directoryName,
+              fileName: file.name,
+              expectedMd5,
+            }
+          );
+
+          if (response.data.matches) {
+            this.$set(this.fileValidationStatus, file.name, {
+              status: "valid",
+              message: `Checksum verified: ${response.data.calculatedMd5}`,
+              calculatedMd5: response.data.calculatedMd5,
+            });
+          } else {
+            this.$set(this.fileValidationStatus, file.name, {
+              status: "invalid",
+              message: `Mismatch! Expected: ${expectedMd5}, Calculated: ${response.data.calculatedMd5}`,
+              calculatedMd5: response.data.calculatedMd5,
+            });
+          }
+        } catch (e) {
+          console.error(`Error validating ${file.name}:`, e);
+          const errorData = e.response?.data;
+          let errorMessage = errorData?.error || "Failed to validate checksum";
+          if (errorData?.requestId) {
+            errorMessage += ` (Ref: ${errorData.requestId})`;
+          }
+          this.$set(this.fileValidationStatus, file.name, {
+            status: "error",
+            message: errorMessage,
+          });
+        }
+
+        this.validationProgress = i + 1;
+      }
+
+      this.isValidating = false;
+
+      // Show toast with result and auto-confirm if all passed
+      if (this.allChecksumsValidated) {
+        // Automatically confirm selection and lock everything
+        this.confirmSelection();
+        this.$buefy.toast.open({
+          message:
+            "All validations passed! Files, MD5 checksums, and settings are now locked.",
+          type: "is-success",
+          duration: 5000,
+        });
+      } else {
+        this.$buefy.toast.open({
+          message:
+            "Some checksums failed validation. Please check and correct.",
+          type: "is-danger",
+        });
       }
     },
-    formatBytes(bytes, decimals = 2) {
-      if (bytes === 0) return "0 Bytes";
-      const k = 1024;
-      const dm = decimals < 0 ? 0 : decimals;
-      const sizes = ["Bytes", "KB", "MB", "GB", "TB", "PB"];
-      const i = Math.floor(Math.log(bytes) / Math.log(k));
-      return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
+    confirmSelection() {
+      // Filter out checksum files - only include actual read files
+      const nonChecksumFiles = this.selectedFiles.filter(
+        (file) => !this.isChecksumFile(file.name)
+      );
+
+      // Build a map of file -> sibling for paired files
+      const siblingMap = {};
+      if (this.paired) {
+        this.filePairings.forEach((pairing) => {
+          if (pairing.file1 && pairing.file2) {
+            siblingMap[pairing.file1] = pairing.file2;
+            siblingMap[pairing.file2] = pairing.file1;
+          }
+        });
+      }
+
+      const formattedFiles = nonChecksumFiles.map((file) => {
+        const fileData = {
+          ...file,
+          MD5: this.fileMd5Inputs[file.name]?.trim() || null,
+          relativePath: this.directoryName,
+        };
+
+        // Add pairing info if this file is paired
+        if (this.paired && siblingMap[file.name]) {
+          fileData.sibling = siblingMap[file.name];
+          fileData.paired = true;
+        } else if (this.paired) {
+          fileData.paired = false;
+        }
+
+        // Add indexing info
+        if (this.indexed) {
+          fileData.indexed = file.name === this.indexFile;
+        }
+
+        return fileData;
+      });
+
+      this.validatedFiles = formattedFiles;
+      this.validationComplete = true;
+      this.$emit("input", this.validatedFiles);
     },
   },
   watch: {
@@ -468,10 +955,26 @@ export default {
         this.resetState();
       },
     },
+    // Watch for library type changes (paired or indexed props)
+    paired() {
+      // Keep directory name but reset everything else
+      this.resetStateKeepDirectory();
+    },
+    indexed() {
+      // Keep directory name but reset everything else
+      this.resetStateKeepDirectory();
+    },
+    allowedExtensions() {
+      // If allowed extensions change, reset state
+      this.resetStateKeepDirectory();
+    },
   },
 };
 </script>
 
 <style scoped>
-/* Add any component-specific styles here */
+.box {
+  padding: 1rem;
+  margin-bottom: 0.5rem;
+}
 </style>

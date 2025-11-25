@@ -179,32 +179,109 @@
             <div class="box mt-4" v-if="rawFilesForLocalUpload.length">
               <h4 class="title is-5">MD5 Checksum Validation</h4>
               <p class="mb-4">
-                Before you can submit, you must calculate and validate the MD5
-                checksum for each uploaded file. This may take several minutes
-                for large files.
+                Enter the expected MD5 checksum for each non-checksum file, then
+                validate. This ensures file integrity during upload.
               </p>
-              <b-button
-                @click="validateMd5s"
-                :loading="isHashing"
-                :disabled="isHashing"
-                type="is-info"
+
+              <!-- MD5 input for each file -->
+              <div
+                v-for="file in nonChecksumLocalFiles"
+                :key="file.data.name"
+                class="box mb-3"
               >
-                Validate MD5 Checksums
-              </b-button>
-              <div v-if="fileStatuses.length" class="mt-4">
-                <ul>
-                  <li v-for="file in fileStatuses" :key="file.name">
+                <p class="has-text-weight-medium mb-2">{{ file.data.name }}</p>
+                <b-field
+                  :type="getLocalMd5FieldType(file.data.name)"
+                  :message="getLocalMd5FieldMessage(file.data.name)"
+                >
+                  <b-input
+                    v-model="localFileMd5Inputs[file.data.name]"
+                    placeholder="Enter expected MD5 checksum (32 hex characters)"
+                    :disabled="isHashing"
+                    @input="onLocalMd5Input(file.data.name)"
+                  ></b-input>
+                </b-field>
+
+                <!-- Validation status -->
+                <div
+                  v-if="fileStatuses.find((s) => s.name === file.data.name)"
+                  class="mt-2"
+                >
+                  <span :class="getLocalStatusClass(file.data.name)">
                     <b-icon
-                      :icon="file.statusIcon"
-                      :type="file.statusType"
+                      :icon="
+                        fileStatuses.find((s) => s.name === file.data.name)
+                          .statusIcon
+                      "
                       size="is-small"
                     ></b-icon>
-                    <span>{{ file.name }} - {{ file.status }}</span>
-                    <strong v-if="file.md5" class="is-family-monospace ml-2">{{
-                      file.md5
-                    }}</strong>
-                  </li>
-                </ul>
+                    {{
+                      fileStatuses.find((s) => s.name === file.data.name).status
+                    }}
+                    <strong
+                      v-if="
+                        fileStatuses.find((s) => s.name === file.data.name)
+                          .calculatedMd5
+                      "
+                      class="is-family-monospace ml-2"
+                    >
+                      Calculated:
+                      {{
+                        fileStatuses.find((s) => s.name === file.data.name)
+                          .calculatedMd5
+                      }}
+                    </strong>
+                  </span>
+                </div>
+              </div>
+
+              <!-- Checksum files (no MD5 required) -->
+              <div
+                v-for="file in checksumLocalFiles"
+                :key="file.data.name"
+                class="box mb-3"
+                style="background-color: #f5f5f5"
+              >
+                <p class="has-text-weight-medium">
+                  {{ file.data.name }}
+                  <span class="tag is-light is-small ml-2"
+                    >checksum file - no validation required</span
+                  >
+                </p>
+              </div>
+
+              <div class="mt-4">
+                <b-button
+                  @click="validateMd5s"
+                  :loading="isHashing"
+                  :disabled="!canStartLocalValidation"
+                  type="is-info"
+                >
+                  Validate MD5 Checksums
+                </b-button>
+                <p
+                  v-if="
+                    !canStartLocalValidation && nonChecksumLocalFiles.length > 0
+                  "
+                  class="help is-danger mt-2"
+                >
+                  Please enter a valid MD5 checksum for all files before
+                  validating.
+                </p>
+              </div>
+
+              <!-- Validation progress -->
+              <div v-if="isHashing" class="mt-4">
+                <p class="has-text-weight-semibold mb-2">
+                  Validating checksums... ({{ validationProgressLocal }}/{{
+                    nonChecksumLocalFiles.length
+                  }})
+                </p>
+                <progress
+                  class="progress is-primary"
+                  :value="validationProgressLocal"
+                  :max="nonChecksumLocalFiles.length"
+                ></progress>
               </div>
             </div>
           </b-tab-item>
@@ -329,7 +406,9 @@ export default {
       // MD5 Validation State
       isHashing: false,
       md5ValidationComplete: false,
-      fileStatuses: [], // { name, status, md5, statusIcon, statusType }
+      fileStatuses: [], // { name, status, md5, statusIcon, statusType, calculatedMd5 }
+      localFileMd5Inputs: {}, // { fileName: 'user entered md5' }
+      validationProgressLocal: 0,
     };
   },
 
@@ -351,6 +430,40 @@ export default {
 
     rawFilesForLocalUpload() {
       return this.$refs.rawUploader?.getFiles() || [];
+    },
+
+    nonChecksumLocalFiles() {
+      return this.rawFilesForLocalUpload.filter(
+        (f) => !this.isChecksumFile(f.data.name)
+      );
+    },
+
+    checksumLocalFiles() {
+      return this.rawFilesForLocalUpload.filter((f) =>
+        this.isChecksumFile(f.data.name)
+      );
+    },
+
+    canStartLocalValidation() {
+      if (this.nonChecksumLocalFiles.length === 0) return false;
+      if (this.isHashing) return false;
+
+      // All non-checksum files must have valid MD5 format
+      const md5Regex = /^[a-fA-F0-9]{32}$/;
+      return this.nonChecksumLocalFiles.every((file) => {
+        const md5 = this.localFileMd5Inputs[file.data.name];
+        return md5 && md5Regex.test(md5.trim());
+      });
+    },
+
+    allLocalChecksumsValidated() {
+      if (this.nonChecksumLocalFiles.length === 0) return false;
+
+      // All non-checksum files must have 'valid' status
+      return this.nonChecksumLocalFiles.every((file) => {
+        const status = this.fileStatuses.find((s) => s.name === file.data.name);
+        return status && status.status === "Verified";
+      });
     },
 
     libraryTypeObject() {
@@ -445,14 +558,51 @@ export default {
   },
 
   methods: {
+    async initializeFromClonedRun(clonedRunId) {
+      try {
+        const { data } = await this.$axios.get("/run", {
+          params: { id: clonedRunId },
+        });
+        const clonedRun = data.run;
+        if (clonedRun) {
+          this.run.name = `${clonedRun.name || ""}_clone`;
+          this.run.sequencingProvider = clonedRun.sequencingProvider || "";
+          this.run.libraryType = clonedRun.libraryType || null;
+          this.run.sequencingTechnology =
+            clonedRun.sequencingTechnology || null;
+          this.run.librarySource = clonedRun.librarySource || null;
+          this.run.librarySelection = clonedRun.librarySelection || null;
+          this.run.libraryStrategy = clonedRun.libraryStrategy || null;
+          this.run.insertSize = clonedRun.insertSize || null;
+          this.$buefy.toast.open({
+            message: "Form pre-filled from cloned run.",
+            type: "is-info",
+          });
+        }
+      } catch (err) {
+        console.error("Error fetching cloned run:", err);
+        this.$buefy.toast.open({
+          message: "Failed to load cloned run data.",
+          type: "is-danger",
+        });
+      }
+    },
+
     isChecksumFile(fileName) {
       const lowerFileName = fileName.toLowerCase();
       return CHECKSUM_EXTENSIONS.some((ext) => lowerFileName.endsWith(ext));
     },
+    /**
+     * Get filename from a file object, handling both HPC (file.name) and local (file.data.name) formats
+     */
+    getFileName(file) {
+      return file.name || file.data?.name || "";
+    },
+
     validateRawFileCount(files) {
       // Filter out checksum files for counting
       const nonChecksumFiles = files.filter(
-        (file) => !this.isChecksumFile(file.name)
+        (file) => !this.isChecksumFile(this.getFileName(file))
       );
       const count = nonChecksumFiles.length;
 
@@ -485,62 +635,133 @@ export default {
     resetMd5Validation() {
       this.md5ValidationComplete = false;
       this.fileStatuses = [];
+      this.localFileMd5Inputs = {};
+      this.validationProgressLocal = 0;
+    },
+
+    // Helper methods for local file MD5 validation UI
+    isValidMd5Format(md5) {
+      const md5Regex = /^[a-fA-F0-9]{32}$/;
+      return md5 && md5Regex.test(md5.trim());
+    },
+
+    getLocalMd5FieldType(fileName) {
+      const md5 = this.localFileMd5Inputs[fileName];
+      if (!md5) return "";
+      if (this.isValidMd5Format(md5)) return "is-success";
+      return "is-danger";
+    },
+
+    getLocalMd5FieldMessage(fileName) {
+      const md5 = this.localFileMd5Inputs[fileName];
+      if (!md5) return "Required: 32 hexadecimal characters";
+      if (this.isValidMd5Format(md5)) return "Valid MD5 format";
+      return "Invalid format: MD5 must be exactly 32 hexadecimal characters (0-9, a-f)";
+    },
+
+    getLocalStatusClass(fileName) {
+      const status = this.fileStatuses.find((s) => s.name === fileName);
+      if (!status) return "";
+      if (status.statusType === "is-success") return "has-text-success";
+      if (status.statusType === "is-danger") return "has-text-danger";
+      if (status.statusType === "is-primary") return "has-text-info";
+      return "has-text-grey";
+    },
+
+    onLocalMd5Input(fileName) {
+      // Clear validation status when MD5 input changes
+      const index = this.fileStatuses.findIndex((s) => s.name === fileName);
+      if (index !== -1) {
+        this.fileStatuses.splice(index, 1);
+      }
+      this.md5ValidationComplete = false;
     },
 
     validateMd5s() {
-      const files = this.rawFilesForLocalUpload.map((f) => f.data);
-      if (!files.length) return;
+      // Only validate non-checksum files
+      const filesToValidate = this.nonChecksumLocalFiles;
+      if (!filesToValidate.length) return;
+      if (!this.canStartLocalValidation) return;
 
       this.isHashing = true;
-      this.resetMd5Validation();
-
-      this.fileStatuses = files.map((file) => ({
-        name: file.name,
-        status: "Queued",
-        md5: null,
-        statusIcon: "clock-outline",
-        statusType: "is-info",
-      }));
+      this.fileStatuses = [];
+      this.validationProgressLocal = 0;
 
       const processFile = (index) => {
-        if (index >= files.length) {
+        if (index >= filesToValidate.length) {
           this.isHashing = false;
-          this.md5ValidationComplete = true;
-          this.$buefy.toast.open({
-            message: "All MD5 checksums validated!",
-            type: "is-success",
-          });
+          this.md5ValidationComplete = this.allLocalChecksumsValidated;
+
+          if (this.allLocalChecksumsValidated) {
+            this.$buefy.toast.open({
+              message: "All MD5 checksums verified successfully!",
+              type: "is-success",
+            });
+          } else {
+            this.$buefy.toast.open({
+              message:
+                "Some checksums failed verification. Please check and correct.",
+              type: "is-danger",
+            });
+          }
           return;
         }
 
-        const file = files[index];
-        const status = this.fileStatuses[index];
-        const reader = new FileReader();
+        const fileWrapper = filesToValidate[index];
+        const file = fileWrapper.data;
+        const expectedMd5 = this.localFileMd5Inputs[file.name]
+          ?.trim()
+          .toLowerCase();
 
-        status.status = "Hashing...";
-        status.statusIcon = "sync";
-        status.statusType = "is-primary";
+        // Add status entry
+        this.fileStatuses.push({
+          name: file.name,
+          status: "Calculating...",
+          md5: expectedMd5,
+          calculatedMd5: null,
+          statusIcon: "sync",
+          statusType: "is-primary",
+        });
+
+        const statusIndex = this.fileStatuses.length - 1;
+        const reader = new FileReader();
 
         reader.onload = (e) => {
           try {
             const spark = new SparkMD5.ArrayBuffer();
             spark.append(e.target.result);
-            status.md5 = spark.end();
-            status.status = "Complete";
-            status.statusIcon = "check-circle";
-            status.statusType = "is-success";
+            const calculatedMd5 = spark.end();
+
+            const matches = calculatedMd5 === expectedMd5;
+
+            this.fileStatuses[statusIndex].calculatedMd5 = calculatedMd5;
+            if (matches) {
+              this.fileStatuses[statusIndex].status = "Verified";
+              this.fileStatuses[statusIndex].statusIcon = "check-circle";
+              this.fileStatuses[statusIndex].statusType = "is-success";
+            } else {
+              this.fileStatuses[
+                statusIndex
+              ].status = `Mismatch! Expected: ${expectedMd5}`;
+              this.fileStatuses[statusIndex].statusIcon = "close-circle";
+              this.fileStatuses[statusIndex].statusType = "is-danger";
+            }
           } catch (err) {
-            status.status = "Error";
-            status.statusIcon = "alert-circle";
-            status.statusType = "is-danger";
+            this.fileStatuses[statusIndex].status =
+              "Error calculating checksum";
+            this.fileStatuses[statusIndex].statusIcon = "alert-circle";
+            this.fileStatuses[statusIndex].statusType = "is-danger";
           }
+
+          this.validationProgressLocal = index + 1;
           processFile(index + 1);
         };
 
         reader.onerror = () => {
-          status.status = "File Read Error";
-          status.statusIcon = "alert-circle";
-          status.statusType = "is-danger";
+          this.fileStatuses[statusIndex].status = "File Read Error";
+          this.fileStatuses[statusIndex].statusIcon = "alert-circle";
+          this.fileStatuses[statusIndex].statusType = "is-danger";
+          this.validationProgressLocal = index + 1;
           processFile(index + 1);
         };
 
@@ -568,14 +789,19 @@ export default {
         rawFilesUploadInfo.relativePath =
           this.hpcValidatedFiles[0]?.relativePath;
       } else {
-        // For local uploads, enrich the file objects with their calculated MD5s
-        rawFilesPayload = this.rawFilesForLocalUpload.map((file) => {
+        // For local uploads, filter out checksum files and enrich with verified MD5s
+        const nonChecksumFiles = this.rawFilesForLocalUpload.filter(
+          (f) => !this.isChecksumFile(f.data.name)
+        );
+
+        rawFilesPayload = nonChecksumFiles.map((file) => {
           const status = this.fileStatuses.find(
             (s) => s.name === file.data.name
           );
+          // Use the calculated MD5 (which was verified against user input)
           return {
             ...file,
-            md5: status ? status.md5 : null,
+            md5: status ? status.calculatedMd5 : null,
           };
         });
       }
@@ -603,9 +829,17 @@ export default {
         });
       } catch (err) {
         console.error("Error creating run:", err);
+        const errorData = err.response?.data;
+        let errorMessage = errorData?.error || "An unexpected error occurred.";
+
+        // Include request ID for easier debugging if available
+        if (errorData?.requestId) {
+          errorMessage += `<br><br><small>Reference ID: ${errorData.requestId}</small>`;
+        }
+
         this.$buefy.dialog.alert({
           title: "Submission Failed",
-          message: err.response?.data?.error || "An unexpected error occurred.",
+          message: errorMessage,
           type: "is-danger",
         });
       } finally {

@@ -149,7 +149,12 @@
         <div class="bottomPadding"></div>
 
         <b-field label="Raw Files">
-          <ReadList :reads="run.rawFiles" :run-path="run.path" />
+          <ReadList
+            :reads="run.rawFiles"
+            :run-path="run.path"
+            :allowed-extensions="libraryTypeExtensions"
+            :run-status="run.status"
+          />
         </b-field>
         <hr />
       </div>
@@ -169,7 +174,7 @@ export default {
     AddAccessionModal,
   },
   middleware: ["auth"],
-  async asyncData({ route, $axios, error }) {
+  async asyncData({ route, $axios, store, error }) {
     if (!route.query.id) {
       return error({ statusCode: 404, message: "Run ID not provided" });
     }
@@ -205,6 +210,10 @@ export default {
       polling: null,
     };
   },
+  async created() {
+    // Ensure library types are loaded for extension checking
+    await this.$store.dispatch("refreshOptions");
+  },
   mounted() {
     if (this.run && this.run.status === "pending") {
       this.startPolling();
@@ -219,7 +228,7 @@ export default {
         path: "/runs/new",
         query: {
           clonedRunId: this.run._id,
-          sampleId: this.run.sample._id,
+          sample: this.run.sample._id,
         },
       });
     },
@@ -256,6 +265,15 @@ export default {
     },
   },
   computed: {
+    libraryTypeExtensions() {
+      // Get the allowed extensions for this run's library type
+      if (!this.run?.libraryType) return [];
+      const libraryTypes = this.$store.state.libraryTypes || [];
+      const libraryType = libraryTypes.find(
+        (lt) => lt.value === this.run.libraryType
+      );
+      return libraryType?.extensions || [];
+    },
     runStatus() {
       if (!this.run || !this.run.status) {
         return { text: "Unknown", type: "is-light", icon: "help-circle" };
