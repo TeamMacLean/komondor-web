@@ -5,14 +5,6 @@
         <div class="title-wrapper">
           <div class="is-flex is-align-items-center">
             <h1 class="title mb-0">{{ run.name }}</h1>
-            <b-tag
-              v-if="runStatus"
-              :type="runStatus.type"
-              :icon="runStatus.icon"
-              size="is-medium"
-              class="ml-4"
-              >{{ runStatus.text }}</b-tag
-            >
           </div>
           <AddAccessionModal
             v-if="showAddAcession"
@@ -55,15 +47,6 @@
           }}
         </p>
 
-        <div
-          v-if="run.status === 'pending'"
-          class="notification is-info is-light"
-        >
-          <b-icon icon="sync" custom-class="fa-spin"></b-icon>
-          This run is currently being processed, and backend MD5 checksum
-          validation is in progress. This page will automatically refresh when
-          complete.
-        </div>
         <div
           v-if="run.status === 'error'"
           class="notification is-danger is-light"
