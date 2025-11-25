@@ -153,6 +153,12 @@
             <HpcFileValidator
               v-model="hpcValidatedFiles"
               :sample-id="sample._id"
+              :allowed-extensions="
+                libraryTypeObject && libraryTypeObject.extensions
+              "
+              :paired="libraryTypeObject && libraryTypeObject.paired"
+              :indexed="libraryTypeObject && libraryTypeObject.indexed"
+              :disabled="!run.libraryType"
             />
           </b-tab-item>
 
@@ -236,6 +242,7 @@
 <script>
 import { mapState } from "vuex";
 import SparkMD5 from "spark-md5";
+import { CHECKSUM_EXTENSIONS } from "~/utils/constants";
 import Uploader from "~/components/uploads/Uploader.vue";
 import HpcFileValidator from "~/components/uploads/HpcFileValidator.vue";
 import FormConsentCheckbox from "~/components/formHelpers/FormConsentCheckbox.vue";
@@ -250,24 +257,55 @@ export default {
     CollapsibleUploaderHelp,
   },
   middleware: "auth",
+  watchQuery: ["sample"],
 
   async asyncData({ $axios, params, error, route }) {
     try {
+      // Get sampleId from query params (not route params for this page)
+      const sampleId = route.query.sample;
+
+      console.log("=== NEW RUN PAGE asyncData ===");
+      console.log("params:", JSON.stringify(params));
+      console.log("route.query:", JSON.stringify(route.query));
+      console.log("route.path:", route.path);
+      console.log("sampleId extracted:", sampleId);
+      console.log("==============================");
+
+      if (!sampleId) {
+        console.error("ERROR: No sampleId in query parameters");
+        return error({
+          statusCode: 400,
+          message: "Sample ID is required. Please navigate from a sample page.",
+        });
+      }
+
+      console.log("Fetching sample with ID:", sampleId);
       const sampleResponse = await $axios.get("/sample", {
-        params: { id: params.id || route.query.sampleId },
+        params: { id: sampleId },
       });
+
+      console.log(
+        "Sample fetched successfully:",
+        sampleResponse.data.sample.name
+      );
+
       const namesResponse = await $axios.get(
         `/runs/names/${sampleResponse.data.sample._id}`
       );
+
+      console.log("Run names fetched successfully");
+
       return {
         sample: sampleResponse.data.sample,
         existingRunNames: namesResponse.data.runNames || [],
       };
     } catch (err) {
       console.error("Failed to load initial data for new run page:", err);
+      console.error("Error details:", err.response?.data || err.message);
       return error({
-        statusCode: 404,
-        message: "Parent sample not found or API error.",
+        statusCode: err.response?.status || 500,
+        message:
+          err.response?.data?.message || "Sample not found or API error.",
       });
     }
   },
@@ -369,11 +407,28 @@ export default {
       if (this.activeTab === "hpc-mv") {
         if (this.hpcValidatedFiles.length === 0)
           errors.rawFiles = "HPC files must be selected and validated.";
+        else {
+          // Validate file count for HPC files
+          const fileCountValidation = this.validateRawFileCount(
+            this.hpcValidatedFiles
+          );
+          if (!fileCountValidation.valid) {
+            errors.rawFiles = fileCountValidation.message;
+          }
+        }
       } else {
         if (this.rawFilesForLocalUpload.length === 0) {
           errors.rawFiles = "At least one raw read file must be uploaded.";
         } else if (!this.md5ValidationComplete) {
           errors.md5 = "You must validate the MD5 checksums of all raw files.";
+        } else {
+          // Validate file count for local uploads
+          const fileCountValidation = this.validateRawFileCount(
+            this.rawFilesForLocalUpload
+          );
+          if (!fileCountValidation.valid) {
+            errors.rawFiles = fileCountValidation.message;
+          }
         }
       }
       return errors;
@@ -390,10 +445,43 @@ export default {
   },
 
   methods: {
-    async initializeFromClonedRun(clonedRunId) {
-      // ... (implementation from previous step)
+    isChecksumFile(fileName) {
+      const lowerFileName = fileName.toLowerCase();
+      return CHECKSUM_EXTENSIONS.some((ext) => lowerFileName.endsWith(ext));
     },
+    validateRawFileCount(files) {
+      // Filter out checksum files for counting
+      const nonChecksumFiles = files.filter(
+        (file) => !this.isChecksumFile(file.name)
+      );
+      const count = nonChecksumFiles.length;
 
+      if (!this.libraryTypeObject) {
+        return { valid: true, message: "" };
+      }
+
+      const paired = this.libraryTypeObject.paired || false;
+
+      if (paired) {
+        // At least 2 files
+        if (count < 2) {
+          return {
+            valid: false,
+            message: `Paired library requires at least 2 files (excluding checksum files). Found ${count}.`,
+          };
+        }
+      } else {
+        // At least 1 file
+        if (count < 1) {
+          return {
+            valid: false,
+            message: `At least 1 file is required (excluding checksum files). Found ${count}.`,
+          };
+        }
+      }
+
+      return { valid: true, message: "" };
+    },
     resetMd5Validation() {
       this.md5ValidationComplete = false;
       this.fileStatuses = [];

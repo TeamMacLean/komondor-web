@@ -34,9 +34,19 @@
               </section>
             </b-upload>
           </b-field>
-          <b-button @click="validateTplexCsv" :disabled="!tplexCsvFile">
-            Validate CSV
-          </b-button>
+          <div class="buttons">
+            <b-button @click="validateTplexCsv" :disabled="!tplexCsvFile">
+              Validate CSV
+            </b-button>
+            <b-button
+              v-if="tplexCsvFile"
+              type="is-danger"
+              outlined
+              @click="removeTplexCsv"
+            >
+              Remove File
+            </b-button>
+          </div>
           <div v-if="validatedCsvData.length" class="mt-4 content">
             <p class="has-text-success">
               <b-icon icon="check-circle" size="is-small"></b-icon>
@@ -156,24 +166,56 @@ export default {
   name: "NewSample",
   components: { Uploader, FormConsentCheckbox, CollapsibleUploaderHelp },
   middleware: "auth",
+  watchQuery: ["projectId"],
 
   async asyncData({ $axios, params, error, route }) {
     try {
+      // Get projectId from query params (not route params for this page)
+      const projectId = route.query.projectId;
+
+      console.log("=== NEW SAMPLE PAGE asyncData ===");
+      console.log("params:", JSON.stringify(params));
+      console.log("route.query:", JSON.stringify(route.query));
+      console.log("route.path:", route.path);
+      console.log("projectId extracted:", projectId);
+      console.log("=================================");
+
+      if (!projectId) {
+        console.error("ERROR: No projectId in query parameters");
+        return error({
+          statusCode: 400,
+          message:
+            "Project ID is required. Please navigate from a project page.",
+        });
+      }
+
+      console.log("Fetching project with ID:", projectId);
       const projectResponse = await $axios.get("/project", {
-        params: { id: params.id || route.query.projectId },
+        params: { id: projectId },
       });
+
+      console.log(
+        "Project fetched successfully:",
+        projectResponse.data.project.name
+      );
+
       const namesResponse = await $axios.get(
         `/samples/names/${projectResponse.data.project._id}`
       );
+
+      console.log("Sample names fetched successfully");
+
       return {
         project: projectResponse.data.project,
         existingSampleNames: namesResponse.data.sampleNames || [],
       };
     } catch (err) {
       console.error("Failed to load initial data for new sample page:", err);
+      console.error("Error details:", err.response?.data || err.message);
       return error({
-        statusCode: 404,
-        message: "Project not found or API error.",
+        statusCode: err.response?.status || 500,
+        message:
+          err.response?.data?.message || "Project not found or API error.",
       });
     }
   },
@@ -289,11 +331,20 @@ export default {
     },
 
     validateTplexCsv() {
-      if (!this.tplexCsvFile) return;
+      if (!this.tplexCsvFile) {
+        this.$buefy.toast.open({
+          message: "Please select a CSV file first.",
+          type: "is-warning",
+        });
+        return;
+      }
+
+      console.log("Validating TPlex CSV file:", this.tplexCsvFile.name);
 
       Papa.parse(this.tplexCsvFile, {
         header: true,
         skipEmptyLines: true,
+        transformHeader: (header) => header.trim(), // Trim whitespace from headers
         complete: (results) => {
           const expectedHeaders = [
             "name",
@@ -302,23 +353,55 @@ export default {
             "ncbi",
             "conditions",
           ];
-          const actualHeaders = results.meta.fields;
+          const actualHeaders = results.meta.fields || [];
 
-          if (!expectedHeaders.every((h) => actualHeaders.includes(h))) {
+          console.log("Expected headers:", expectedHeaders);
+          console.log("Actual headers:", actualHeaders);
+          console.log("CSV data rows:", results.data.length);
+
+          // Check if CSV is empty
+          if (results.data.length === 0) {
             this.validatedCsvData = [];
             this.$buefy.dialog.alert({
-              title: "Invalid CSV Headers",
-              message: `CSV headers are incorrect. Expected: <strong>${expectedHeaders.join(
-                ", "
-              )}</strong>`,
+              title: "Empty CSV File",
+              message: "The CSV file appears to be empty or has no data rows.",
               type: "is-danger",
             });
             return;
           }
 
-          this.validatedCsvData = results.data;
+          // Check if all expected headers are present
+          const missingHeaders = expectedHeaders.filter(
+            (h) => !actualHeaders.includes(h)
+          );
+
+          if (missingHeaders.length > 0) {
+            this.validatedCsvData = [];
+            this.$buefy.dialog.alert({
+              title: "Invalid CSV Headers",
+              message: `CSV headers are missing or incorrect.<br><br>
+                <strong>Expected:</strong> ${expectedHeaders.join(", ")}<br>
+                <strong>Found:</strong> ${actualHeaders.join(", ")}<br>
+                <strong>Missing:</strong> ${missingHeaders.join(", ")}`,
+              type: "is-danger",
+            });
+            return;
+          }
+
+          // Filter out any completely empty rows
+          this.validatedCsvData = results.data.filter((row) => {
+            return (
+              row.name ||
+              row.scientificName ||
+              row.commonName ||
+              row.ncbi ||
+              row.conditions
+            );
+          });
+          console.log("Validated CSV data:", this.validatedCsvData);
+
           this.$buefy.toast.open({
-            message: "CSV validated successfully!",
+            message: `CSV validated successfully! Found ${this.validatedCsvData.length} sample(s).`,
             type: "is-success",
           });
         },
@@ -331,6 +414,15 @@ export default {
             type: "is-danger",
           });
         },
+      });
+    },
+
+    removeTplexCsv() {
+      this.tplexCsvFile = null;
+      this.validatedCsvData = [];
+      this.$buefy.toast.open({
+        message: "CSV file removed.",
+        type: "is-info",
       });
     },
 
@@ -366,19 +458,11 @@ export default {
           type: "is-success",
         });
 
-        // If not tplex, redirect to the single sample page
-        if (!this.isTplexChecked) {
-          this.$router.push({
-            name: "sample",
-            query: { id: createdSample._id },
-          });
-        } else {
-          // if tplex, redirect to the project page
-          this.$router.push({
-            name: "project",
-            query: { id: this.project._id },
-          });
-        }
+        // Redirect to the newly created sample page (both standard and TPlex)
+        this.$router.push({
+          name: "sample",
+          query: { id: createdSample._id },
+        });
       } catch (err) {
         console.error("Error creating sample(s):", err);
         this.$buefy.dialog.alert({

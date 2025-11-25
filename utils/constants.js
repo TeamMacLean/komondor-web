@@ -47,13 +47,13 @@ export const HTTP_STATUS = {
  * Local storage keys
  */
 export const STORAGE_KEYS = {
-  TOKEN: 'auth_token',
-  USER: 'user_data',
-  THEME: 'app_theme',
-  LANGUAGE: 'app_language',
-  MD5_WARNING: 'has_seen_md5_warning',
-  PREFERENCES: 'user_preferences',
-}
+  TOKEN: "auth_token",
+  USER: "user_data",
+  THEME: "app_theme",
+  LANGUAGE: "app_language",
+  MD5_WARNING: "has_seen_md5_warning",
+  PREFERENCES: "user_preferences",
+};
 
 /**
  * File size limits (in bytes)
@@ -73,6 +73,7 @@ export const FILE_EXTENSIONS = {
   DOCUMENTS: ["pdf", "doc", "docx", "txt", "csv", "xls", "xlsx"],
   SEQUENCE_DATA: ["fastq", "fq", "fasta", "fa", "bam", "sam", "vcf"],
   COMPRESSED: ["zip", "gz", "tar", "bz2", "7z"],
+  CHECKSUMS: [".md5", ".sha256", ".sha1"],
 };
 
 /**
@@ -352,12 +353,19 @@ export const Z_INDEX = {
   TOOLTIP: 1070,
 };
 
+/**
+ * Checksum file extensions
+ * These file types are not counted when validating file uploads
+ */
+export const CHECKSUM_EXTENSIONS = FILE_EXTENSIONS.CHECKSUMS;
+
 export default {
   API_ENDPOINTS,
   HTTP_STATUS,
   STORAGE_KEYS,
   FILE_SIZE_LIMITS,
   FILE_EXTENSIONS,
+  CHECKSUM_EXTENSIONS,
   DATE_FORMATS,
   PAGINATION,
   VALIDATION,

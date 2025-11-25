@@ -4,7 +4,11 @@
       <div v-if="sample">
         <div class="title-wrapper">
           <div class="title">
-            {{ sample.scientificName }} - {{ sample.name }}
+            {{
+              sample.scientificName ||
+              (sample.tplexCsv ? "TPlex Sample" : "Sample")
+            }}
+            - {{ sample.name }}
           </div>
           <AddAccessionModal
             v-if="!!showAddAcession"
@@ -14,7 +18,7 @@
           />
         </div>
 
-        <div class="buttons-wrapper">
+        <div class="buttons-wrapper" v-if="!sample.tplexCsv">
           <b-button
             type="is-secondary"
             icon-left="content-copy"
@@ -92,10 +96,7 @@
           <b-field label="Tplex CSV Content Preview">
             <div class="csv-table-container">
               <table
-                class="
-                  table
-                  is-bordered is-striped is-narrow is-hoverable is-fullwidth
-                "
+                class="table is-bordered is-striped is-narrow is-hoverable is-fullwidth"
               >
                 <thead>
                   <tr>
@@ -225,18 +226,41 @@ export default {
       }
     },
     parsedTplexCsv() {
-      // Parse the CSV string into an array of arrays
+      // Parse TPlex CSV - handle both old (CSV text) and new (JSON array) formats
       if (this.sample && this.sample.tplexCsv) {
-        const result = Papa.parse(this.sample.tplexCsv, {
-          header: false, // We'll handle header separately
-          skipEmptyLines: true,
-        });
-        if (result.errors.length) {
-          console.error("Error parsing Tplex CSV:", result.errors);
-          // Handle parse errors (e.g., return empty or show message)
+        try {
+          // Try to parse as JSON first (new format)
+          const csvData = JSON.parse(this.sample.tplexCsv);
+
+          if (Array.isArray(csvData) && csvData.length > 0) {
+            // New format: JSON array of objects
+            const headers = Object.keys(csvData[0]);
+            const rows = csvData.map((obj) =>
+              headers.map((key) => obj[key] || "")
+            );
+            return [headers, ...rows];
+          }
+        } catch (err) {
+          // Not JSON, must be old CSV text format - fall through to Papa.parse
+        }
+
+        // Old format: CSV text with \r\n line breaks
+        try {
+          const result = Papa.parse(this.sample.tplexCsv, {
+            header: false,
+            skipEmptyLines: true,
+          });
+
+          if (result.errors.length) {
+            console.error("Error parsing TPlex CSV text:", result.errors);
+            return [];
+          }
+
+          return result.data;
+        } catch (err) {
+          console.error("Error parsing TPlex CSV:", err);
           return [];
         }
-        return result.data;
       }
       return [];
     },
@@ -275,7 +299,7 @@ export default {
         path: "/samples/new",
         query: {
           clonedSampleId: this.sample._id,
-          project: this.sample.project._id,
+          projectId: this.sample.project._id,
         },
       });
     },
@@ -288,31 +312,65 @@ export default {
         return;
       }
 
-      const filename = `tplex_${this.sample.safeName || "sample"}.csv`;
-      const csvContent = this.sample.tplexCsv;
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      try {
+        let csvContent;
 
-      const link = document.createElement("a");
-      if (link.download !== undefined) {
-        const url = URL.createObjectURL(blob);
-        link.setAttribute("href", url);
-        link.setAttribute("download", filename);
-        link.style.visibility = "hidden";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-      } else {
-        this.$buefy.dialog.alert({
-          title: "Download Not Supported",
-          message:
-            "Your browser does not support automatic downloads. Please copy the content and save it manually.",
-          type: "is-danger",
-          hasIcon: false,
+        // Try to parse as JSON first (new format)
+        try {
+          const csvData = JSON.parse(this.sample.tplexCsv);
+
+          if (Array.isArray(csvData) && csvData.length > 0) {
+            // New format: Convert JSON array to CSV
+            csvContent = Papa.unparse(csvData, {
+              header: true,
+              skipEmptyLines: true,
+            });
+          } else {
+            throw new Error("Invalid JSON format");
+          }
+        } catch (jsonErr) {
+          // Old format: Already CSV text, use as-is
+          csvContent = this.sample.tplexCsv;
+        }
+
+        const filename = `tplex_${this.sample.safeName || "sample"}.csv`;
+        const blob = new Blob([csvContent], {
+          type: "text/csv;charset=utf-8;",
         });
-        window.open(
-          "data:text/csv;charset=utf-8," + encodeURIComponent(csvContent)
-        );
+
+        const link = document.createElement("a");
+        if (link.download !== undefined) {
+          const url = URL.createObjectURL(blob);
+          link.setAttribute("href", url);
+          link.setAttribute("download", filename);
+          link.style.visibility = "hidden";
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+
+          this.$buefy.toast.open({
+            message: "CSV file downloaded successfully!",
+            type: "is-success",
+          });
+        } else {
+          this.$buefy.dialog.alert({
+            title: "Download Not Supported",
+            message:
+              "Your browser does not support automatic downloads. Please copy the content and save it manually.",
+            type: "is-danger",
+            hasIcon: false,
+          });
+          window.open(
+            "data:text/csv;charset=utf-8," + encodeURIComponent(csvContent)
+          );
+        }
+      } catch (err) {
+        console.error("Error generating CSV download:", err);
+        this.$buefy.toast.open({
+          message: "Failed to generate CSV file. Please contact support.",
+          type: "is-danger",
+        });
       }
     },
   },

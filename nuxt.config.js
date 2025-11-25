@@ -18,6 +18,7 @@ export default {
     API_URL: process.env.API_URL,
     HOST: process.env.HOST,
     HPC_DATASTORE_ROOT: process.env.HPC_DATASTORE_ROOT,
+    HPC_DIRECTORY_PREFIX: process.env.HPC_DIRECTORY_PREFIX,
     DATAHOG_DEATH: process.env.DATAHOG_DEATH,
     ENA_ADMINS: process.env.ENA_ADMINS,
   },

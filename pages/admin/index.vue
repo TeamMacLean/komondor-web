@@ -188,7 +188,9 @@
               <li v-for="sample in samples" :key="sample._id">
                 <nuxt-link
                   :to="{ name: 'sample', query: { id: sample._id } }"
-                  >{{ sample.scientificName }}</nuxt-link
+                  >{{
+                    sample.scientificName || sample.name || "[Unnamed Sample]"
+                  }}</nuxt-link
                 >
               </li>
             </ul>

@@ -9,10 +9,10 @@
  * @returns {boolean} True if valid email format
  */
 export const validateEmail = (email) => {
-  if (!email) return false
-  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  return re.test(String(email).toLowerCase())
-}
+  if (!email) return false;
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return re.test(String(email).toLowerCase());
+};
 
 /**
  * Validate required field
@@ -20,11 +20,11 @@ export const validateEmail = (email) => {
  * @returns {boolean} True if value is not empty
  */
 export const validateRequired = (value) => {
-  if (value === null || value === undefined) return false
-  if (typeof value === 'string') return value.trim().length > 0
-  if (Array.isArray(value)) return value.length > 0
-  return true
-}
+  if (value === null || value === undefined) return false;
+  if (typeof value === "string") return value.trim().length > 0;
+  if (Array.isArray(value)) return value.length > 0;
+  return true;
+};
 
 /**
  * Validate minimum length
@@ -33,9 +33,9 @@ export const validateRequired = (value) => {
  * @returns {boolean} True if value meets minimum length
  */
 export const validateMinLength = (value, minLength) => {
-  if (!value) return false
-  return value.length >= minLength
-}
+  if (!value) return false;
+  return value.length >= minLength;
+};
 
 /**
  * Validate maximum length
@@ -44,9 +44,9 @@ export const validateMinLength = (value, minLength) => {
  * @returns {boolean} True if value is within maximum length
  */
 export const validateMaxLength = (value, maxLength) => {
-  if (!value) return true // Empty is valid for max length
-  return value.length <= maxLength
-}
+  if (!value) return true; // Empty is valid for max length
+  return value.length <= maxLength;
+};
 
 /**
  * Validate numeric value
@@ -54,9 +54,9 @@ export const validateMaxLength = (value, maxLength) => {
  * @returns {boolean} True if value is a valid number
  */
 export const validateNumber = (value) => {
-  if (value === null || value === undefined || value === '') return false
-  return !isNaN(parseFloat(value)) && isFinite(value)
-}
+  if (value === null || value === undefined || value === "") return false;
+  return !isNaN(parseFloat(value)) && isFinite(value);
+};
 
 /**
  * Validate integer value
@@ -64,8 +64,8 @@ export const validateNumber = (value) => {
  * @returns {boolean} True if value is a valid integer
  */
 export const validateInteger = (value) => {
-  return validateNumber(value) && Number.isInteger(Number(value))
-}
+  return validateNumber(value) && Number.isInteger(Number(value));
+};
 
 /**
  * Validate positive number
@@ -73,8 +73,8 @@ export const validateInteger = (value) => {
  * @returns {boolean} True if value is a positive number
  */
 export const validatePositive = (value) => {
-  return validateNumber(value) && Number(value) > 0
-}
+  return validateNumber(value) && Number(value) > 0;
+};
 
 /**
  * Validate number within range
@@ -84,10 +84,10 @@ export const validatePositive = (value) => {
  * @returns {boolean} True if value is within range
  */
 export const validateRange = (value, min, max) => {
-  if (!validateNumber(value)) return false
-  const num = Number(value)
-  return num >= min && num <= max
-}
+  if (!validateNumber(value)) return false;
+  const num = Number(value);
+  return num >= min && num <= max;
+};
 
 /**
  * Validate URL format
@@ -95,14 +95,14 @@ export const validateRange = (value, min, max) => {
  * @returns {boolean} True if valid URL format
  */
 export const validateUrl = (url) => {
-  if (!url) return false
+  if (!url) return false;
   try {
-    new URL(url)
-    return true
+    new URL(url);
+    return true;
   } catch {
-    return false
+    return false;
   }
-}
+};
 
 /**
  * Validate date format (ISO 8601)
@@ -110,10 +110,10 @@ export const validateUrl = (url) => {
  * @returns {boolean} True if valid date format
  */
 export const validateDate = (date) => {
-  if (!date) return false
-  const timestamp = Date.parse(date)
-  return !isNaN(timestamp)
-}
+  if (!date) return false;
+  const timestamp = Date.parse(date);
+  return !isNaN(timestamp);
+};
 
 /**
  * Validate alphanumeric string (letters and numbers only)
@@ -121,10 +121,10 @@ export const validateDate = (date) => {
  * @returns {boolean} True if only alphanumeric characters
  */
 export const validateAlphanumeric = (value) => {
-  if (!value) return false
-  const re = /^[a-zA-Z0-9]+$/
-  return re.test(value)
-}
+  if (!value) return false;
+  const re = /^[a-zA-Z0-9]+$/;
+  return re.test(value);
+};
 
 /**
  * Validate username format (alphanumeric, underscore, hyphen)
@@ -134,14 +134,14 @@ export const validateAlphanumeric = (value) => {
  * @returns {boolean} True if valid username format
  */
 export const validateUsername = (username, minLength = 3, maxLength = 20) => {
-  if (!username) return false
-  const re = /^[a-zA-Z0-9_-]+$/
+  if (!username) return false;
+  const re = /^[a-zA-Z0-9_-]+$/;
   return (
     re.test(username) &&
     username.length >= minLength &&
     username.length <= maxLength
-  )
-}
+  );
+};
 
 /**
  * Validate password strength
@@ -155,7 +155,7 @@ export const validateUsername = (username, minLength = 3, maxLength = 20) => {
  * @returns {boolean} True if password meets requirements
  */
 export const validatePassword = (password, requirements = {}) => {
-  if (!password) return false
+  if (!password) return false;
 
   const {
     minLength = 8,
@@ -163,31 +163,64 @@ export const validatePassword = (password, requirements = {}) => {
     requireLowercase = false,
     requireNumber = false,
     requireSpecial = false,
-  } = requirements
+  } = requirements;
 
-  if (password.length < minLength) return false
-  if (requireUppercase && !/[A-Z]/.test(password)) return false
-  if (requireLowercase && !/[a-z]/.test(password)) return false
-  if (requireNumber && !/[0-9]/.test(password)) return false
-  if (requireSpecial && !/[!@#$%^&*(),.?":{}|<>]/.test(password)) return false
+  if (password.length < minLength) return false;
+  if (requireUppercase && !/[A-Z]/.test(password)) return false;
+  if (requireLowercase && !/[a-z]/.test(password)) return false;
+  if (requireNumber && !/[0-9]/.test(password)) return false;
+  if (requireSpecial && !/[!@#$%^&*(),.?":{}|<>]/.test(password)) return false;
 
-  return true
-}
+  return true;
+};
+
+/**
+ * Get the matching extension from a filename against a list of allowed extensions.
+ * Prioritizes longer extensions (e.g., checks '.fastq.gz' before '.gz').
+ * @param {string} filename - The full name of the file (e.g., "sample.fastq.gz")
+ * @param {string[]} validExtensions - Array of extensions (e.g., ['.fastq.gz', '.gz'])
+ * @returns {string|null} - The matched extension or null if no match found
+ */
+export const getMatchingExtension = (filename, validExtensions) => {
+  if (!filename || !validExtensions || validExtensions.length === 0) {
+    return null;
+  }
+
+  // Sort extensions by length descending to match longer extensions first
+  // This ensures we match '.fastq.gz' before '.gz'
+  const sortedExtensions = [...validExtensions].sort(
+    (a, b) => b.length - a.length
+  );
+
+  // Normalize filename to lowercase for case-insensitive matching
+  const lowerFilename = filename.toLowerCase();
+
+  // Find the first extension that the filename ends with
+  const match = sortedExtensions.find((ext) =>
+    lowerFilename.endsWith(ext.toLowerCase())
+  );
+
+  return match || null;
+};
 
 /**
  * Validate file extension
  * @param {string} filename - The filename to check
- * @param {string[]} allowedExtensions - Array of allowed extensions (e.g., ['jpg', 'png'])
+ * @param {string[]} allowedExtensions - Array of allowed extensions (e.g., ['.jpg', '.png'] or ['jpg', 'png'])
  * @returns {boolean} True if file has allowed extension
  */
 export const validateFileExtension = (filename, allowedExtensions) => {
   if (!filename || !allowedExtensions || allowedExtensions.length === 0) {
-    return false
+    return false;
   }
 
-  const extension = filename.split('.').pop()?.toLowerCase()
-  return allowedExtensions.some((ext) => ext.toLowerCase() === extension)
-}
+  // Normalize extensions to ensure they start with a dot
+  const normalizedExtensions = allowedExtensions.map((ext) =>
+    ext.startsWith(".") ? ext : `.${ext}`
+  );
+
+  return getMatchingExtension(filename, normalizedExtensions) !== null;
+};
 
 /**
  * Validate file size
@@ -197,12 +230,12 @@ export const validateFileExtension = (filename, allowedExtensions) => {
  */
 export const validateFileSize = (sizeInBytes, maxSizeInMB) => {
   if (!validateNumber(sizeInBytes) || !validateNumber(maxSizeInMB)) {
-    return false
+    return false;
   }
 
-  const maxSizeInBytes = maxSizeInMB * 1024 * 1024
-  return sizeInBytes <= maxSizeInBytes
-}
+  const maxSizeInBytes = maxSizeInMB * 1024 * 1024;
+  return sizeInBytes <= maxSizeInBytes;
+};
 
 /**
  * Validate JSON string
@@ -210,14 +243,14 @@ export const validateFileSize = (sizeInBytes, maxSizeInMB) => {
  * @returns {boolean} True if valid JSON
  */
 export const validateJson = (jsonString) => {
-  if (!jsonString) return false
+  if (!jsonString) return false;
   try {
-    JSON.parse(jsonString)
-    return true
+    JSON.parse(jsonString);
+    return true;
   } catch {
-    return false
+    return false;
   }
-}
+};
 
 /**
  * Validate phone number (basic format)
@@ -225,11 +258,11 @@ export const validateJson = (jsonString) => {
  * @returns {boolean} True if valid phone format
  */
 export const validatePhone = (phone) => {
-  if (!phone) return false
+  if (!phone) return false;
   // Basic international phone format: +XX XXXXXXXXXX or similar
-  const re = /^[\d\s\-\+\(\)]+$/
-  return re.test(phone) && phone.replace(/\D/g, '').length >= 10
-}
+  const re = /^[\d\s\-\+\(\)]+$/;
+  return re.test(phone) && phone.replace(/\D/g, "").length >= 10;
+};
 
 /**
  * Validate hex color code
@@ -237,10 +270,10 @@ export const validatePhone = (phone) => {
  * @returns {boolean} True if valid hex color
  */
 export const validateHexColor = (color) => {
-  if (!color) return false
-  const re = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/
-  return re.test(color)
-}
+  if (!color) return false;
+  const re = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
+  return re.test(color);
+};
 
 /**
  * Composite validator - run multiple validators
@@ -249,13 +282,13 @@ export const validateHexColor = (color) => {
  * @returns {Object} Validation result with { valid, errors }
  */
 export const validate = (value, validators) => {
-  const errors = []
+  const errors = [];
 
   for (const validator of validators) {
-    if (typeof validator === 'function') {
-      const result = validator(value)
+    if (typeof validator === "function") {
+      const result = validator(value);
       if (!result) {
-        errors.push(validator.name || 'Validation failed')
+        errors.push(validator.name || "Validation failed");
       }
     }
   }
@@ -263,8 +296,8 @@ export const validate = (value, validators) => {
   return {
     valid: errors.length === 0,
     errors,
-  }
-}
+  };
+};
 
 /**
  * Create custom validator with error message
@@ -274,10 +307,10 @@ export const validate = (value, validators) => {
  */
 export const createValidator = (validatorFn, errorMessage) => {
   return (value) => {
-    const isValid = validatorFn(value)
-    return isValid ? true : errorMessage
-  }
-}
+    const isValid = validatorFn(value);
+    return isValid ? true : errorMessage;
+  };
+};
 
 export default {
   validateEmail,
@@ -293,6 +326,7 @@ export default {
   validateAlphanumeric,
   validateUsername,
   validatePassword,
+  getMatchingExtension,
   validateFileExtension,
   validateFileSize,
   validateJson,
@@ -300,4 +334,4 @@ export default {
   validateHexColor,
   validate,
   createValidator,
-}
+};
