@@ -6,16 +6,6 @@ import Vuex from "vuex";
 const localVue = createLocalVue();
 localVue.use(Vuex);
 
-// Mock SparkMD5
-vi.mock("spark-md5", () => ({
-  default: {
-    ArrayBuffer: vi.fn().mockImplementation(() => ({
-      append: vi.fn(),
-      end: vi.fn().mockReturnValue("mocked-md5-hash-123"),
-    })),
-  },
-}));
-
 describe("NewRun.vue", () => {
   let wrapper;
   let store;
@@ -115,6 +105,7 @@ describe("NewRun.vue", () => {
       },
       dialog: {
         alert: vi.fn(),
+        confirm: vi.fn(({ onConfirm }) => onConfirm && onConfirm()),
       },
     };
 
@@ -139,13 +130,14 @@ describe("NewRun.vue", () => {
         libraryStrategy: null,
         insertSize: null,
       },
-      activeTab: "hpc-mv",
-      hpcValidatedFiles: [],
+      uploadMethod: "hpc-mv",
+      hpcDiscoveredFiles: [],
+      hpcDirectoryName: "",
+      localUploadedFiles: [],
+      localFilesConfirmed: false,
+      processedFiles: [],
       consent: false,
       isSubmitting: false,
-      isHashing: false,
-      md5ValidationComplete: false,
-      fileStatuses: [],
       ...dataOverrides,
     };
 
@@ -184,13 +176,10 @@ describe("NewRun.vue", () => {
           template: "<span></span>",
           props: ["icon", "size", "type"],
         },
-        "b-tabs": {
-          template: "<div><slot /></div>",
-          props: ["value", "type"],
-        },
-        "b-tab-item": {
-          template: '<div v-if="!disabled"><slot /></div>',
-          props: ["label", "value", "disabled"],
+        "b-radio": {
+          template:
+            '<label><input type="radio" @change="$emit(\'input\', nativeValue)" :checked="value === nativeValue" :disabled="disabled" /><slot /></label>',
+          props: ["value", "nativeValue", "disabled"],
         },
         Uploader: {
           name: "Uploader",
@@ -199,12 +188,34 @@ describe("NewRun.vue", () => {
             getFiles: vi.fn().mockReturnValue([]),
             isUploadComplete: vi.fn().mockReturnValue(true),
             clear: vi.fn(),
+            isConfirmed: vi.fn().mockReturnValue(false),
           },
         },
-        HpcFileValidator: {
-          name: "HpcFileValidator",
-          template: "<div class='mock-hpc-validator'></div>",
-          props: ["value", "sampleId"],
+        HpcDirectoryFinder: {
+          name: "HpcDirectoryFinder",
+          template: "<div class='mock-hpc-finder'></div>",
+          props: [
+            "sampleId",
+            "allowedExtensions",
+            "paired",
+            "indexed",
+            "disabled",
+          ],
+          methods: {
+            clear: vi.fn(),
+          },
+        },
+        FileProcessor: {
+          name: "FileProcessor",
+          template: "<div class='mock-file-processor'></div>",
+          props: [
+            "value",
+            "files",
+            "source",
+            "paired",
+            "indexed",
+            "directoryName",
+          ],
         },
         FormConsentCheckbox: {
           template:
@@ -256,9 +267,17 @@ describe("NewRun.vue", () => {
       expect(wrapper.html()).toContain("Insert Size");
     });
 
-    it("should render raw read files section", () => {
+    it("should render Step 1: Select Files section", () => {
       wrapper = createWrapper();
-      expect(wrapper.html()).toContain("Raw Read Files");
+      expect(wrapper.html()).toContain("Step 1");
+      expect(wrapper.html()).toContain("Select Files");
+    });
+
+    it("should render upload method radio buttons", () => {
+      wrapper = createWrapper();
+      // The radio buttons are rendered, check for the radio input elements
+      const radioInputs = wrapper.findAll('input[type="radio"]');
+      expect(radioInputs.length).toBeGreaterThanOrEqual(2);
     });
 
     it("should render submit button", () => {
@@ -275,23 +294,6 @@ describe("NewRun.vue", () => {
   });
 
   describe("Computed Properties", () => {
-    describe("rawFilesForLocalUpload", () => {
-      it("should return empty array by default", () => {
-        wrapper = createWrapper();
-        // In unit tests, refs don't work the same way as in real components
-        // So we just verify the computed property exists and returns an array
-        expect(Array.isArray(wrapper.vm.rawFilesForLocalUpload)).toBe(true);
-      });
-
-      it("should have getter that checks for uploader ref", () => {
-        wrapper = createWrapper();
-        // Verify the computed property is defined
-        expect(
-          wrapper.vm.$options.computed.rawFilesForLocalUpload
-        ).toBeDefined();
-      });
-    });
-
     describe("libraryTypeObject", () => {
       it("should return null when no library type selected", () => {
         wrapper = createWrapper();
@@ -322,7 +324,7 @@ describe("NewRun.vue", () => {
     });
 
     describe("isLocalFilesystemDisabled", () => {
-      it("should return false when library type is not indexed", () => {
+      it("should return false for all library types", () => {
         wrapper = createWrapper({
           run: {
             name: "",
@@ -338,7 +340,7 @@ describe("NewRun.vue", () => {
         expect(wrapper.vm.isLocalFilesystemDisabled).toBe(false);
       });
 
-      it("should return true when library type is indexed", () => {
+      it("should return false even for indexed library types", () => {
         wrapper = createWrapper({
           run: {
             name: "",
@@ -351,7 +353,7 @@ describe("NewRun.vue", () => {
             insertSize: null,
           },
         });
-        expect(wrapper.vm.isLocalFilesystemDisabled).toBe(true);
+        expect(wrapper.vm.isLocalFilesystemDisabled).toBe(false);
       });
 
       it("should return false when no library type selected", () => {
@@ -360,32 +362,74 @@ describe("NewRun.vue", () => {
       });
     });
 
-    describe("uploadsAreComplete", () => {
-      it("should return true when in HPC mode", () => {
-        wrapper = createWrapper({ activeTab: "hpc-mv" });
-        expect(wrapper.vm.uploadsAreComplete).toBe(true);
+    describe("hasFilesSelected", () => {
+      it("should return false when no files selected", () => {
+        wrapper = createWrapper();
+        expect(wrapper.vm.hasFilesSelected).toBe(false);
       });
 
-      it("should check uploaders in local filesystem mode", () => {
-        wrapper = createWrapper({ activeTab: "local-filesystem" });
-        wrapper.vm.$refs.rawUploader = {
-          isUploadComplete: vi.fn().mockReturnValue(true),
-        };
-        wrapper.vm.$refs.additionalUploader = {
-          isUploadComplete: vi.fn().mockReturnValue(true),
-        };
-        expect(wrapper.vm.uploadsAreComplete).toBe(true);
+      it("should return true when HPC files discovered", () => {
+        wrapper = createWrapper({
+          hpcDiscoveredFiles: [{ name: "file1.fq.gz" }],
+        });
+        expect(wrapper.vm.hasFilesSelected).toBe(true);
       });
 
-      it("should return false if raw uploads not complete", () => {
-        wrapper = createWrapper({ activeTab: "local-filesystem" });
-        wrapper.vm.$refs.rawUploader = {
-          isUploadComplete: vi.fn().mockReturnValue(false),
-        };
-        wrapper.vm.$refs.additionalUploader = {
-          isUploadComplete: vi.fn().mockReturnValue(true),
-        };
-        expect(wrapper.vm.uploadsAreComplete).toBe(false);
+      it("should return true when local files confirmed", () => {
+        wrapper = createWrapper({
+          localFilesConfirmed: true,
+        });
+        expect(wrapper.vm.hasFilesSelected).toBe(true);
+      });
+
+      it("should return true when processed files exist", () => {
+        wrapper = createWrapper({
+          processedFiles: [{ name: "file1.fq.gz", md5: "abc123" }],
+        });
+        expect(wrapper.vm.hasFilesSelected).toBe(true);
+      });
+    });
+
+    describe("filesToProcess", () => {
+      it("should return HPC files when in HPC mode", () => {
+        wrapper = createWrapper({
+          uploadMethod: "hpc-mv",
+          hpcDiscoveredFiles: [{ name: "file1.fq.gz" }],
+        });
+        expect(wrapper.vm.filesToProcess).toEqual([{ name: "file1.fq.gz" }]);
+      });
+
+      it("should return local files when confirmed", () => {
+        wrapper = createWrapper({
+          uploadMethod: "local-filesystem",
+          localFilesConfirmed: true,
+          localUploadedFiles: [{ name: "file1.fq.gz" }],
+        });
+        expect(wrapper.vm.filesToProcess).toEqual([{ name: "file1.fq.gz" }]);
+      });
+
+      it("should return empty array when local files not confirmed", () => {
+        wrapper = createWrapper({
+          uploadMethod: "local-filesystem",
+          localFilesConfirmed: false,
+          localUploadedFiles: [{ name: "file1.fq.gz" }],
+        });
+        expect(wrapper.vm.filesToProcess).toEqual([]);
+      });
+    });
+
+    describe("hasFilesToProcess", () => {
+      it("should return false when no files to process", () => {
+        wrapper = createWrapper();
+        expect(wrapper.vm.hasFilesToProcess).toBe(false);
+      });
+
+      it("should return true when files exist", () => {
+        wrapper = createWrapper({
+          uploadMethod: "hpc-mv",
+          hpcDiscoveredFiles: [{ name: "file1.fq.gz" }],
+        });
+        expect(wrapper.vm.hasFilesToProcess).toBe(true);
       });
     });
 
@@ -468,100 +512,9 @@ describe("NewRun.vue", () => {
         );
       });
 
-      it("should return error when library type is missing", () => {
+      it("should return error when processed files are empty", () => {
         wrapper = createWrapper({
-          run: {
-            name: "Valid Run Name",
-            sequencingProvider: "Novogene",
-            libraryType: null,
-            sequencingTechnology: "Illumina",
-            librarySource: "GENOMIC",
-            librarySelection: "RANDOM",
-            libraryStrategy: "WGS",
-            insertSize: null,
-          },
-        });
-        expect(wrapper.vm.validationErrors.libraryType).toBe(
-          "Library type is required."
-        );
-      });
-
-      it("should return error when sequencing technology is missing", () => {
-        wrapper = createWrapper({
-          run: {
-            name: "Valid Run Name",
-            sequencingProvider: "Novogene",
-            libraryType: "Paired-end",
-            sequencingTechnology: null,
-            librarySource: "GENOMIC",
-            librarySelection: "RANDOM",
-            libraryStrategy: "WGS",
-            insertSize: null,
-          },
-        });
-        expect(wrapper.vm.validationErrors.sequencingTechnology).toBe(
-          "Sequencing technology is required."
-        );
-      });
-
-      it("should return error when library source is missing", () => {
-        wrapper = createWrapper({
-          run: {
-            name: "Valid Run Name",
-            sequencingProvider: "Novogene",
-            libraryType: "Paired-end",
-            sequencingTechnology: "Illumina",
-            librarySource: null,
-            librarySelection: "RANDOM",
-            libraryStrategy: "WGS",
-            insertSize: null,
-          },
-        });
-        expect(wrapper.vm.validationErrors.librarySource).toBe(
-          "Library source is required."
-        );
-      });
-
-      it("should return error when library selection is missing", () => {
-        wrapper = createWrapper({
-          run: {
-            name: "Valid Run Name",
-            sequencingProvider: "Novogene",
-            libraryType: "Paired-end",
-            sequencingTechnology: "Illumina",
-            librarySource: "GENOMIC",
-            librarySelection: null,
-            libraryStrategy: "WGS",
-            insertSize: null,
-          },
-        });
-        expect(wrapper.vm.validationErrors.librarySelection).toBe(
-          "Library selection is required."
-        );
-      });
-
-      it("should return error when library strategy is missing", () => {
-        wrapper = createWrapper({
-          run: {
-            name: "Valid Run Name",
-            sequencingProvider: "Novogene",
-            libraryType: "Paired-end",
-            sequencingTechnology: "Illumina",
-            librarySource: "GENOMIC",
-            librarySelection: "RANDOM",
-            libraryStrategy: null,
-            insertSize: null,
-          },
-        });
-        expect(wrapper.vm.validationErrors.libraryStrategy).toBe(
-          "Library strategy is required."
-        );
-      });
-
-      it("should return error when HPC files not selected", () => {
-        wrapper = createWrapper({
-          activeTab: "hpc-mv",
-          hpcValidatedFiles: [],
+          processedFiles: [],
           run: {
             name: "Valid Run Name",
             sequencingProvider: "Novogene",
@@ -574,57 +527,17 @@ describe("NewRun.vue", () => {
           },
         });
         expect(wrapper.vm.validationErrors.rawFiles).toBe(
-          "HPC files must be selected and validated."
+          "Raw files must be selected, have MD5 checksums validated, and be processed."
         );
       });
 
-      it("should return error when local files not uploaded", () => {
+      it("should return no errors when all fields are valid with processed files", () => {
         wrapper = createWrapper({
-          activeTab: "local-filesystem",
-          run: {
-            name: "Valid Run Name",
-            sequencingProvider: "Novogene",
-            libraryType: "Paired-end",
-            sequencingTechnology: "Illumina",
-            librarySource: "GENOMIC",
-            librarySelection: "RANDOM",
-            libraryStrategy: "WGS",
-            insertSize: null,
-          },
-        });
-        wrapper.vm.$refs.rawUploader = {
-          getFiles: vi.fn().mockReturnValue([]),
-        };
-        expect(wrapper.vm.validationErrors.rawFiles).toBe(
-          "At least one raw read file must be uploaded."
-        );
-      });
-
-      it("should require MD5 validation for local uploads", () => {
-        wrapper = createWrapper({
-          activeTab: "local-filesystem",
-          md5ValidationComplete: false,
-          run: {
-            name: "Valid Run Name",
-            sequencingProvider: "Novogene",
-            libraryType: "Paired-end",
-            sequencingTechnology: "Illumina",
-            librarySource: "GENOMIC",
-            librarySelection: "RANDOM",
-            libraryStrategy: "WGS",
-            insertSize: null,
-          },
-        });
-        // When in local-filesystem mode and files exist but MD5 not validated
-        // The validation logic checks rawFilesForLocalUpload.length and md5ValidationComplete
-        expect(wrapper.vm.md5ValidationComplete).toBe(false);
-        expect(wrapper.vm.activeTab).toBe("local-filesystem");
-      });
-
-      it("should return no errors when all fields are valid with HPC", () => {
-        wrapper = createWrapper({
-          activeTab: "hpc-mv",
-          hpcValidatedFiles: [{ name: "file1.fq.gz" }],
+          // Paired-end requires at least 2 files
+          processedFiles: [
+            { name: "file1.fq.gz", md5: "abc123" },
+            { name: "file2.fq.gz", md5: "def456" },
+          ],
           run: {
             name: "Valid Run Name",
             sequencingProvider: "Novogene",
@@ -636,25 +549,6 @@ describe("NewRun.vue", () => {
             insertSize: 500,
           },
         });
-        expect(Object.keys(wrapper.vm.validationErrors)).toHaveLength(0);
-      });
-
-      it("should validate successfully with HPC mode", () => {
-        wrapper = createWrapper({
-          activeTab: "hpc-mv",
-          hpcValidatedFiles: [{ name: "file1.fq.gz" }],
-          run: {
-            name: "Valid Run Name",
-            sequencingProvider: "Novogene",
-            libraryType: "Paired-end",
-            sequencingTechnology: "Illumina",
-            librarySource: "GENOMIC",
-            librarySelection: "RANDOM",
-            libraryStrategy: "WGS",
-            insertSize: 500,
-          },
-        });
-        // HPC mode with validated files should have no errors
         expect(Object.keys(wrapper.vm.validationErrors)).toHaveLength(0);
       });
     });
@@ -685,8 +579,7 @@ describe("NewRun.vue", () => {
       it("should return false when consent not given", () => {
         wrapper = createWrapper({
           consent: false,
-          activeTab: "hpc-mv",
-          hpcValidatedFiles: [{ name: "file1.fq.gz" }],
+          processedFiles: [{ name: "file1.fq.gz", md5: "abc123" }],
           run: {
             name: "Valid Run Name",
             sequencingProvider: "Novogene",
@@ -704,8 +597,11 @@ describe("NewRun.vue", () => {
       it("should return true when all conditions met", () => {
         wrapper = createWrapper({
           consent: true,
-          activeTab: "hpc-mv",
-          hpcValidatedFiles: [{ name: "file1.fq.gz" }],
+          // Paired-end requires at least 2 files
+          processedFiles: [
+            { name: "file1.fq.gz", md5: "abc123" },
+            { name: "file2.fq.gz", md5: "def456" },
+          ],
           run: {
             name: "Valid Run Name",
             sequencingProvider: "Novogene",
@@ -723,60 +619,66 @@ describe("NewRun.vue", () => {
   });
 
   describe("Methods", () => {
-    describe("resetMd5Validation", () => {
-      it("should reset MD5 validation state", () => {
+    describe("clearAllFiles", () => {
+      it("should clear all file state", () => {
         wrapper = createWrapper({
-          md5ValidationComplete: true,
-          fileStatuses: [{ name: "file.fq.gz", status: "Complete" }],
+          hpcDiscoveredFiles: [{ name: "file1.fq.gz" }],
+          hpcDirectoryName: "test-dir",
+          localUploadedFiles: [{ name: "file2.fq.gz" }],
+          localFilesConfirmed: true,
+          processedFiles: [{ name: "file1.fq.gz", md5: "abc123" }],
         });
-        wrapper.vm.resetMd5Validation();
-        expect(wrapper.vm.md5ValidationComplete).toBe(false);
-        expect(wrapper.vm.fileStatuses).toEqual([]);
+
+        wrapper.vm.clearAllFiles();
+
+        expect(wrapper.vm.hpcDiscoveredFiles).toEqual([]);
+        expect(wrapper.vm.hpcDirectoryName).toBe("");
+        expect(wrapper.vm.localUploadedFiles).toEqual([]);
+        expect(wrapper.vm.localFilesConfirmed).toBe(false);
+        expect(wrapper.vm.processedFiles).toEqual([]);
       });
     });
 
-    describe("validateMd5s", () => {
-      it("should return early if no files", () => {
+    describe("handleHpcFilesFound", () => {
+      it("should set HPC discovered files", () => {
         wrapper = createWrapper();
-        wrapper.vm.$refs.rawUploader = {
-          getFiles: vi.fn().mockReturnValue([]),
-        };
-        wrapper.vm.validateMd5s();
-        expect(wrapper.vm.isHashing).toBe(false);
-      });
+        const files = [{ name: "file1.fq.gz" }];
+        const directoryName = "test-dir";
 
-      it("should handle MD5 validation state changes", () => {
+        wrapper.vm.handleHpcFilesFound(files, directoryName);
+
+        expect(wrapper.vm.hpcDiscoveredFiles).toEqual(files);
+        expect(wrapper.vm.hpcDirectoryName).toBe(directoryName);
+        expect(wrapper.vm.processedFiles).toEqual([]);
+      });
+    });
+
+    describe("handleLocalFilesConfirmed", () => {
+      it("should set local uploaded files and confirm", () => {
+        wrapper = createWrapper();
+        const files = [{ name: "file1.fq.gz" }];
+
+        wrapper.vm.handleLocalFilesConfirmed(files);
+
+        expect(wrapper.vm.localUploadedFiles).toEqual(files);
+        expect(wrapper.vm.localFilesConfirmed).toBe(true);
+        expect(wrapper.vm.processedFiles).toEqual([]);
+      });
+    });
+
+    describe("handleLocalUploadRestart", () => {
+      it("should clear local file state", () => {
         wrapper = createWrapper({
-          fileStatuses: [
-            { name: "file1.fq.gz", status: "Queued", md5: null },
-            { name: "file2.fq.gz", status: "Queued", md5: null },
-          ],
+          localUploadedFiles: [{ name: "file1.fq.gz" }],
+          localFilesConfirmed: true,
+          processedFiles: [{ name: "file1.fq.gz", md5: "abc123" }],
         });
 
-        // Verify file statuses are tracked
-        expect(wrapper.vm.fileStatuses).toHaveLength(2);
-        expect(wrapper.vm.fileStatuses[0].name).toBe("file1.fq.gz");
-        expect(wrapper.vm.fileStatuses[1].name).toBe("file2.fq.gz");
-      });
+        wrapper.vm.handleLocalUploadRestart();
 
-      it("should track MD5 hashing status", () => {
-        wrapper = createWrapper({
-          isHashing: true,
-          fileStatuses: [
-            {
-              name: "file.fq.gz",
-              status: "Hashing...",
-              md5: null,
-              statusIcon: "sync",
-              statusType: "is-primary",
-            },
-          ],
-        });
-
-        // Verify hashing state is tracked
-        expect(wrapper.vm.isHashing).toBe(true);
-        expect(wrapper.vm.fileStatuses).toHaveLength(1);
-        expect(wrapper.vm.fileStatuses[0].status).toBe("Hashing...");
+        expect(wrapper.vm.localUploadedFiles).toEqual([]);
+        expect(wrapper.vm.localFilesConfirmed).toBe(false);
+        expect(wrapper.vm.processedFiles).toEqual([]);
       });
     });
 
@@ -798,8 +700,12 @@ describe("NewRun.vue", () => {
       it("should set isSubmitting to true during submission", async () => {
         wrapper = createWrapper({
           consent: true,
-          activeTab: "hpc-mv",
-          hpcValidatedFiles: [{ name: "file1.fq.gz" }],
+          uploadMethod: "hpc-mv",
+          hpcDirectoryName: "test-dir",
+          processedFiles: [
+            { name: "file1.fq.gz", md5: "abc123" },
+            { name: "file2.fq.gz", md5: "def456" },
+          ],
           run: {
             name: "Valid Run",
             sequencingProvider: "Novogene",
@@ -817,12 +723,14 @@ describe("NewRun.vue", () => {
         await submitPromise;
       });
 
-      it("should submit HPC files with correct payload", async () => {
+      it("should submit with correct payload for HPC mode", async () => {
         wrapper = createWrapper({
           consent: true,
-          activeTab: "hpc-mv",
-          hpcValidatedFiles: [
-            { name: "file1.fq.gz", relativePath: "/data/files" },
+          uploadMethod: "hpc-mv",
+          hpcDirectoryName: "test-dir",
+          processedFiles: [
+            { name: "file1.fq.gz", md5: "abc123", relativePath: "test-dir" },
+            { name: "file2.fq.gz", md5: "def456", relativePath: "test-dir" },
           ],
           run: {
             name: "Valid Run",
@@ -854,38 +762,74 @@ describe("NewRun.vue", () => {
           group: "group123",
           owner: "testuser",
           additionalFiles: [],
-          rawFiles: [{ name: "file1.fq.gz", relativePath: "/data/files" }],
+          rawFiles: [
+            { name: "file1.fq.gz", md5: "abc123", relativePath: "test-dir" },
+            { name: "file2.fq.gz", md5: "def456", relativePath: "test-dir" },
+          ],
           rawFilesUploadInfo: {
             method: "hpc-mv",
-            relativePath: "/data/files",
+            relativePath: "test-dir",
           },
         });
       });
 
-      it("should enrich local files with MD5 hashes in payload", () => {
-        const mockFile = { data: new File(["content"], "file1.fq.gz") };
+      it("should submit with correct payload for local mode", async () => {
         wrapper = createWrapper({
-          activeTab: "local-filesystem",
-          md5ValidationComplete: true,
-          fileStatuses: [{ name: "file1.fq.gz", md5: "abc123" }],
+          consent: true,
+          uploadMethod: "local-filesystem",
+          processedFiles: [
+            { name: "file1.fq.gz", md5: "abc123", calculatedMd5: "abc123" },
+            { name: "file2.fq.gz", md5: "def456", calculatedMd5: "def456" },
+          ],
+          run: {
+            name: "Valid Run",
+            sequencingProvider: "Novogene",
+            libraryType: "Paired-end",
+            sequencingTechnology: "Illumina",
+            librarySource: "GENOMIC",
+            librarySelection: "RANDOM",
+            libraryStrategy: "WGS",
+            insertSize: 500,
+          },
         });
-        wrapper.vm.$refs.rawUploader = {
-          getFiles: vi.fn().mockReturnValue([mockFile]),
+        wrapper.vm.$refs.additionalUploader = {
+          getFiles: vi.fn().mockReturnValue([]),
         };
 
-        // Test that the file status with MD5 can be found
-        const status = wrapper.vm.fileStatuses.find(
-          (s) => s.name === mockFile.data.name
-        );
-        expect(status).toBeDefined();
-        expect(status.md5).toBe("abc123");
+        await wrapper.vm.submitForm();
+
+        expect(mockAxios.post).toHaveBeenCalledWith("/runs/new", {
+          name: "Valid Run",
+          sequencingProvider: "Novogene",
+          libraryType: "Paired-end",
+          sequencingTechnology: "Illumina",
+          librarySource: "GENOMIC",
+          librarySelection: "RANDOM",
+          libraryStrategy: "WGS",
+          insertSize: 500,
+          sample: "sample123",
+          group: "group123",
+          owner: "testuser",
+          additionalFiles: [],
+          rawFiles: [
+            { name: "file1.fq.gz", md5: "abc123", calculatedMd5: "abc123" },
+            { name: "file2.fq.gz", md5: "def456", calculatedMd5: "def456" },
+          ],
+          rawFilesUploadInfo: {
+            method: "local-filesystem",
+          },
+        });
       });
 
       it("should show success toast after submission", async () => {
         wrapper = createWrapper({
           consent: true,
-          activeTab: "hpc-mv",
-          hpcValidatedFiles: [{ name: "file1.fq.gz" }],
+          uploadMethod: "hpc-mv",
+          hpcDirectoryName: "test-dir",
+          processedFiles: [
+            { name: "file1.fq.gz", md5: "abc123" },
+            { name: "file2.fq.gz", md5: "def456" },
+          ],
           run: {
             name: "Valid Run",
             sequencingProvider: "Novogene",
@@ -913,8 +857,12 @@ describe("NewRun.vue", () => {
       it("should redirect to run page after submission", async () => {
         wrapper = createWrapper({
           consent: true,
-          activeTab: "hpc-mv",
-          hpcValidatedFiles: [{ name: "file1.fq.gz" }],
+          uploadMethod: "hpc-mv",
+          hpcDirectoryName: "test-dir",
+          processedFiles: [
+            { name: "file1.fq.gz", md5: "abc123" },
+            { name: "file2.fq.gz", md5: "def456" },
+          ],
           run: {
             name: "Valid Run",
             sequencingProvider: "Novogene",
@@ -949,8 +897,12 @@ describe("NewRun.vue", () => {
 
         wrapper = createWrapper({
           consent: true,
-          activeTab: "hpc-mv",
-          hpcValidatedFiles: [{ name: "file1.fq.gz" }],
+          uploadMethod: "hpc-mv",
+          hpcDirectoryName: "test-dir",
+          processedFiles: [
+            { name: "file1.fq.gz", md5: "abc123" },
+            { name: "file2.fq.gz", md5: "def456" },
+          ],
           run: {
             name: "Valid Run",
             sequencingProvider: "Novogene",
@@ -979,8 +931,12 @@ describe("NewRun.vue", () => {
       it("should reset isSubmitting flag after error", async () => {
         wrapper = createWrapper({
           consent: true,
-          activeTab: "hpc-mv",
-          hpcValidatedFiles: [{ name: "file1.fq.gz" }],
+          uploadMethod: "hpc-mv",
+          hpcDirectoryName: "test-dir",
+          processedFiles: [
+            { name: "file1.fq.gz", md5: "abc123" },
+            { name: "file2.fq.gz", md5: "def456" },
+          ],
           run: {
             name: "Valid Run",
             sequencingProvider: "Novogene",
@@ -1003,44 +959,13 @@ describe("NewRun.vue", () => {
 
         expect(wrapper.vm.isSubmitting).toBe(false);
       });
-
-      it("should handle errors without response data", async () => {
-        wrapper = createWrapper({
-          consent: true,
-          activeTab: "hpc-mv",
-          hpcValidatedFiles: [{ name: "file1.fq.gz" }],
-          run: {
-            name: "Valid Run",
-            sequencingProvider: "Novogene",
-            libraryType: "Paired-end",
-            sequencingTechnology: "Illumina",
-            librarySource: "GENOMIC",
-            librarySelection: "RANDOM",
-            libraryStrategy: "WGS",
-            insertSize: null,
-          },
-        });
-        wrapper.vm.$refs.additionalUploader = {
-          getFiles: vi.fn().mockReturnValue([]),
-        };
-        wrapper.vm.$axios.post = vi
-          .fn()
-          .mockRejectedValueOnce(new Error("Network error"));
-
-        await wrapper.vm.submitForm();
-
-        expect(wrapper.vm.$buefy.dialog.alert).toHaveBeenCalledWith({
-          title: "Submission Failed",
-          message: "An unexpected error occurred.",
-          type: "is-danger",
-        });
-      });
     });
   });
 
   describe("Watchers", () => {
-    it("should clear uploader when library type changes", async () => {
+    it("should not change upload method when library type changes", async () => {
       wrapper = createWrapper({
+        uploadMethod: "local-filesystem",
         run: {
           name: "",
           sequencingProvider: "",
@@ -1052,73 +977,6 @@ describe("NewRun.vue", () => {
           insertSize: null,
         },
       });
-      const mockClear = vi.fn();
-      wrapper.vm.$refs.rawUploader = {
-        clear: mockClear,
-        getFiles: vi.fn().mockReturnValue([]),
-      };
-
-      await wrapper.setData({
-        run: {
-          ...wrapper.vm.run,
-          libraryType: "Single-end",
-        },
-      });
-      await wrapper.vm.$nextTick();
-
-      expect(mockClear).toHaveBeenCalled();
-    });
-
-    it("should reset MD5 validation when library type changes", async () => {
-      wrapper = createWrapper({
-        run: {
-          name: "",
-          sequencingProvider: "",
-          libraryType: "Paired-end",
-          sequencingTechnology: null,
-          librarySource: null,
-          librarySelection: null,
-          libraryStrategy: null,
-          insertSize: null,
-        },
-        md5ValidationComplete: true,
-        fileStatuses: [{ name: "file.fq.gz", status: "Complete" }],
-      });
-      wrapper.vm.$refs.rawUploader = {
-        clear: vi.fn(),
-        getFiles: vi.fn().mockReturnValue([]),
-      };
-
-      await wrapper.setData({
-        run: {
-          ...wrapper.vm.run,
-          libraryType: "Single-end",
-        },
-      });
-      await wrapper.vm.$nextTick();
-
-      expect(wrapper.vm.md5ValidationComplete).toBe(false);
-      expect(wrapper.vm.fileStatuses).toEqual([]);
-    });
-
-    it("should switch to HPC tab when indexed library selected", async () => {
-      wrapper = createWrapper({
-        activeTab: "local-filesystem",
-        run: {
-          name: "",
-          sequencingProvider: "",
-          libraryType: "Paired-end",
-          sequencingTechnology: null,
-          librarySource: null,
-          librarySelection: null,
-          libraryStrategy: null,
-          insertSize: null,
-        },
-      });
-      wrapper.vm.$refs.rawUploader = {
-        clear: vi.fn(),
-        getFiles: vi.fn().mockReturnValue([]),
-      };
 
       await wrapper.setData({
         run: {
@@ -1128,21 +986,8 @@ describe("NewRun.vue", () => {
       });
       await wrapper.vm.$nextTick();
 
-      expect(wrapper.vm.activeTab).toBe("hpc-mv");
-    });
-
-    it("should reset MD5 validation when active tab changes", async () => {
-      wrapper = createWrapper({
-        activeTab: "hpc-mv",
-        md5ValidationComplete: true,
-        fileStatuses: [{ name: "file.fq.gz", status: "Complete" }],
-      });
-
-      await wrapper.setData({ activeTab: "local-filesystem" });
-      await wrapper.vm.$nextTick();
-
-      expect(wrapper.vm.md5ValidationComplete).toBe(false);
-      expect(wrapper.vm.fileStatuses).toEqual([]);
+      // Upload method should remain unchanged - no restrictions
+      expect(wrapper.vm.uploadMethod).toBe("local-filesystem");
     });
   });
 
@@ -1150,9 +995,11 @@ describe("NewRun.vue", () => {
     it("should handle complete HPC run creation flow", async () => {
       wrapper = createWrapper({
         consent: true,
-        activeTab: "hpc-mv",
-        hpcValidatedFiles: [
-          { name: "file1.fq.gz", relativePath: "/data/files" },
+        uploadMethod: "hpc-mv",
+        hpcDirectoryName: "test-dir",
+        processedFiles: [
+          { name: "file1.fq.gz", md5: "abc123", relativePath: "test-dir" },
+          { name: "file2.fq.gz", md5: "def456", relativePath: "test-dir" },
         ],
         run: {
           name: "Integration Test Run",
@@ -1179,13 +1026,15 @@ describe("NewRun.vue", () => {
       });
     });
 
-    it("should handle complete local upload run with all validations", async () => {
-      const mockFile = { data: new File(["content"], "file1.fq.gz") };
+    it("should handle complete local upload run flow", async () => {
       wrapper = createWrapper({
         consent: true,
-        activeTab: "local-filesystem",
-        md5ValidationComplete: true,
-        fileStatuses: [{ name: "file1.fq.gz", md5: "abc123def456" }],
+        uploadMethod: "local-filesystem",
+        localFilesConfirmed: true,
+        processedFiles: [
+          { name: "file1.fq.gz", md5: "abc123", calculatedMd5: "abc123" },
+          { name: "file2.fq.gz", md5: "def456", calculatedMd5: "def456" },
+        ],
         run: {
           name: "Local Upload Run",
           sequencingProvider: "Earlham Institute",
@@ -1197,18 +1046,18 @@ describe("NewRun.vue", () => {
           insertSize: 300,
         },
       });
-      wrapper.vm.$refs.rawUploader = {
-        getFiles: vi.fn().mockReturnValue([mockFile]),
+      wrapper.vm.$refs.additionalUploader = {
+        getFiles: vi.fn().mockReturnValue([]),
       };
 
-      // Verify validation is complete
-      expect(wrapper.vm.md5ValidationComplete).toBe(true);
-      expect(wrapper.vm.fileStatuses).toHaveLength(1);
-      expect(wrapper.vm.fileStatuses[0].md5).toBe("abc123def456");
+      await wrapper.vm.submitForm();
 
-      // Verify run data is set correctly
-      expect(wrapper.vm.run.name).toBe("Local Upload Run");
-      expect(wrapper.vm.run.sequencingProvider).toBe("Earlham Institute");
+      expect(mockAxios.post).toHaveBeenCalled();
+      expect(mockBuefy.toast.open).toHaveBeenCalled();
+      expect(mockRouter.push).toHaveBeenCalledWith({
+        name: "run",
+        query: { id: "run123" },
+      });
     });
   });
 });

@@ -42,7 +42,12 @@
               :type="{ 'is-danger': validationErrors.libraryType }"
               :message="validationErrors.libraryType"
             >
-              <b-select v-model="run.libraryType" expanded required>
+              <b-select
+                v-model="run.libraryType"
+                expanded
+                required
+                :disabled="hasFilesSelected"
+              >
                 <option :value="null" disabled>Select a library type</option>
                 <option
                   v-for="opt in libraryTypes"
@@ -53,6 +58,11 @@
                 </option>
               </b-select>
             </b-field>
+            <p class="help has-text-danger" v-if="hasFilesSelected">
+              <b-icon icon="lock" size="is-small"></b-icon>
+              To change library type, click "Start Over" in the file selection
+              section below.
+            </p>
           </div>
           <div class="column">
             <b-field
@@ -143,15 +153,48 @@
         </div>
         <hr />
 
-        <!-- Raw Read Files -->
-        <h3 class="title is-4">Raw Read Files*</h3>
-        <p class="subtitle is-6">
-          You must provide the raw sequence files for this run.
-        </p>
-        <b-tabs v-model="activeTab" type="is-boxed">
-          <b-tab-item label="HPC Transfer" value="hpc-mv">
-            <HpcFileValidator
-              v-model="hpcValidatedFiles"
+        <!-- STEP 1: SELECT FILES -->
+        <section class="mb-6">
+          <h3 class="title is-4">
+            <span class="tag is-info is-medium mr-2">Step 1</span>
+            Select Files*
+          </h3>
+          <p class="subtitle is-6 mb-4">
+            Choose how you want to provide the raw sequence files for this run.
+          </p>
+
+          <!-- Upload Method Selection -->
+          <div class="field mb-4">
+            <b-radio
+              v-model="uploadMethod"
+              native-value="hpc-mv"
+              :disabled="hasFilesSelected"
+              @input="onUploadMethodChange"
+            >
+              <strong>HPC Transfer</strong>
+              <span class="has-text-grey ml-2"
+                >- Select files from the HPC transfer area</span
+              >
+            </b-radio>
+          </div>
+          <div class="field mb-4">
+            <b-radio
+              v-model="uploadMethod"
+              native-value="local-filesystem"
+              :disabled="hasFilesSelected"
+              @input="onUploadMethodChange"
+            >
+              <strong>Local Filesystem Upload</strong>
+              <span class="has-text-grey ml-2"
+                >- Upload files from your computer</span
+              >
+            </b-radio>
+          </div>
+
+          <!-- HPC Directory Finder -->
+          <div v-if="uploadMethod === 'hpc-mv'" class="box">
+            <HpcDirectoryFinder
+              ref="hpcFinder"
               :sample-id="sample._id"
               :allowed-extensions="
                 libraryTypeObject && libraryTypeObject.extensions
@@ -159,14 +202,12 @@
               :paired="libraryTypeObject && libraryTypeObject.paired"
               :indexed="libraryTypeObject && libraryTypeObject.indexed"
               :disabled="!run.libraryType"
+              @files-found="handleHpcFilesFound"
             />
-          </b-tab-item>
+          </div>
 
-          <b-tab-item
-            label="Local Filesystem Upload"
-            value="local-filesystem"
-            :disabled="isLocalFilesystemDisabled"
-          >
+          <!-- Local Filesystem Upload -->
+          <div v-if="uploadMethod === 'local-filesystem'" class="box">
             <Uploader
               ref="rawUploader"
               :paired="libraryTypeObject && libraryTypeObject.paired"
@@ -174,118 +215,40 @@
               :allowed-extensions="
                 libraryTypeObject && libraryTypeObject.extensions
               "
-              @files-changed="resetMd5Validation"
+              @confirm="handleLocalFilesConfirmed"
+              @restart="handleLocalUploadRestart"
             />
-            <div class="box mt-4" v-if="rawFilesForLocalUpload.length">
-              <h4 class="title is-5">MD5 Checksum Validation</h4>
-              <p class="mb-4">
-                Enter the expected MD5 checksum for each non-checksum file, then
-                validate. This ensures file integrity during upload.
-              </p>
+          </div>
+        </section>
 
-              <!-- MD5 input for each file -->
-              <div
-                v-for="file in nonChecksumLocalFiles"
-                :key="file.data.name"
-                class="box mb-3"
-              >
-                <p class="has-text-weight-medium mb-2">{{ file.data.name }}</p>
-                <b-field
-                  :type="getLocalMd5FieldType(file.data.name)"
-                  :message="getLocalMd5FieldMessage(file.data.name)"
-                >
-                  <b-input
-                    v-model="localFileMd5Inputs[file.data.name]"
-                    placeholder="Enter expected MD5 checksum (32 hex characters)"
-                    :disabled="isHashing"
-                    @input="onLocalMd5Input(file.data.name)"
-                  ></b-input>
-                </b-field>
+        <!-- STEP 2: PROCESS FILES -->
+        <section v-if="hasFilesToProcess" class="mb-6">
+          <h3 class="title is-4">
+            <span class="tag is-info is-medium mr-2">Step 2</span>
+            Process Files
+          </h3>
+          <p class="subtitle is-6 mb-4">
+            <span v-if="uploadMethod === 'hpc-mv'">
+              Select the files you want to include and enter MD5 checksums for
+              validation.
+            </span>
+            <span v-else>
+              Enter MD5 checksums for your uploaded files to verify integrity.
+            </span>
+          </p>
 
-                <!-- Validation status -->
-                <div
-                  v-if="fileStatuses.find((s) => s.name === file.data.name)"
-                  class="mt-2"
-                >
-                  <span :class="getLocalStatusClass(file.data.name)">
-                    <b-icon
-                      :icon="
-                        fileStatuses.find((s) => s.name === file.data.name)
-                          .statusIcon
-                      "
-                      size="is-small"
-                    ></b-icon>
-                    {{
-                      fileStatuses.find((s) => s.name === file.data.name).status
-                    }}
-                    <strong
-                      v-if="
-                        fileStatuses.find((s) => s.name === file.data.name)
-                          .calculatedMd5
-                      "
-                      class="is-family-monospace ml-2"
-                    >
-                      Calculated:
-                      {{
-                        fileStatuses.find((s) => s.name === file.data.name)
-                          .calculatedMd5
-                      }}
-                    </strong>
-                  </span>
-                </div>
-              </div>
-
-              <!-- Checksum files (no MD5 required) -->
-              <div
-                v-for="file in checksumLocalFiles"
-                :key="file.data.name"
-                class="box mb-3"
-                style="background-color: #f5f5f5"
-              >
-                <p class="has-text-weight-medium">
-                  {{ file.data.name }}
-                  <span class="tag is-light is-small ml-2"
-                    >checksum file - no validation required</span
-                  >
-                </p>
-              </div>
-
-              <div class="mt-4">
-                <b-button
-                  @click="validateMd5s"
-                  :loading="isHashing"
-                  :disabled="!canStartLocalValidation"
-                  type="is-info"
-                >
-                  Validate MD5 Checksums
-                </b-button>
-                <p
-                  v-if="
-                    !canStartLocalValidation && nonChecksumLocalFiles.length > 0
-                  "
-                  class="help is-danger mt-2"
-                >
-                  Please enter a valid MD5 checksum for all files before
-                  validating.
-                </p>
-              </div>
-
-              <!-- Validation progress -->
-              <div v-if="isHashing" class="mt-4">
-                <p class="has-text-weight-semibold mb-2">
-                  Validating checksums... ({{ validationProgressLocal }}/{{
-                    nonChecksumLocalFiles.length
-                  }})
-                </p>
-                <progress
-                  class="progress is-primary"
-                  :value="validationProgressLocal"
-                  :max="nonChecksumLocalFiles.length"
-                ></progress>
-              </div>
-            </div>
-          </b-tab-item>
-        </b-tabs>
+          <div class="box">
+            <FileProcessor
+              ref="fileProcessor"
+              v-model="processedFiles"
+              :files="filesToProcess"
+              :source="uploadMethod"
+              :paired="libraryTypeObject && libraryTypeObject.paired"
+              :indexed="libraryTypeObject && libraryTypeObject.indexed"
+              :directory-name="hpcDirectoryName"
+            />
+          </div>
+        </section>
 
         <hr />
 
@@ -318,10 +281,10 @@
 
 <script>
 import { mapState } from "vuex";
-import SparkMD5 from "spark-md5";
 import { CHECKSUM_EXTENSIONS } from "~/utils/constants";
 import Uploader from "~/components/uploads/Uploader.vue";
-import HpcFileValidator from "~/components/uploads/HpcFileValidator.vue";
+import HpcDirectoryFinder from "~/components/uploads/HpcDirectoryFinder.vue";
+import FileProcessor from "~/components/uploads/FileProcessor.vue";
 import FormConsentCheckbox from "~/components/formHelpers/FormConsentCheckbox.vue";
 import CollapsibleUploaderHelp from "~/components/formHelpers/CollapsibleUploaderHelp.vue";
 
@@ -329,7 +292,8 @@ export default {
   name: "NewRun",
   components: {
     Uploader,
-    HpcFileValidator,
+    HpcDirectoryFinder,
+    FileProcessor,
     FormConsentCheckbox,
     CollapsibleUploaderHelp,
   },
@@ -338,39 +302,22 @@ export default {
 
   async asyncData({ $axios, params, error, route }) {
     try {
-      // Get sampleId from query params (not route params for this page)
       const sampleId = route.query.sample;
 
-      console.log("=== NEW RUN PAGE asyncData ===");
-      console.log("params:", JSON.stringify(params));
-      console.log("route.query:", JSON.stringify(route.query));
-      console.log("route.path:", route.path);
-      console.log("sampleId extracted:", sampleId);
-      console.log("==============================");
-
       if (!sampleId) {
-        console.error("ERROR: No sampleId in query parameters");
         return error({
           statusCode: 400,
           message: "Sample ID is required. Please navigate from a sample page.",
         });
       }
 
-      console.log("Fetching sample with ID:", sampleId);
       const sampleResponse = await $axios.get("/sample", {
         params: { id: sampleId },
       });
 
-      console.log(
-        "Sample fetched successfully:",
-        sampleResponse.data.sample.name
-      );
-
       const namesResponse = await $axios.get(
         `/runs/names/${sampleResponse.data.sample._id}`
       );
-
-      console.log("Run names fetched successfully");
 
       return {
         sample: sampleResponse.data.sample,
@@ -378,7 +325,6 @@ export default {
       };
     } catch (err) {
       console.error("Failed to load initial data for new run page:", err);
-      console.error("Error details:", err.response?.data || err.message);
       return error({
         statusCode: err.response?.status || 500,
         message:
@@ -399,16 +345,20 @@ export default {
         libraryStrategy: null,
         insertSize: null,
       },
-      activeTab: "hpc-mv",
-      hpcValidatedFiles: [],
+      // Upload method selection
+      uploadMethod: "hpc-mv",
+      pendingUploadMethod: null, // For confirmation modal
+      // HPC files
+      hpcDiscoveredFiles: [],
+      hpcDirectoryName: "",
+      // Local files
+      localUploadedFiles: [],
+      localFilesConfirmed: false,
+      // Processed files (output from FileProcessor)
+      processedFiles: [],
+      // Form state
       consent: false,
       isSubmitting: false,
-      // MD5 Validation State
-      isHashing: false,
-      md5ValidationComplete: false,
-      fileStatuses: [], // { name, status, md5, statusIcon, statusType, calculatedMd5 }
-      localFileMd5Inputs: {}, // { fileName: 'user entered md5' }
-      validationProgressLocal: 0,
     };
   },
 
@@ -428,70 +378,46 @@ export default {
       "libraryStrategies",
     ]),
 
-    rawFilesForLocalUpload() {
-      return this.$refs.rawUploader?.getFiles() || [];
-    },
-
-    nonChecksumLocalFiles() {
-      return this.rawFilesForLocalUpload.filter(
-        (f) => !this.isChecksumFile(f.data.name)
-      );
-    },
-
-    checksumLocalFiles() {
-      return this.rawFilesForLocalUpload.filter((f) =>
-        this.isChecksumFile(f.data.name)
-      );
-    },
-
-    canStartLocalValidation() {
-      if (this.nonChecksumLocalFiles.length === 0) return false;
-      if (this.isHashing) return false;
-
-      // All non-checksum files must have valid MD5 format
-      const md5Regex = /^[a-fA-F0-9]{32}$/;
-      return this.nonChecksumLocalFiles.every((file) => {
-        const md5 = this.localFileMd5Inputs[file.data.name];
-        return md5 && md5Regex.test(md5.trim());
-      });
-    },
-
-    allLocalChecksumsValidated() {
-      if (this.nonChecksumLocalFiles.length === 0) return false;
-
-      // All non-checksum files must have 'valid' status
-      return this.nonChecksumLocalFiles.every((file) => {
-        const status = this.fileStatuses.find((s) => s.name === file.data.name);
-        return status && status.status === "Verified";
-      });
-    },
-
     libraryTypeObject() {
       if (!this.run.libraryType) return null;
       return this.libraryTypes.find((lt) => lt.value === this.run.libraryType);
     },
 
     isLocalFilesystemDisabled() {
-      return this.libraryTypeObject?.indexed || false;
+      // No restrictions - local filesystem upload works for all library types
+      return false;
+    },
+
+    // Check if any files are currently selected/discovered
+    hasFilesSelected() {
+      return (
+        this.hpcDiscoveredFiles.length > 0 ||
+        this.localFilesConfirmed ||
+        this.processedFiles.length > 0
+      );
+    },
+
+    // Files to pass to FileProcessor
+    filesToProcess() {
+      if (this.uploadMethod === "hpc-mv") {
+        return this.hpcDiscoveredFiles;
+      } else {
+        return this.localFilesConfirmed ? this.localUploadedFiles : [];
+      }
+    },
+
+    hasFilesToProcess() {
+      return this.filesToProcess.length > 0;
     },
 
     uploadsAreComplete() {
-      const additionalComplete =
-        this.$refs.additionalUploader &&
-        typeof this.$refs.additionalUploader.isUploadComplete === "function"
-          ? this.$refs.additionalUploader.isUploadComplete()
-          : true;
-      let rawComplete = false;
-      if (this.activeTab === "hpc-mv") {
-        rawComplete = true; // HPC uploads are handled pre-validation
-      } else {
-        rawComplete =
-          this.$refs.rawUploader &&
-          typeof this.$refs.rawUploader.isUploadComplete === "function"
-            ? this.$refs.rawUploader.isUploadComplete()
-            : true;
-      }
-      return additionalComplete && rawComplete;
+      // Additional files uploader
+      const additionalComplete = true; // Additional files are optional
+
+      // Raw files must be processed
+      if (this.processedFiles.length === 0) return false;
+
+      return additionalComplete;
     },
 
     validationErrors() {
@@ -517,33 +443,19 @@ export default {
         errors.libraryStrategy = "Library strategy is required.";
 
       // Raw files validation
-      if (this.activeTab === "hpc-mv") {
-        if (this.hpcValidatedFiles.length === 0)
-          errors.rawFiles = "HPC files must be selected and validated.";
-        else {
-          // Validate file count for HPC files
-          const fileCountValidation = this.validateRawFileCount(
-            this.hpcValidatedFiles
-          );
-          if (!fileCountValidation.valid) {
-            errors.rawFiles = fileCountValidation.message;
-          }
-        }
+      if (this.processedFiles.length === 0) {
+        errors.rawFiles =
+          "Raw files must be selected, have MD5 checksums validated, and be processed.";
       } else {
-        if (this.rawFilesForLocalUpload.length === 0) {
-          errors.rawFiles = "At least one raw read file must be uploaded.";
-        } else if (!this.md5ValidationComplete) {
-          errors.md5 = "You must validate the MD5 checksums of all raw files.";
-        } else {
-          // Validate file count for local uploads
-          const fileCountValidation = this.validateRawFileCount(
-            this.rawFilesForLocalUpload
-          );
-          if (!fileCountValidation.valid) {
-            errors.rawFiles = fileCountValidation.message;
-          }
+        // Validate file count
+        const fileCountValidation = this.validateRawFileCount(
+          this.processedFiles
+        );
+        if (!fileCountValidation.valid) {
+          errors.rawFiles = fileCountValidation.message;
         }
       }
+
       return errors;
     },
 
@@ -592,15 +504,12 @@ export default {
       const lowerFileName = fileName.toLowerCase();
       return CHECKSUM_EXTENSIONS.some((ext) => lowerFileName.endsWith(ext));
     },
-    /**
-     * Get filename from a file object, handling both HPC (file.name) and local (file.data.name) formats
-     */
+
     getFileName(file) {
       return file.name || file.data?.name || "";
     },
 
     validateRawFileCount(files) {
-      // Filter out checksum files for counting
       const nonChecksumFiles = files.filter(
         (file) => !this.isChecksumFile(this.getFileName(file))
       );
@@ -613,162 +522,110 @@ export default {
       const paired = this.libraryTypeObject.paired || false;
 
       if (paired) {
-        // At least 2 files
         if (count < 2) {
           return {
             valid: false,
-            message: `Paired library requires at least 2 files (excluding checksum files). Found ${count}.`,
+            message: `Paired library requires at least 2 files. Found ${count}.`,
           };
         }
       } else {
-        // At least 1 file
         if (count < 1) {
           return {
             valid: false,
-            message: `At least 1 file is required (excluding checksum files). Found ${count}.`,
+            message: `At least 1 file is required. Found ${count}.`,
           };
         }
       }
 
       return { valid: true, message: "" };
     },
-    resetMd5Validation() {
-      this.md5ValidationComplete = false;
-      this.fileStatuses = [];
-      this.localFileMd5Inputs = {};
-      this.validationProgressLocal = 0;
-    },
 
-    // Helper methods for local file MD5 validation UI
-    isValidMd5Format(md5) {
-      const md5Regex = /^[a-fA-F0-9]{32}$/;
-      return md5 && md5Regex.test(md5.trim());
-    },
+    clearAllFiles() {
+      this.hpcDiscoveredFiles = [];
+      this.hpcDirectoryName = "";
+      this.localUploadedFiles = [];
+      this.localFilesConfirmed = false;
+      this.processedFiles = [];
 
-    getLocalMd5FieldType(fileName) {
-      const md5 = this.localFileMd5Inputs[fileName];
-      if (!md5) return "";
-      if (this.isValidMd5Format(md5)) return "is-success";
-      return "is-danger";
-    },
-
-    getLocalMd5FieldMessage(fileName) {
-      const md5 = this.localFileMd5Inputs[fileName];
-      if (!md5) return "Required: 32 hexadecimal characters";
-      if (this.isValidMd5Format(md5)) return "Valid MD5 format";
-      return "Invalid format: MD5 must be exactly 32 hexadecimal characters (0-9, a-f)";
-    },
-
-    getLocalStatusClass(fileName) {
-      const status = this.fileStatuses.find((s) => s.name === fileName);
-      if (!status) return "";
-      if (status.statusType === "is-success") return "has-text-success";
-      if (status.statusType === "is-danger") return "has-text-danger";
-      if (status.statusType === "is-primary") return "has-text-info";
-      return "has-text-grey";
-    },
-
-    onLocalMd5Input(fileName) {
-      // Clear validation status when MD5 input changes
-      const index = this.fileStatuses.findIndex((s) => s.name === fileName);
-      if (index !== -1) {
-        this.fileStatuses.splice(index, 1);
+      // Clear component refs
+      if (this.$refs.hpcFinder) {
+        this.$refs.hpcFinder.clear();
       }
-      this.md5ValidationComplete = false;
+      if (this.$refs.rawUploader) {
+        this.$refs.rawUploader.clear();
+      }
     },
 
-    validateMd5s() {
-      // Only validate non-checksum files
-      const filesToValidate = this.nonChecksumLocalFiles;
-      if (!filesToValidate.length) return;
-      if (!this.canStartLocalValidation) return;
-
-      this.isHashing = true;
-      this.fileStatuses = [];
-      this.validationProgressLocal = 0;
-
-      const processFile = (index) => {
-        if (index >= filesToValidate.length) {
-          this.isHashing = false;
-          this.md5ValidationComplete = this.allLocalChecksumsValidated;
-
-          if (this.allLocalChecksumsValidated) {
-            this.$buefy.toast.open({
-              message: "All MD5 checksums verified successfully!",
-              type: "is-success",
-            });
-          } else {
-            this.$buefy.toast.open({
-              message:
-                "Some checksums failed verification. Please check and correct.",
-              type: "is-danger",
-            });
-          }
-          return;
-        }
-
-        const fileWrapper = filesToValidate[index];
-        const file = fileWrapper.data;
-        const expectedMd5 = this.localFileMd5Inputs[file.name]
-          ?.trim()
-          .toLowerCase();
-
-        // Add status entry
-        this.fileStatuses.push({
-          name: file.name,
-          status: "Calculating...",
-          md5: expectedMd5,
-          calculatedMd5: null,
-          statusIcon: "sync",
-          statusType: "is-primary",
+    // Handle upload method change with confirmation
+    onUploadMethodChange(newMethod) {
+      if (this.hasFilesSelected && newMethod !== this.uploadMethod) {
+        // Store the pending method and show confirmation
+        this.pendingUploadMethod = newMethod;
+        this.$buefy.dialog.confirm({
+          title: "Switch Upload Method?",
+          message:
+            "Switching upload methods will remove all selected files and you will have to start over. Are you sure?",
+          confirmText: "Yes, Switch",
+          cancelText: "Cancel",
+          type: "is-warning",
+          onConfirm: () => {
+            this.clearAllFiles();
+            this.uploadMethod = this.pendingUploadMethod;
+            this.pendingUploadMethod = null;
+          },
+          onCancel: () => {
+            // Revert to previous method
+            this.pendingUploadMethod = null;
+          },
         });
+      }
+    },
 
-        const statusIndex = this.fileStatuses.length - 1;
-        const reader = new FileReader();
+    // Handle library type change with confirmation
+    onLibraryTypeChange(newValue) {
+      const oldValue = this.run.libraryType;
 
-        reader.onload = (e) => {
-          try {
-            const spark = new SparkMD5.ArrayBuffer();
-            spark.append(e.target.result);
-            const calculatedMd5 = spark.end();
+      if (this.hasFilesSelected && newValue !== oldValue) {
+        this.$buefy.dialog.confirm({
+          title: "Change Library Type?",
+          message:
+            "Changing the library type will clear all selected files and you will have to start over. Are you sure?",
+          confirmText: "Yes, Change",
+          cancelText: "Cancel",
+          type: "is-warning",
+          onConfirm: () => {
+            this.clearAllFiles();
+            this.run.libraryType = newValue;
+          },
+          onCancel: () => {
+            // Revert
+            this.$nextTick(() => {
+              this.run.libraryType = oldValue;
+            });
+          },
+        });
+      }
+    },
 
-            const matches = calculatedMd5 === expectedMd5;
+    // Handle HPC files found
+    handleHpcFilesFound(files, directoryName) {
+      this.hpcDiscoveredFiles = files;
+      this.hpcDirectoryName = directoryName;
+      this.processedFiles = [];
+    },
 
-            this.fileStatuses[statusIndex].calculatedMd5 = calculatedMd5;
-            if (matches) {
-              this.fileStatuses[statusIndex].status = "Verified";
-              this.fileStatuses[statusIndex].statusIcon = "check-circle";
-              this.fileStatuses[statusIndex].statusType = "is-success";
-            } else {
-              this.fileStatuses[
-                statusIndex
-              ].status = `Mismatch! Expected: ${expectedMd5}`;
-              this.fileStatuses[statusIndex].statusIcon = "close-circle";
-              this.fileStatuses[statusIndex].statusType = "is-danger";
-            }
-          } catch (err) {
-            this.fileStatuses[statusIndex].status =
-              "Error calculating checksum";
-            this.fileStatuses[statusIndex].statusIcon = "alert-circle";
-            this.fileStatuses[statusIndex].statusType = "is-danger";
-          }
+    // Handle local files confirmed
+    handleLocalFilesConfirmed(files) {
+      this.localUploadedFiles = files;
+      this.localFilesConfirmed = true;
+      this.processedFiles = [];
+    },
 
-          this.validationProgressLocal = index + 1;
-          processFile(index + 1);
-        };
-
-        reader.onerror = () => {
-          this.fileStatuses[statusIndex].status = "File Read Error";
-          this.fileStatuses[statusIndex].statusIcon = "alert-circle";
-          this.fileStatuses[statusIndex].statusType = "is-danger";
-          this.validationProgressLocal = index + 1;
-          processFile(index + 1);
-        };
-
-        reader.readAsArrayBuffer(file);
-      };
-
-      processFile(0);
+    // Handle local upload restart
+    handleLocalUploadRestart() {
+      this.localUploadedFiles = [];
+      this.localFilesConfirmed = false;
+      this.processedFiles = [];
     },
 
     async submitForm() {
@@ -781,29 +638,11 @@ export default {
       }
       this.isSubmitting = true;
 
-      let rawFilesPayload = [];
-      let rawFilesUploadInfo = { method: this.activeTab };
+      let rawFilesPayload = this.processedFiles;
+      let rawFilesUploadInfo = { method: this.uploadMethod };
 
-      if (this.activeTab === "hpc-mv") {
-        rawFilesPayload = this.hpcValidatedFiles;
-        rawFilesUploadInfo.relativePath =
-          this.hpcValidatedFiles[0]?.relativePath;
-      } else {
-        // For local uploads, filter out checksum files and enrich with verified MD5s
-        const nonChecksumFiles = this.rawFilesForLocalUpload.filter(
-          (f) => !this.isChecksumFile(f.data.name)
-        );
-
-        rawFilesPayload = nonChecksumFiles.map((file) => {
-          const status = this.fileStatuses.find(
-            (s) => s.name === file.data.name
-          );
-          // Use the calculated MD5 (which was verified against user input)
-          return {
-            ...file,
-            md5: status ? status.calculatedMd5 : null,
-          };
-        });
+      if (this.uploadMethod === "hpc-mv") {
+        rawFilesUploadInfo.relativePath = this.hpcDirectoryName;
       }
 
       const payload = {
@@ -832,7 +671,6 @@ export default {
         const errorData = err.response?.data;
         let errorMessage = errorData?.error || "An unexpected error occurred.";
 
-        // Include request ID for easier debugging if available
         if (errorData?.requestId) {
           errorMessage += `<br><br><small>Reference ID: ${errorData.requestId}</small>`;
         }
@@ -848,21 +686,12 @@ export default {
     },
   },
 
-  watch: {
-    "run.libraryType"(newValue, oldValue) {
-      if (newValue !== oldValue) {
-        if (this.$refs.rawUploader) this.$refs.rawUploader.clear();
-        this.resetMd5Validation();
-        if (this.isLocalFilesystemDisabled) this.activeTab = "hpc-mv";
-      }
-    },
-    activeTab() {
-      this.resetMd5Validation();
-    },
-  },
+  watch: {},
 };
 </script>
 
 <style scoped>
-/* Scoped styles here */
+.mb-6 {
+  margin-bottom: 2rem;
+}
 </style>

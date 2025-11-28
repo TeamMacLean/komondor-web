@@ -55,6 +55,9 @@ export default {
         showLinkToFileUploadResult: false,
         height: 150,
         width: "100%",
+        // Hide the status bar after upload completes to prevent the "Done" button
+        // from appearing. The Done button calls uppy.reset() which clears all files.
+        hideAfterFinish: true,
         strings: {
           closeModal: "TESTING yoda for closeModal",
           addMoreFiles: "TESTING yoda for addMoreFiles",
