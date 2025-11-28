@@ -34,8 +34,17 @@
       </p>
     </div>
 
-    <!-- Uppy Dashboard (hidden when confirmed) -->
-    <div v-show="!confirmed" :class="uppyId"></div>
+    <!-- Disabled message -->
+    <div
+      v-if="disabled && !confirmed"
+      class="notification is-warning is-light mb-4"
+    >
+      <b-icon icon="alert" size="is-small"></b-icon>
+      Please select a library type above before uploading files.
+    </div>
+
+    <!-- Uppy Dashboard (hidden when confirmed or disabled) -->
+    <div v-show="!confirmed && !disabled" :class="uppyId"></div>
 
     <div
       v-if="fileCountError && !confirmed"
@@ -109,6 +118,10 @@ export default {
       default: false,
     },
     indexed: {
+      type: Boolean,
+      default: false,
+    },
+    disabled: {
       type: Boolean,
       default: false,
     },

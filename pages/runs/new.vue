@@ -215,6 +215,7 @@
               :allowed-extensions="
                 libraryTypeObject && libraryTypeObject.extensions
               "
+              :disabled="!run.libraryType"
               @confirm="handleLocalFilesConfirmed"
               @restart="handleLocalUploadRestart"
             />
