@@ -7,13 +7,13 @@ localVue.use(Vuex);
 
 // Store the onBeforeFileAdded callback so we can test it
 let capturedOnBeforeFileAdded = null;
-let capturedRestrictions = null;
+let _capturedRestrictions = null;
 let mockUppyInstance = null;
 
 // Mock Uppy and its plugins
 const mockSetOptions = vi.fn((options) => {
   if (options.restrictions) {
-    capturedRestrictions = options.restrictions;
+    _capturedRestrictions = options.restrictions;
     // Update the mock instance's opts to reflect the change
     if (mockUppyInstance) {
       mockUppyInstance.opts.restrictions = {
@@ -53,7 +53,7 @@ vi.mock("@uppy/core", () => ({
   default: vi.fn().mockImplementation((options) => {
     // Capture the onBeforeFileAdded callback for testing
     capturedOnBeforeFileAdded = options.onBeforeFileAdded;
-    capturedRestrictions = options.restrictions;
+    _capturedRestrictions = options.restrictions;
     return createMockUppyInstance();
   }),
 }));
@@ -161,7 +161,7 @@ describe("Uploader.vue", () => {
     vi.clearAllMocks();
     mockSetOptions.mockClear();
     capturedOnBeforeFileAdded = null;
-    capturedRestrictions = null;
+    _capturedRestrictions = null;
     mockUppyInstance = null;
   });
 

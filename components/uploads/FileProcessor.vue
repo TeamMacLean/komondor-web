@@ -1,12 +1,17 @@
 <template>
   <div>
     <h4 class="subtitle is-5 mb-3">
-      <b-icon icon="file-document-multiple" size="is-small" class="mr-2"></b-icon>
+      <b-icon
+        icon="file-document-multiple"
+        size="is-small"
+        class="mr-2"
+      ></b-icon>
       Files to Process
     </h4>
     <p class="mb-3 has-text-grey">
       <span v-if="source === 'hpc-mv'">
-        Select the read files you want to include and enter the expected MD5 checksum for each.
+        Select the read files you want to include and enter the expected MD5
+        checksum for each.
       </span>
       <span v-else>
         Enter the expected MD5 checksum for each uploaded file.
@@ -14,11 +19,7 @@
     </p>
 
     <!-- File list -->
-    <div
-      class="box"
-      v-for="(file, index) in selectableFiles"
-      :key="file.name"
-    >
+    <div class="box" v-for="(file, index) in selectableFiles" :key="file.name">
       <div class="columns is-vcentered is-mobile">
         <!-- Checkbox only for HPC -->
         <div v-if="source === 'hpc-mv'" class="column is-narrow">
@@ -248,8 +249,8 @@
           At least one file pairing is required.</span
         >
         <span v-else-if="indexed && !isIndexingValid">
-          Please select an index file and ensure there is at least one
-          non-index file.</span
+          Please select an index file and ensure there is at least one non-index
+          file.</span
         >
       </p>
     </div>

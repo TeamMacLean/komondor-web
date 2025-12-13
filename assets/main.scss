@@ -4,24 +4,54 @@
 // Set your colors
 // $primary: #9c88ff; //purple
 // $primary:#253F56; //TSL blue
-$primary:#3C3F41; //black
+$primary: #3c3f41; //black
 // $primary-invert: findColorInvert($primary);
 $primary-invert: #ffffff;
-$twitter: #4099FF;
+$twitter: #4099ff;
 $twitter-invert: findColorInvert($twitter);
 
 // Setup $colors to use as bulma classes (e.g. 'is-twitter')
 $colors: (
-  "white": ($white, $black),
-  "black": ($black, $white),
-  "light": ($light, $light-invert),
-  "dark": ($dark, $dark-invert),
-  "primary": ($primary, $primary-invert),
-  "info": ($info, $info-invert),
-  "success": ($success, $success-invert),
-  "warning": ($warning, $warning-invert),
-  "danger": ($danger, $danger-invert),
-  "twitter": ($twitter, $twitter-invert)
+  "white": (
+    $white,
+    $black,
+  ),
+  "black": (
+    $black,
+    $white,
+  ),
+  "light": (
+    $light,
+    $light-invert,
+  ),
+  "dark": (
+    $dark,
+    $dark-invert,
+  ),
+  "primary": (
+    $primary,
+    $primary-invert,
+  ),
+  "info": (
+    $info,
+    $info-invert,
+  ),
+  "success": (
+    $success,
+    $success-invert,
+  ),
+  "warning": (
+    $warning,
+    $warning-invert,
+  ),
+  "danger": (
+    $danger,
+    $danger-invert,
+  ),
+  "twitter": (
+    $twitter,
+    $twitter-invert,
+  ),
 );
 
 //FONT
@@ -43,7 +73,6 @@ $primary-light: lighten($primary, 4);
   color: $text !important;
 }
 
-
 // Import Bulma and Buefy styles
 @import "~bulma";
 @import "~buefy/src/scss/buefy";
@@ -52,11 +81,10 @@ $primary-light: lighten($primary, 4);
 $mdi-font-path: "~@mdi/font/fonts";
 @import "~@mdi/font/scss/materialdesignicons";
 
-
 //CUSTOM
 
 //make buify modals HIGH
-.modal{
+.modal {
   z-index: 11111;
 }
 
@@ -103,10 +131,10 @@ $mdi-font-path: "~@mdi/font/fonts";
 //}
 
 .truncate {
-    width: 100%;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 
   //display: inline-block;
   //max-width: 100%;

@@ -13,25 +13,39 @@
       <div class="columns">
         <div class="column is-6">
           <label class="label">First read file (R1)aa</label>
-          <p
-            class="help"
-          >Choose the file that contains the forward reads (usually having "R1" in the filename).</p>
+          <p class="help">
+            Choose the file that contains the forward reads (usually having "R1"
+            in the filename).
+          </p>
           <br />
-          <RawItem :onUploadStatusChange="onLeftChange" ref="left" :allowedExtensions="allowedExtensions"/>
+          <RawItem
+            :onUploadStatusChange="onLeftChange"
+            ref="left"
+            :allowedExtensions="allowedExtensions"
+          />
         </div>
         <div class="column is-6">
           <label class="label">Second read file (R2)</label>
-          <p
-            class="help"
-          >Choose the file that contains the reverse reads (usually having "R2" in the filename).</p>
+          <p class="help">
+            Choose the file that contains the reverse reads (usually having "R2"
+            in the filename).
+          </p>
           <br />
-          <RawItem :onUploadStatusChange="onRightChange" ref="right" :allowedExtensions="allowedExtensions" />
+          <RawItem
+            :onUploadStatusChange="onRightChange"
+            ref="right"
+            :allowedExtensions="allowedExtensions"
+          />
         </div>
       </div>
     </div>
     <div v-else>
       <!-- <div class="outlined"> -->
-      <RawItem :onUploadStatusChange="onSingleChange" ref="single"  :allowedExtensions="allowedExtensions" />
+      <RawItem
+        :onUploadStatusChange="onSingleChange"
+        ref="single"
+        :allowedExtensions="allowedExtensions"
+      />
       <!-- </div> -->
     </div>
   </div>
@@ -40,14 +54,20 @@
 <script>
 import RawItem from "./_RawItem";
 export default {
-  props: ["paired", "deleteRow", "rowID", "onUploadStatusChange", "allowedExtensions"],
+  props: [
+    "paired",
+    "deleteRow",
+    "rowID",
+    "onUploadStatusChange",
+    "allowedExtensions",
+  ],
   components: { RawItem },
   data() {
     return {
       leftDone: false, //left all uploads complete
       rightDone: false, //right all uploads complete
       singleDone: false, //single all uploads complete
-      API_URL: process.env.API_URL
+      API_URL: process.env.API_URL,
     };
   },
 
@@ -59,7 +79,7 @@ export default {
         onConfirm: () => {
           // Note: File deletion from server happens server-side when this.deleteRow is called
           this.deleteRow(this.rowID);
-        }
+        },
       });
     },
     onLeftChange(val) {
@@ -110,8 +130,8 @@ export default {
         }
         return [single];
       }
-    }
-  }
+    },
+  },
 };
 </script>
 

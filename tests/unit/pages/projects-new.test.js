@@ -1,6 +1,6 @@
 // Unit tests for pages/projects/new.vue
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { mount, createLocalVue, shallowMount } from "@vue/test-utils";
+import { createLocalVue, shallowMount } from "@vue/test-utils";
 import Vuex from "vuex";
 import NewProject from "~/pages/projects/new.vue";
 

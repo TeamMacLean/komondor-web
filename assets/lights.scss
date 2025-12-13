@@ -1,27 +1,27 @@
-.light{
-  width:24px;
-  height:24px;
+.light {
+  width: 24px;
+  height: 24px;
   display: inline-block;
   border-radius: 50%;
   border: 2px solid $grey-light;
   background-color: $light;
-  &.is-success{
+  &.is-success {
     background-color: $success;
     //border-color: $success-invert;
   }
-  &.is-danger{
+  &.is-danger {
     background-color: $danger;
     //border-color: $danger-invert;
   }
-  &.is-warning{
+  &.is-warning {
     background-color: $warning;
     //border-color: $warning-invert;
   }
-  &.is-info{
+  &.is-info {
     background-color: $info;
     //border-color: $info-invert;
   }
-  &.is-primary{
+  &.is-primary {
     background-color: $primary;
     //border-color: $primary-invert;
   }

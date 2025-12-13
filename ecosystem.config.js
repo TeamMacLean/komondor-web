@@ -1,11 +1,11 @@
 module.exports = {
   apps: [
     {
-      name: 'komondor-web',
-      exec_mode: 'fork',
+      name: "komondor-web",
+      exec_mode: "fork",
       instances: 1, // Or a number of instances
-      script: './node_modules/nuxt/bin/nuxt.js',
-      args: 'start'
-    }
-  ]
-}
+      script: "./node_modules/nuxt/bin/nuxt.js",
+      args: "start",
+    },
+  ],
+};

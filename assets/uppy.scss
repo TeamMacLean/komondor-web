@@ -1,12 +1,12 @@
-@import '~@uppy/dashboard/src/style';
+@import "~@uppy/dashboard/src/style";
 
-.uppy-Dashboard-browse{
+.uppy-Dashboard-browse {
   @extend .button;
 }
 
-.uppy-Dashboard-inner{
+.uppy-Dashboard-inner {
   margin: auto;
-  width:100% !important;
+  width: 100% !important;
   z-index: 10;
 }
 

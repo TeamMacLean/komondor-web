@@ -5,7 +5,7 @@
   .tooltip-inner {
     background: white;
     color: $text;
-    border:1px solid $text;
+    border: 1px solid $text;
     border-radius: 16px;
     padding: 5px 10px 4px;
   }
@@ -80,15 +80,15 @@
     }
   }
 
-  &[aria-hidden='true'] {
+  &[aria-hidden="true"] {
     visibility: hidden;
     opacity: 0;
-    transition: opacity .15s, visibility .15s;
+    transition: opacity 0.15s, visibility 0.15s;
   }
 
-  &[aria-hidden='false'] {
+  &[aria-hidden="false"] {
     visibility: visible;
     opacity: 1;
-    transition: opacity .15s;
+    transition: opacity 0.15s;
   }
 }

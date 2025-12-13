@@ -6,10 +6,7 @@
         <div class="section">
           <div class="container">
             <div
-              class="
-                is-flex is-justify-content-space-between is-align-items-center
-                mb-4
-              "
+              class="is-flex is-justify-content-space-between is-align-items-center mb-4"
             >
               <h2 class="title is-5 mb-0">Projects</h2>
               <nuxt-link to="/projects/new" class="button is-success is-small">

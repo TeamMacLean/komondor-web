@@ -17,11 +17,7 @@
               <div class="list is-hoverable">
                 <span
                   v-for="groupLdap in ldapGroups"
-                  class="
-                    list-item
-                    message-header
-                    has-background-light has-text-info
-                  "
+                  class="list-item message-header has-background-light has-text-info"
                 >
                   {{ groupLdap }}
                   <!-- <button

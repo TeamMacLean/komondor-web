@@ -260,7 +260,7 @@ export const validateJson = (jsonString) => {
 export const validatePhone = (phone) => {
   if (!phone) return false;
   // Basic international phone format: +XX XXXXXXXXXX or similar
-  const re = /^[\d\s\-\+\(\)]+$/;
+  const re = /^[\d\s\-+()]+$/;
   return re.test(phone) && phone.replace(/\D/g, "").length >= 10;
 };
 

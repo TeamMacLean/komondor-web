@@ -226,7 +226,7 @@ export const BREAKPOINTS = {
 export const REGEX = {
   EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
   URL: /^https?:\/\/.+/,
-  PHONE: /^[\d\s\-\+\(\)]+$/,
+  PHONE: /^[\d\s\-+()]+$/,
   ALPHANUMERIC: /^[a-zA-Z0-9]+$/,
   USERNAME: /^[a-zA-Z0-9_-]+$/,
   HEX_COLOR: /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/,

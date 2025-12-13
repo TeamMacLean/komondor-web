@@ -126,8 +126,9 @@
         Unsuccessful form submissions will return an error. I'm hoping to
         improve the error handling experience for the user in the future. At the
         moment, if you run into any problems, the likely advice from the website
-        will be to contact me (<a href="mailto:george.deeks@tsl.ac.uk">george.deeks@tsl.ac.uk</a>), so I can untangle the
-        data and figure out what went wrong myself.
+        will be to contact me (<a href="mailto:george.deeks@tsl.ac.uk"
+          >george.deeks@tsl.ac.uk</a
+        >), so I can untangle the data and figure out what went wrong myself.
       </p>
 
       <p>

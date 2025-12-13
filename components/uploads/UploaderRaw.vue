@@ -14,7 +14,7 @@
     </div>
 
     <br />
-    <div class='bottomPadding'>
+    <div class="bottomPadding">
       <b-button icon-left="plus" @click="addRow">Add another</b-button>
     </div>
   </div>
@@ -30,12 +30,12 @@ export default {
     return {
       API_URL: process.env.API_URL,
       rowIDs: [uuidv4()],
-      rowsDone: []
+      rowsDone: [],
     };
   },
   methods: {
     deleteRow(rowID) {
-      this.rowIDs = this.rowIDs.filter(u => u != rowID);
+      this.rowIDs = this.rowIDs.filter((u) => u != rowID);
       this.updateStatus();
     },
     addRow() {
@@ -51,7 +51,7 @@ export default {
       if (this.rowIDs.length < 1) {
         this.onUploadStatusChange(true);
       } else {
-        const filtered = this.rowIDs.filter(rid => {
+        const filtered = this.rowIDs.filter((rid) => {
           return !this.rowsDone[rid];
         });
         const status = filtered.length < 1;
@@ -61,22 +61,22 @@ export default {
     getFiles() {
       const self = this;
       const flat = [];
-      this.rowIDs.map(rid => {
+      this.rowIDs.map((rid) => {
         if (self.$refs[rid]) {
-          const result = self.$refs[rid][0].getFiles().map(ff => {
+          const result = self.$refs[rid][0].getFiles().map((ff) => {
             const ffWithRowID = {
               ...ff,
               rowID: rid,
-            }
-            
+            };
+
             flat.push(ffWithRowID);
           });
-          return result;          
+          return result;
         }
-      });      
-      return flat
-    }
-  }
+      });
+      return flat;
+    },
+  },
 };
 </script>
 <style>

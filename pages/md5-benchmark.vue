@@ -8,10 +8,10 @@
       </h2>
       <div class="notification is-info is-light">
         <p>
-          This is a temporary development page to understand how long it takes to
-          calculate MD5 checksums for large FASTQ files before implementing the
-          feature in the "New Run" page. Calculations are done entirely on your
-          computer; the file is not uploaded.
+          This is a temporary development page to understand how long it takes
+          to calculate MD5 checksums for large FASTQ files before implementing
+          the feature in the "New Run" page. Calculations are done entirely on
+          your computer; the file is not uploaded.
         </p>
       </div>
       <hr />

@@ -42,15 +42,16 @@ tests/
 
 ### Form Tests Overview
 
-| Form | Unit Tests | E2E Tests | Status | Complexity |
-|------|-----------|-----------|---------|------------|
-| **New Project** | ✅ Comprehensive | ✅ 25+ tests | Complete | Medium |
-| **New Sample** | ✅ 55 tests | ✅ 41 tests | Complete | Medium |
-| **New Run** | ✅ 55 tests | ✅ 55 tests | Complete | High |
+| Form            | Unit Tests       | E2E Tests    | Status   | Complexity |
+| --------------- | ---------------- | ------------ | -------- | ---------- |
+| **New Project** | ✅ Comprehensive | ✅ 25+ tests | Complete | Medium     |
+| **New Sample**  | ✅ 55 tests      | ✅ 41 tests  | Complete | Medium     |
+| **New Run**     | ✅ 55 tests      | ✅ 55 tests  | Complete | High       |
 
 ### Detailed Coverage by Form
 
 #### New Project Form (`pages/projects/new.vue`)
+
 - **Unit Tests:** Comprehensive coverage of form validation, Vuex integration, file uploads
 - **E2E Tests:** 25+ tests covering page loading, field validation, submission
 - **Key Features:**
@@ -60,6 +61,7 @@ tests/
   - Project name uniqueness validation
 
 #### New Sample Form (`pages/samples/new.vue`)
+
 - **Unit Tests:** 55 tests - All passing ✅
 - **E2E Tests:** 41 tests
 - **Key Features:**
@@ -69,6 +71,7 @@ tests/
   - Field validation (name, scientific name, NCBI taxonomy, conditions)
 
 #### New Run Form (`pages/runs/new.vue`)
+
 - **Unit Tests:** 55 tests - All passing ✅
 - **E2E Tests:** 55 tests
 - **Key Features:**
@@ -122,12 +125,14 @@ npx playwright test --debug
 ## Test Technologies
 
 ### Unit Testing
+
 - **Framework:** [Vitest](https://vitest.dev/)
 - **Component Testing:** Vue Test Utils (@vue/test-utils)
 - **Mocking:** Vitest built-in mocking
 - **State Management:** Vuex with localVue
 
 ### E2E Testing
+
 - **Framework:** [Playwright](https://playwright.dev/)
 - **Browsers:** Chromium, Firefox, WebKit
 - **Video Recording:** Enabled for failed tests
@@ -138,6 +143,7 @@ npx playwright test --debug
 ### Unit Test Patterns
 
 #### 1. Component Wrapper Creation
+
 ```javascript
 const createWrapper = (dataOverrides = {}) => {
   return mount(Component, {
@@ -150,19 +156,24 @@ const createWrapper = (dataOverrides = {}) => {
       $buefy: mockBuefy,
     },
     stubs: {
-      'b-field': { template: '<div><label v-if="label">{{ label }}</label><slot /></div>' },
-      'b-input': { template: '<input @input="$emit(\'input\', $event.target.value)" />' }
+      "b-field": {
+        template: '<div><label v-if="label">{{ label }}</label><slot /></div>',
+      },
+      "b-input": {
+        template: "<input @input=\"$emit('input', $event.target.value)\" />",
+      },
     },
     data() {
       return { ...defaultData, ...dataOverrides };
-    }
+    },
   });
 };
 ```
 
 #### 2. Async Operations
+
 ```javascript
-it('should handle async data loading', async () => {
+it("should handle async data loading", async () => {
   wrapper.vm.$axios.get = vi.fn().mockResolvedValueOnce({ data: mockData });
   await wrapper.vm.fetchData();
   await wrapper.vm.$nextTick();
@@ -171,47 +182,53 @@ it('should handle async data loading', async () => {
 ```
 
 #### 3. Form Validation Testing
+
 ```javascript
-it('should validate field length', () => {
+it("should validate field length", () => {
   wrapper = createWrapper({
-    form: { name: 'ab' } // Too short
+    form: { name: "ab" }, // Too short
   });
-  expect(wrapper.vm.validationErrors.name).toBe('Name must be at least 3 characters.');
+  expect(wrapper.vm.validationErrors.name).toBe(
+    "Name must be at least 3 characters."
+  );
 });
 ```
 
 ### E2E Test Patterns
 
 #### 1. Page Navigation
+
 ```javascript
-test('should load the page', async ({ page }) => {
-  await page.goto('/projects/new');
-  await page.waitForLoadState('domcontentloaded');
-  const title = page.locator('h1.title');
+test("should load the page", async ({ page }) => {
+  await page.goto("/projects/new");
+  await page.waitForLoadState("domcontentloaded");
+  const title = page.locator("h1.title");
   await expect(title).toBeVisible({ timeout: 10000 });
 });
 ```
 
 #### 2. Form Interaction
+
 ```javascript
-test('should fill form fields', async ({ page }) => {
+test("should fill form fields", async ({ page }) => {
   const nameInput = page.locator('input[name="name"]');
-  await nameInput.fill('Test Project Name');
+  await nameInput.fill("Test Project Name");
   const value = await nameInput.inputValue();
-  expect(value).toBe('Test Project Name');
+  expect(value).toBe("Test Project Name");
 });
 ```
 
 #### 3. API Mocking
+
 ```javascript
-test('should handle API errors', async ({ page }) => {
-  await page.route('**/api/projects', (route) => {
+test("should handle API errors", async ({ page }) => {
+  await page.route("**/api/projects", (route) => {
     route.fulfill({
       status: 500,
-      body: JSON.stringify({ error: 'Server error' })
+      body: JSON.stringify({ error: "Server error" }),
     });
   });
-  await page.goto('/projects/new');
+  await page.goto("/projects/new");
   // Test error handling...
 });
 ```
@@ -219,6 +236,7 @@ test('should handle API errors', async ({ page }) => {
 ## Validation Rules Reference
 
 ### Project Form
+
 - **Name:** 20-80 characters, unique
 - **Short Description:** 20-200 characters
 - **Long Description:** 100-1000 characters
@@ -226,6 +244,7 @@ test('should handle API errors', async ({ page }) => {
 - **Consent:** Required checkbox
 
 ### Sample Form
+
 - **Name:** 3-80 characters, unique within project
 - **Scientific Name:** Minimum 5 characters
 - **Common Name:** Minimum 3 characters
@@ -234,6 +253,7 @@ test('should handle API errors', async ({ page }) => {
 - **TPlex CSV:** Must have headers: name, scientificName, commonName, ncbi, conditions
 
 ### Run Form
+
 - **Name:** 3-80 characters, unique within sample
 - **Sequencing Provider:** Required
 - **Library Type:** Required (dropdown)
@@ -248,21 +268,27 @@ test('should handle API errors', async ({ page }) => {
 ## Common Testing Issues & Solutions
 
 ### Issue: "element not found" in tests
+
 **Solution:** Ensure stubs properly render labels and form structure. Use appropriate timeouts and wait for elements.
 
 ### Issue: Computed properties don't update
+
 **Solution:** Use `await wrapper.setData()` instead of direct assignment, and call `$nextTick()`.
 
 ### Issue: Vuex store errors
+
 **Solution:** Create localVue instance and call `Vue.use(Vuex)` before creating store.
 
 ### Issue: FileReader not working in tests
+
 **Solution:** Mock FileReader globally with proper async behavior.
 
 ### Issue: E2E tests timeout
+
 **Solution:** E2E tests require authentication and backend. Use longer timeouts or mock API responses.
 
 ### Issue: Refs don't work in unit tests
+
 **Solution:** Test behavior indirectly through computed properties or set refs explicitly after mounting.
 
 ## Continuous Integration
@@ -290,6 +316,7 @@ Current coverage metrics:
 - **Integration Tests:** Cross-form validation tests
 
 To generate coverage report:
+
 ```bash
 npm test -- --coverage
 ```
@@ -309,17 +336,17 @@ When adding new tests:
 
 ```javascript
 // Unit tests
-describe('ComponentName', () => {
-  describe('methodName', () => {
-    it('should do something specific', () => {
+describe("ComponentName", () => {
+  describe("methodName", () => {
+    it("should do something specific", () => {
       // Test implementation
     });
   });
 });
 
 // E2E tests
-test.describe('Page Name', () => {
-  test('should perform user action', async ({ page }) => {
+test.describe("Page Name", () => {
+  test("should perform user action", async ({ page }) => {
     // Test implementation
   });
 });
@@ -337,6 +364,7 @@ test.describe('Page Name', () => {
 ## Test Maintenance
 
 ### Regular Tasks
+
 - Review and update tests when components change
 - Remove obsolete tests
 - Add tests for new features
@@ -344,6 +372,7 @@ test.describe('Page Name', () => {
 - Update mocks when APIs change
 
 ### Performance
+
 - Unit tests should run in < 1 second per test
 - E2E tests should run in < 10 seconds per test
 - Use appropriate timeouts to avoid flaky tests
@@ -354,11 +383,13 @@ test.describe('Page Name', () => {
 This test suite provides comprehensive coverage of the Komondor web application's core functionality. With **165+ tests** across unit and E2E categories, the three main form workflows (Projects, Samples, and Runs) are thoroughly tested to ensure reliability and maintainability.
 
 **Key Achievements:**
+
 - ✅ All unit tests passing (55 + 55 + existing)
 - ✅ Comprehensive E2E coverage (41 + 55 + existing)
 - ✅ Well-documented test patterns
 - ✅ Easy to extend and maintain
 
 For specific form documentation, see:
+
 - [Sample Form Tests](./README_SAMPLES.md)
 - [Run Form Tests](./README_RUNS.md)

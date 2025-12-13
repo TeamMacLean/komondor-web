@@ -1,14 +1,14 @@
 // Vitest setup file for Vue 2 + Nuxt 2
-import { config } from '@vue/test-utils';
-import { vi } from 'vitest';
+import { config } from "@vue/test-utils";
+import { vi } from "vitest";
 
 // Mock Nuxt context and helpers
 global.$nuxt = {
   context: {
     env: {
-      API_URL: 'http://localhost:8000',
-      HOST: 'localhost',
-      HPC_DATASTORE_ROOT: '/test/datastore',
+      API_URL: "http://localhost:8000",
+      HOST: "localhost",
+      HPC_DATASTORE_ROOT: "/test/datastore",
     },
   },
 };
@@ -16,8 +16,8 @@ global.$nuxt = {
 // Mock common Nuxt plugins
 config.mocks = {
   $config: {
-    API_URL: 'http://localhost:8000',
-    HOST: 'localhost',
+    API_URL: "http://localhost:8000",
+    HOST: "localhost",
   },
   $axios: {
     get: vi.fn(),
@@ -42,7 +42,7 @@ config.mocks = {
     back: vi.fn(),
   },
   $route: {
-    path: '/',
+    path: "/",
     params: {},
     query: {},
   },
@@ -59,7 +59,7 @@ config.mocks = {
 config.showDeprecationWarnings = false;
 
 // Mock window.matchMedia (for responsive components)
-Object.defineProperty(window, 'matchMedia', {
+Object.defineProperty(window, "matchMedia", {
   writable: true,
   value: vi.fn().mockImplementation((query) => ({
     matches: false,
