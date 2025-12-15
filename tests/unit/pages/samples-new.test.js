@@ -736,7 +736,7 @@ describe("NewSample.vue", () => {
 
         expect(wrapper.vm.validatedCsvData).toEqual(mockCsvData);
         expect(mockBuefy.toast.open).toHaveBeenCalledWith({
-          message: "CSV validated successfully!",
+          message: expect.stringContaining("CSV validated successfully!"),
           type: "is-success",
         });
       });
@@ -744,9 +744,10 @@ describe("NewSample.vue", () => {
       it("should show error dialog when CSV headers are incorrect", async () => {
         const Papa = await import("papaparse");
 
+        // Provide some data rows so it doesn't trigger empty check first
         Papa.default.parse.mockImplementationOnce((file, options) => {
           options.complete({
-            data: [],
+            data: [{ wrong: "value1", headers: "value2" }],
             meta: {
               fields: ["wrong", "headers"],
             },
@@ -761,7 +762,9 @@ describe("NewSample.vue", () => {
         expect(wrapper.vm.validatedCsvData).toEqual([]);
         expect(mockBuefy.dialog.alert).toHaveBeenCalledWith({
           title: "Invalid CSV Headers",
-          message: expect.stringContaining("CSV headers are incorrect"),
+          message: expect.stringContaining(
+            "CSV headers are missing or incorrect"
+          ),
           type: "is-danger",
         });
       });
@@ -945,7 +948,7 @@ describe("NewSample.vue", () => {
         });
       });
 
-      it("should redirect to project page after TPlex submission", async () => {
+      it("should redirect to sample page after TPlex submission", async () => {
         const csvData = [
           {
             name: "Sample 1",
@@ -975,9 +978,10 @@ describe("NewSample.vue", () => {
           message: "Successfully created 2 sample(s)!",
           type: "is-success",
         });
+        // Both standard and TPlex submissions redirect to the created sample page
         expect(mockRouter.push).toHaveBeenCalledWith({
-          name: "project",
-          query: { id: "project123" },
+          name: "sample",
+          query: { id: "sample123" },
         });
       });
 
@@ -1196,9 +1200,10 @@ describe("NewSample.vue", () => {
         message: "Successfully created 2 sample(s)!",
         type: "is-success",
       });
+      // Both standard and TPlex submissions redirect to the created sample page
       expect(mockRouter.push).toHaveBeenCalledWith({
-        name: "project",
-        query: { id: "project123" },
+        name: "sample",
+        query: { id: "sample123" },
       });
     });
   });
