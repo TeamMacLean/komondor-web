@@ -58,7 +58,7 @@
                 </option>
               </b-select>
             </b-field>
-            <p class="help has-text-danger" v-if="hasFilesSelected">
+            <p v-if="hasFilesSelected" class="help has-text-danger">
               <b-icon icon="lock" size="is-small"></b-icon>
               To change library type, click "Start Over" in the file selection
               section below.
@@ -299,9 +299,8 @@ export default {
     CollapsibleUploaderHelp,
   },
   middleware: "auth",
-  watchQuery: ["sample"],
 
-  async asyncData({ $axios, params, error, route }) {
+  async asyncData({ $axios, error, route }) {
     try {
       const sampleId = route.query.sample;
 
@@ -688,6 +687,8 @@ export default {
   },
 
   watch: {},
+
+  watchQuery: ["sample"],
 };
 </script>
 

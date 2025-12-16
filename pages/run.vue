@@ -157,7 +157,7 @@ export default {
     AddAccessionModal,
   },
   middleware: ["auth"],
-  async asyncData({ route, $axios, store, error }) {
+  async asyncData({ route, $axios, error }) {
     if (!route.query.id) {
       return error({ statusCode: 404, message: "Run ID not provided" });
     }
@@ -192,6 +192,57 @@ export default {
     return {
       polling: null,
     };
+  },
+  computed: {
+    libraryTypeExtensions() {
+      // Get the allowed extensions for this run's library type
+      if (!this.run?.libraryType) return [];
+      const libraryTypes = this.$store.state.libraryTypes || [];
+      const libraryType = libraryTypes.find(
+        (lt) => lt.value === this.run.libraryType
+      );
+      return libraryType?.extensions || [];
+    },
+    runStatus() {
+      if (!this.run || !this.run.status) {
+        return { text: "Unknown", type: "is-light", icon: "help-circle" };
+      }
+      switch (this.run.status) {
+        case "pending":
+          return {
+            text: "Processing",
+            type: "is-info",
+            icon: "sync",
+          };
+        case "complete":
+          return {
+            text: "Complete",
+            type: "is-success",
+            icon: "check-circle",
+          };
+        case "error":
+          return {
+            text: "Error",
+            type: "is-danger",
+            icon: "alert-circle",
+          };
+        default:
+          return {
+            text: this.run.status,
+            type: "is-light",
+            icon: "help-circle",
+          };
+      }
+    },
+    insertSizeString() {
+      const insertSize = this.run.insertSize;
+      return insertSize == null ? "(not set)" : insertSize.toString();
+    },
+    showAddAcession() {
+      const username = this?.$auth?.$state?.user?.username;
+      const admins = process?.env?.ENA_ADMINS || "";
+      return username && admins.includes(username);
+    },
   },
   async created() {
     // Ensure library types are loaded for extension checking
@@ -245,57 +296,6 @@ export default {
         console.error("Polling error:", err);
         this.stopPolling(); // Stop polling on error to avoid spamming requests
       }
-    },
-  },
-  computed: {
-    libraryTypeExtensions() {
-      // Get the allowed extensions for this run's library type
-      if (!this.run?.libraryType) return [];
-      const libraryTypes = this.$store.state.libraryTypes || [];
-      const libraryType = libraryTypes.find(
-        (lt) => lt.value === this.run.libraryType
-      );
-      return libraryType?.extensions || [];
-    },
-    runStatus() {
-      if (!this.run || !this.run.status) {
-        return { text: "Unknown", type: "is-light", icon: "help-circle" };
-      }
-      switch (this.run.status) {
-        case "pending":
-          return {
-            text: "Processing",
-            type: "is-info",
-            icon: "sync",
-          };
-        case "complete":
-          return {
-            text: "Complete",
-            type: "is-success",
-            icon: "check-circle",
-          };
-        case "error":
-          return {
-            text: "Error",
-            type: "is-danger",
-            icon: "alert-circle",
-          };
-        default:
-          return {
-            text: this.run.status,
-            type: "is-light",
-            icon: "help-circle",
-          };
-      }
-    },
-    insertSizeString() {
-      const insertSize = this.run.insertSize;
-      return insertSize == null ? "(not set)" : insertSize.toString();
-    },
-    showAddAcession() {
-      const username = this?.$auth?.$state?.user?.username;
-      const admins = process?.env?.ENA_ADMINS || "";
-      return username && admins.includes(username);
     },
   },
 };

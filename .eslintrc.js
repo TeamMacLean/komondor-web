@@ -11,6 +11,7 @@ module.exports = {
     "plugin:prettier/recommended",
   ],
   rules: {
+    "vue/multi-word-component-names": "off",
     "vue/component-name-in-template-casing": ["error", "PascalCase"],
     /**
      * Setting up the "no-console" rule like I did allows us to use
