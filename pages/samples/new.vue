@@ -476,9 +476,15 @@ export default {
         });
       } catch (err) {
         console.error("Error creating sample(s):", err);
+        let message =
+          err.response?.data?.error || "An unexpected error occurred.";
+        if (err.response?.status === 413) {
+          message =
+            "The CSV file is too large to submit. Please reduce the number of rows and try again, or contact support.";
+        }
         this.$buefy.dialog.alert({
           title: "Submission Failed",
-          message: err.response?.data?.error || "An unexpected error occurred.",
+          message,
           type: "is-danger",
         });
       } finally {
