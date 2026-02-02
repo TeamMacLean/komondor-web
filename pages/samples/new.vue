@@ -35,7 +35,7 @@
             </b-upload>
           </b-field>
           <div class="buttons">
-            <b-button @click="validateTplexCsv" :disabled="!tplexCsvFile">
+            <b-button :disabled="!tplexCsvFile" @click="validateTplexCsv">
               Validate CSV
             </b-button>
             <b-button
@@ -166,7 +166,6 @@ export default {
   name: "NewSample",
   components: { Uploader, FormConsentCheckbox, CollapsibleUploaderHelp },
   middleware: "auth",
-  watchQuery: ["projectId"],
 
   async asyncData({ $axios, params, error, route }) {
     try {
@@ -238,12 +237,6 @@ export default {
     };
   },
 
-  async created() {
-    if (this.$route.query.clonedSampleId) {
-      await this.initializeFromClonedSample(this.$route.query.clonedSampleId);
-    }
-  },
-
   computed: {
     uploadsAreComplete() {
       if (this.isTplexChecked || !this.$refs.additionalUploader) {
@@ -301,6 +294,24 @@ export default {
         this.uploadsAreComplete
       );
     },
+  },
+
+  watch: {
+    isTplexChecked() {
+      // Reset validation when switching modes
+      this.validatedCsvData = [];
+      this.tplexCsvFile = null;
+    },
+    tplexCsvFile() {
+      // Invalidate previous validation if file changes
+      this.validatedCsvData = [];
+    },
+  },
+
+  async created() {
+    if (this.$route.query.clonedSampleId) {
+      await this.initializeFromClonedSample(this.$route.query.clonedSampleId);
+    }
   },
 
   methods: {
@@ -473,17 +484,6 @@ export default {
       } finally {
         this.isSubmitting = false;
       }
-    },
-  },
-  watch: {
-    isTplexChecked() {
-      // Reset validation when switching modes
-      this.validatedCsvData = [];
-      this.tplexCsvFile = null;
-    },
-    tplexCsvFile() {
-      // Invalidate previous validation if file changes
-      this.validatedCsvData = [];
     },
   },
 };
