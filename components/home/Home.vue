@@ -62,10 +62,10 @@
       <!-- Main Content Area -->
       <main class="column is-9 is-10-fullhd">
         <div class="section fill-height">
-          <h1 class="title is-2 mb-2">
+          <h1 class="title is-2 mb-4">
             TSL Raw Sequencing Data Upload Website
           </h1>
-          <p class="subtitle is-5 has-text-grey mb-6">
+          <p class="subtitle is-5 has-text-grey mt-2 mb-6">
             Manage your projects, samples, and sequencing runs
           </p>
 
@@ -126,9 +126,9 @@
             </h3>
             <b-loading :is-full-page="false" :active="isLoading"></b-loading>
             <div v-if="!isLoading">
-              <template v-if="news.length">
+              <template v-if="displayedNews.length">
                 <NewsCard
-                  v-for="newsItem in news"
+                  v-for="newsItem in displayedNews"
                   :key="newsItem._id"
                   :news="newsItem"
                 />
@@ -157,11 +157,16 @@ export default {
       isLoading: false,
       projectFilterText: "",
       showingAll: false,
-      defaultProjectCount: 20,
+      defaultProjectCount: 15,
+      maxNewsCount: 10,
     };
   },
   computed: {
     ...mapState(["projects", "news"]),
+
+    displayedNews() {
+      return this.news.slice(0, this.maxNewsCount);
+    },
 
     isLoggedIn() {
       return this.$store.state.auth && this.$store.state.auth.loggedIn;
@@ -229,11 +234,17 @@ export default {
 </script>
 
 <style scoped>
+#home > .columns {
+  min-height: calc(100vh - 52px);
+}
+
 .sidebar {
-  height: calc(100vh - 52px);
-  /* 52px is the height of the navbar */
   overflow-y: auto;
   border-right: 1px solid #dbdbdb;
+  position: sticky;
+  top: 52px;
+  height: calc(100vh - 52px);
+  align-self: flex-start;
 }
 
 .fill-height {
