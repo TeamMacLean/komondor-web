@@ -1,6 +1,17 @@
 <template>
   <div>
-    <Home v-if="renderHome"></Home>
+    <div v-if="renderHome">
+      <section class="section" style="padding-bottom: 0">
+        <b-message type="is-info" has-icon>
+          <strong>New Bulk Upload Feature:</strong> Power users can now enter
+          multiple projects, samples, and runs using a single CSV file. If you
+          are interested in beta testing this feature, please contact George for
+          more info. Once this has been tested more thoroughly, it will be
+          released to more users publicly.
+        </b-message>
+      </section>
+      <Home></Home>
+    </div>
     <div v-else>
       <section
         class="hero is-medium is-primary"
@@ -12,7 +23,7 @@
               <h1 class="title is-1 has-text-centered">TSL Sequence Store</h1>
             </div>
             <br />
-            <SigninCard hideHeader="true" />
+            <SigninCard hide-header="true" />
           </div>
         </div>
       </section>

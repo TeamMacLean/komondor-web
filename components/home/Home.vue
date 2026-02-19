@@ -23,39 +23,38 @@
               ></b-input>
             </b-field>
 
-            <ul id="sidebar-projects">
+            <div id="sidebar-projects" class="menu">
               <b-loading :is-full-page="false" :active="isLoading"></b-loading>
-              <li
-                v-for="project in displayedProjects"
-                :key="project._id"
-                class="truncate mb-2"
-              >
-                <nuxt-link
-                  :to="{ name: 'project', query: { id: project._id } }"
-                  class="has-text-weight-bold"
-                  v-tooltip="{
-                    content: project.name,
-                    delay: 500,
-                    placement: 'bottom-start',
-                  }"
+              <ul class="menu-list">
+                <li
+                  v-for="project in displayedProjects"
+                  :key="project._id"
+                  class="truncate"
                 >
-                  <b-icon
-                    icon="folder-text-outline"
-                    size="is-small"
-                    class="has-text-grey mr-1"
-                  />
-                  {{ project.name }}
-                </nuxt-link>
-              </li>
-              <li v-if="canShowMore" class="mt-2">
-                <a class="has-text-black is-size-7" @click="showAll">
-                  Show more...
-                </a>
-              </li>
-              <li v-if="!isLoading && projects.length === 0">
-                <p class="is-size-7 has-text-grey">No projects found.</p>
-              </li>
-            </ul>
+                  <nuxt-link
+                    v-tooltip="{
+                      content: project.name,
+                      delay: 500,
+                      placement: 'bottom-start',
+                    }"
+                    :to="{ name: 'project', query: { id: project._id } }"
+                  >
+                    <b-icon
+                      icon="folder-text-outline"
+                      size="is-small"
+                      class="has-text-grey mr-1"
+                    />
+                    {{ project.name }}
+                  </nuxt-link>
+                </li>
+                <li v-if="canShowMore" class="mt-2">
+                  <a class="is-size-7" @click="showAll"> Show more... </a>
+                </li>
+                <li v-if="!isLoading && projects.length === 0">
+                  <p class="is-size-7 has-text-grey p-2">No projects found.</p>
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
       </aside>
@@ -63,21 +62,55 @@
       <!-- Main Content Area -->
       <main class="column is-9 is-10-fullhd">
         <div class="section fill-height">
-          <h1 class="title is-2">Welcome to sequences.tsl.ac.uk!</h1>
+          <h1 class="title is-2 mb-6">Welcome to sequences.tsl.ac.uk!</h1>
 
-          <h2 class="subtitle is-4">Quick start</h2>
-          <p class="block">
-            Check out our <a href="/help">FAQ</a> or read our
-            <a href="/upload-instructions.html">Detailed User Guide</a>.
-          </p>
+          <div class="columns is-multiline mb-6">
+            <div class="column is-6">
+              <div class="box h-100">
+                <h2 class="title is-4">
+                  <b-icon icon="rocket-launch" class="mr-2" type="is-primary" />
+                  Quick Start
+                </h2>
+                <div class="content">
+                  <p>New here? Check out our resources to get started:</p>
+                  <ul>
+                    <li>
+                      <a href="/help"><strong>FAQ</strong></a> - Common
+                      questions and answers.
+                    </li>
+                    <li>
+                      <a href="/upload-instructions.html"
+                        ><strong>Detailed User Guide</strong></a
+                      >
+                      - Step-by-step instructions.
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
 
-          <div v-if="isAdmin" class="block">
-            <h3 class="title is-4">Admin Links</h3>
-            <p><a href="/export">Export run data as CSV</a></p>
+            <div v-if="isAdmin" class="column is-6">
+              <div class="box h-100">
+                <h3 class="title is-4">
+                  <b-icon icon="shield-account" class="mr-2" type="is-danger" />
+                  Admin
+                </h3>
+                <div class="content">
+                  <p>
+                    <a href="/export" class="button is-small is-light"
+                      >Export run data as CSV</a
+                    >
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div class="container">
-            <h3 class="title is-4">Most Recently Added</h3>
+            <h3 class="title is-4 mb-4">
+              <b-icon icon="history" class="mr-2" />
+              Most Recently Added
+            </h3>
             <b-loading :is-full-page="false" :active="isLoading"></b-loading>
             <div v-if="!isLoading">
               <template v-if="news.length">
@@ -87,7 +120,7 @@
                   :news="newsItem"
                 />
               </template>
-              <p v-else class="is-size-6 has-text-grey">
+              <p v-else class="is-size-6 has-text-grey box">
                 No new projects have been added from your group(s) recently.
               </p>
             </div>
@@ -198,5 +231,9 @@ export default {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.h-100 {
+  height: 100%;
 }
 </style>
