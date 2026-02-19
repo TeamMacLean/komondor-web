@@ -62,7 +62,12 @@
       <!-- Main Content Area -->
       <main class="column is-9 is-10-fullhd">
         <div class="section fill-height">
-          <h1 class="title is-2 mb-6">Welcome to sequences.tsl.ac.uk!</h1>
+          <h1 class="title is-2 mb-2">
+            TSL Raw Sequencing Data Upload Website
+          </h1>
+          <p class="subtitle is-5 has-text-grey mb-6">
+            Manage your projects, samples, and sequencing runs
+          </p>
 
           <div class="columns is-multiline mb-6">
             <div class="column is-6">
@@ -105,6 +110,14 @@
               </div>
             </div>
           </div>
+
+          <b-message type="is-info" has-icon class="mb-6">
+            <strong>New Bulk Upload Feature:</strong> Power users can now enter
+            multiple projects, samples, and runs using a single CSV file. If you
+            are interested in beta testing this feature, please contact George
+            for more info. Once this has been tested more thoroughly, it will be
+            released to more users publicly.
+          </b-message>
 
           <div class="container">
             <h3 class="title is-4 mb-4">
