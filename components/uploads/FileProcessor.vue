@@ -17,9 +17,15 @@
         Enter the expected MD5 checksum for each uploaded file.
       </span>
     </p>
+    <p v-if="source !== 'hpc-mv'" class="mb-3 has-text-grey is-size-7">
+      <b-icon icon="information-outline" size="is-small" class="mr-1"></b-icon>
+      Checksum validation reads each file in your browser to verify integrity.
+      Large files (multi-GB) may take 1–2 minutes each and are processed
+      sequentially.
+    </p>
 
     <!-- File list -->
-    <div class="box" v-for="(file, index) in selectableFiles" :key="file.name">
+    <div v-for="file in selectableFiles" :key="file.name" class="box">
       <div class="columns is-vcentered is-mobile">
         <!-- Checkbox only for HPC -->
         <div v-if="source === 'hpc-mv'" class="column is-narrow">
@@ -219,18 +225,18 @@
     <div class="mt-4">
       <b-button
         v-if="!validationComplete"
-        @click="validateChecksums"
         :loading="isValidating"
         :disabled="!canStartValidation"
         type="is-info"
+        @click="validateChecksums"
       >
         {{ validationButtonText }}
       </b-button>
       <b-button
         v-if="validationComplete"
-        @click="resetValidation"
         type="is-warning"
         icon-left="refresh"
+        @click="resetValidation"
       >
         Start Over (Reset Validation)
       </b-button>
@@ -267,6 +273,15 @@
         :value="validationProgress"
         :max="selectedNonChecksumFiles.length"
       ></progress>
+      <p class="has-text-grey is-size-7 mt-1">
+        <b-icon
+          icon="information-outline"
+          size="is-small"
+          class="mr-1"
+        ></b-icon>
+        Files are processed one at a time. Please keep this browser tab open and
+        do not navigate away until validation is complete.
+      </p>
     </div>
 
     <!-- Success message -->
@@ -611,7 +626,13 @@ export default {
             calculatedMd5 = response.data.calculatedMd5;
           } else {
             // Client-side validation for local files
-            calculatedMd5 = await this.calculateMd5(file.data);
+            const fileSize = this.formatFileSize(file.data.size);
+            calculatedMd5 = await this.calculateMd5(file.data, (percent) => {
+              this.$set(this.fileValidationStatus, file.name, {
+                status: "validating",
+                message: `Calculating checksum... ${percent}% (${fileSize})`,
+              });
+            });
           }
 
           const matches =
@@ -633,9 +654,16 @@ export default {
         } catch (e) {
           console.error(`Error validating ${file.name}:`, e);
           const errorData = e.response?.data;
-          let errorMessage = errorData?.error || "Failed to validate checksum";
-          if (errorData?.requestId) {
-            errorMessage += ` (Ref: ${errorData.requestId})`;
+          let errorMessage;
+          if (errorData?.error) {
+            // API error (HPC server-side validation)
+            errorMessage = errorData.error;
+            if (errorData.requestId) {
+              errorMessage += ` (Ref: ${errorData.requestId})`;
+            }
+          } else {
+            // Local file error (e.g. failed to read file)
+            errorMessage = e.message || "Failed to validate checksum";
           }
           this.$set(this.fileValidationStatus, file.name, {
             status: "error",
@@ -664,17 +692,50 @@ export default {
         });
       }
     },
-    // Calculate MD5 for local file using SparkMD5
-    calculateMd5(file) {
+    formatFileSize(bytes) {
+      if (!bytes || bytes <= 0) return "0 B";
+      const units = ["B", "KB", "MB", "GB", "TB"];
+      const i = Math.floor(Math.log(bytes) / Math.log(1024));
+      return (
+        (bytes / Math.pow(1024, i)).toFixed(i === 0 ? 0 : 1) + " " + units[i]
+      );
+    },
+    // Calculate MD5 for local file using SparkMD5 with chunked reading
+    // to avoid loading the entire file into memory at once (which fails
+    // for large genomic files like .fq.gz that can be many GBs).
+    calculateMd5(file, onProgress) {
       return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const spark = new SparkMD5.ArrayBuffer();
+        const chunkSize = 2097152; // Read in chunks of 2MB
+        const chunks = Math.max(1, Math.ceil(file.size / chunkSize));
+        let currentChunk = 0;
+        const spark = new SparkMD5.ArrayBuffer();
+        const fileReader = new FileReader();
+
+        fileReader.onload = (e) => {
           spark.append(e.target.result);
-          resolve(spark.end());
+          currentChunk++;
+
+          if (onProgress) {
+            const percent = Math.round((currentChunk / chunks) * 100);
+            onProgress(percent);
+          }
+
+          if (currentChunk < chunks) {
+            loadNext();
+          } else {
+            resolve(spark.end());
+          }
         };
-        reader.onerror = () => reject(new Error("Failed to read file"));
-        reader.readAsArrayBuffer(file);
+
+        fileReader.onerror = () => reject(new Error("Failed to read file"));
+
+        function loadNext() {
+          const start = currentChunk * chunkSize;
+          const end = Math.min(start + chunkSize, file.size);
+          fileReader.readAsArrayBuffer(file.slice(start, end));
+        }
+
+        loadNext();
       });
     },
     confirmSelection() {
