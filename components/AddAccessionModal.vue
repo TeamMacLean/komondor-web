@@ -31,6 +31,8 @@
 
 <script>
 import moment from "moment";
+import { getApiErrorMessage } from "~/utils/apiError";
+
 const ModalForm = {
   props: [
     "canCancel",
@@ -176,26 +178,12 @@ const ModalForm = {
         })
         .catch((err) => {
           this.$emit("close");
-
-          // Extract error message from various possible error structures
-          let errorMessage = "Failed to update accessions. Please try again.";
-
-          if (err.response?.data?.message) {
-            errorMessage = err.response.data.message;
-          } else if (err.response?.data?.error) {
-            errorMessage =
-              typeof err.response.data.error === "string"
-                ? err.response.data.error
-                : "Failed to update accessions. Please check your input.";
-          } else if (err.message) {
-            errorMessage =
-              err.message === "Network Error"
-                ? "Unable to connect to server. Please ensure the API is running."
-                : err.message;
-          }
+          console.error("Failed to update accessions:", err);
 
           this.$buefy.toast.open({
-            message: errorMessage,
+            message: getApiErrorMessage(err, {
+              fallback: "Failed to update accessions. Please try again.",
+            }),
             type: "is-danger",
             duration: 5000,
           });

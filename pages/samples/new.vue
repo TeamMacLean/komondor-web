@@ -161,26 +161,19 @@ import Papa from "papaparse";
 import Uploader from "~/components/uploads/Uploader.vue";
 import FormConsentCheckbox from "~/components/formHelpers/FormConsentCheckbox.vue";
 import CollapsibleUploaderHelp from "~/components/formHelpers/CollapsibleUploaderHelp.vue";
+import { getApiErrorMessage, getApiErrorStatus } from "~/utils/apiError";
 
 export default {
   name: "NewSample",
   components: { Uploader, FormConsentCheckbox, CollapsibleUploaderHelp },
   middleware: "auth",
 
-  async asyncData({ $axios, params, error, route }) {
+  async asyncData({ $axios, error, route }) {
     try {
       // Get projectId from query params (not route params for this page)
       const projectId = route.query.projectId;
 
-      console.log("=== NEW SAMPLE PAGE asyncData ===");
-      console.log("params:", JSON.stringify(params));
-      console.log("route.query:", JSON.stringify(route.query));
-      console.log("route.path:", route.path);
-      console.log("projectId extracted:", projectId);
-      console.log("=================================");
-
       if (!projectId) {
-        console.error("ERROR: No projectId in query parameters");
         return error({
           statusCode: 400,
           message:
@@ -188,21 +181,13 @@ export default {
         });
       }
 
-      console.log("Fetching project with ID:", projectId);
       const projectResponse = await $axios.get("/project", {
         params: { id: projectId },
       });
 
-      console.log(
-        "Project fetched successfully:",
-        projectResponse.data.project.name
-      );
-
       const namesResponse = await $axios.get(
         `/samples/names/${projectResponse.data.project._id}`
       );
-
-      console.log("Sample names fetched successfully");
 
       return {
         project: projectResponse.data.project,
@@ -210,11 +195,13 @@ export default {
       };
     } catch (err) {
       console.error("Failed to load initial data for new sample page:", err);
-      console.error("Error details:", err.response?.data || err.message);
       return error({
-        statusCode: err.response?.status || 500,
-        message:
-          err.response?.data?.message || "Project not found or API error.",
+        statusCode: getApiErrorStatus(err) || 500,
+        // Was `data.message`, which no route but /login sends — so this always
+        // fell through to the generic text.
+        message: getApiErrorMessage(err, {
+          fallback: "Project not found or API error.",
+        }),
       });
     }
   },
@@ -350,8 +337,6 @@ export default {
         return;
       }
 
-      console.log("Validating TPlex CSV file:", this.tplexCsvFile.name);
-
       Papa.parse(this.tplexCsvFile, {
         header: true,
         skipEmptyLines: true,
@@ -365,10 +350,6 @@ export default {
             "conditions",
           ];
           const actualHeaders = results.meta.fields || [];
-
-          console.log("Expected headers:", expectedHeaders);
-          console.log("Actual headers:", actualHeaders);
-          console.log("CSV data rows:", results.data.length);
 
           // Check if CSV is empty
           if (results.data.length === 0) {
@@ -409,7 +390,6 @@ export default {
               row.conditions
             );
           });
-          console.log("Validated CSV data:", this.validatedCsvData);
 
           this.$buefy.toast.open({
             message: `CSV validated successfully! Found ${this.validatedCsvData.length} sample(s).`,
@@ -476,9 +456,8 @@ export default {
         });
       } catch (err) {
         console.error("Error creating sample(s):", err);
-        let message =
-          err.response?.data?.error || "An unexpected error occurred.";
-        if (err.response?.status === 413) {
+        let message = getApiErrorMessage(err);
+        if (getApiErrorStatus(err) === 413) {
           message =
             "The CSV file is too large to submit. Please reduce the number of rows and try again, or contact support.";
         }

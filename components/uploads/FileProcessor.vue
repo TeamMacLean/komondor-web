@@ -314,6 +314,7 @@
 <script>
 import SparkMD5 from "spark-md5";
 import { CHECKSUM_EXTENSIONS } from "~/utils/constants";
+import { getApiErrorMessage } from "~/utils/apiError";
 
 // MD5 is 32 hexadecimal characters
 const MD5_REGEX = /^[a-fA-F0-9]{32}$/;
@@ -653,21 +654,14 @@ export default {
           }
         } catch (e) {
           console.error(`Error validating ${file.name}:`, e);
-          const errorData = e.response?.data;
-          let errorMessage;
-          if (errorData?.error) {
-            // API error (HPC server-side validation)
-            errorMessage = errorData.error;
-            if (errorData.requestId) {
-              errorMessage += ` (Ref: ${errorData.requestId})`;
-            }
-          } else {
-            // Local file error (e.g. failed to read file)
-            errorMessage = e.message || "Failed to validate checksum";
-          }
           this.$set(this.fileValidationStatus, file.name, {
             status: "error",
-            message: errorMessage,
+            // Checksum failures get reported to support often enough to be
+            // worth carrying the API's request id.
+            message: getApiErrorMessage(e, {
+              fallback: "Failed to validate checksum",
+              includeRef: true,
+            }),
           });
         }
 

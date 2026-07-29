@@ -51,18 +51,13 @@
 <script>
 import ProjectList from "~/components/projects/ProjectList.vue";
 import Identicon from "identicon.js";
+import { getApiErrorMessage, getApiErrorStatus } from "~/utils/apiError";
 
 export default {
-  middleware: "auth",
   components: {
     ProjectList,
   },
-  fetch({ store }) {
-    return Promise.all([
-      // store.dispatch('refreshProjects'),
-      store.dispatch("refreshGroups"),
-    ]);
-  },
+  middleware: "auth",
   asyncData({ route, $axios, error }) {
     function userNotFound() {
       error({ statusCode: 404, message: "User not found." });
@@ -90,9 +85,26 @@ export default {
         }
       })
       .catch((err) => {
-        console.error(err);
-        userNotFound();
+        console.error("Failed to load user:", err);
+        // "User not found." was shown for every cause, including an expired
+        // session and an unreachable API.
+        const status = getApiErrorStatus(err);
+        if (status === 404) {
+          return userNotFound();
+        }
+        error({
+          statusCode: status || 500,
+          message: getApiErrorMessage(err, {
+            fallback: "Could not load this user.",
+          }),
+        });
       });
+  },
+  fetch({ store }) {
+    return Promise.all([
+      // store.dispatch('refreshProjects'),
+      store.dispatch("refreshGroups"),
+    ]);
   },
   computed: {
     icon() {

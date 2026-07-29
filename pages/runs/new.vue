@@ -288,6 +288,7 @@ import HpcDirectoryFinder from "~/components/uploads/HpcDirectoryFinder.vue";
 import FileProcessor from "~/components/uploads/FileProcessor.vue";
 import FormConsentCheckbox from "~/components/formHelpers/FormConsentCheckbox.vue";
 import CollapsibleUploaderHelp from "~/components/formHelpers/CollapsibleUploaderHelp.vue";
+import { getApiErrorMessage, getApiErrorStatus } from "~/utils/apiError";
 
 export default {
   name: "NewRun",
@@ -326,9 +327,12 @@ export default {
     } catch (err) {
       console.error("Failed to load initial data for new run page:", err);
       return error({
-        statusCode: err.response?.status || 500,
-        message:
-          err.response?.data?.message || "Sample not found or API error.",
+        statusCode: getApiErrorStatus(err) || 500,
+        // Was `data.message`, which no route but /login sends — so this always
+        // fell through to the generic text.
+        message: getApiErrorMessage(err, {
+          fallback: "Sample not found or API error.",
+        }),
       });
     }
   },
@@ -668,16 +672,12 @@ export default {
         });
       } catch (err) {
         console.error("Error creating run:", err);
-        const errorData = err.response?.data;
-        let errorMessage = errorData?.error || "An unexpected error occurred.";
-
-        if (errorData?.requestId) {
-          errorMessage += `<br><br><small>Reference ID: ${errorData.requestId}</small>`;
-        }
 
         this.$buefy.dialog.alert({
           title: "Submission Failed",
-          message: errorMessage,
+          // Buefy renders `message` with v-html, so the reference is appended as
+          // plain text rather than as markup built around a server string.
+          message: getApiErrorMessage(err, { includeRef: true }),
           type: "is-danger",
         });
       } finally {

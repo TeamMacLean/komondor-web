@@ -1047,7 +1047,11 @@ describe("NewSample.vue", () => {
         expect(wrapper.vm.isSubmitting).toBe(false);
       });
 
-      it("should handle errors without error response data", async () => {
+      // A bare Error is not an axios rejection — it has no `config` and no
+      // `response`. getApiErrorMessage treats that as "thrown by our own code",
+      // so its message is ours to show. A real network failure takes the axios
+      // path instead and gets NETWORK_ERROR_MESSAGE.
+      it("shows the message of a non-axios error thrown during submission", async () => {
         wrapper = createWrapper({
           consent: true,
           sample: {
@@ -1074,7 +1078,7 @@ describe("NewSample.vue", () => {
 
         expect(wrapper.vm.$buefy.dialog.alert).toHaveBeenCalledWith({
           title: "Submission Failed",
-          message: "An unexpected error occurred.",
+          message: "Network error",
           type: "is-danger",
         });
       });

@@ -171,6 +171,7 @@ import { mapState } from "vuex";
 import Uploader from "~/components/uploads/Uploader.vue";
 import FormConsentCheckbox from "~/components/formHelpers/FormConsentCheckbox.vue";
 import CollapsibleUploaderHelp from "~/components/formHelpers/CollapsibleUploaderHelp.vue";
+import { getApiErrorMessage, getApiErrorStatus } from "~/utils/apiError";
 
 export default {
   name: "NewProject",
@@ -184,16 +185,12 @@ export default {
     } catch (err) {
       console.error("Failed to fetch existing project names:", err);
       error({
-        statusCode: 500,
-        message: "Could not load initial data. Please try again later.",
+        statusCode: getApiErrorStatus(err) || 500,
+        message: getApiErrorMessage(err, {
+          fallback: "Could not load initial data. Please try again later.",
+        }),
       });
       return { existingProjectNames: [] };
-    }
-  },
-
-  async fetch({ store }) {
-    if (store.state.groups.length === 0) {
-      await store.dispatch("refreshGroups");
     }
   },
 
@@ -215,6 +212,12 @@ export default {
         nameList: [], // Stores existing project names for validation
       },
     };
+  },
+
+  async fetch({ store }) {
+    if (store.state.groups.length === 0) {
+      await store.dispatch("refreshGroups");
+    }
   },
 
   computed: {
@@ -390,9 +393,10 @@ export default {
         });
       } catch (err) {
         console.error("Error creating project:", err);
-        const errorMessage =
-          err.response?.data?.error ||
-          "An unexpected error occurred. Please check the details and try again.";
+        const errorMessage = getApiErrorMessage(err, {
+          fallback:
+            "An unexpected error occurred. Please check the details and try again.",
+        });
 
         this.$buefy.dialog.alert({
           title: "Submission Failed",

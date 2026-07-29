@@ -2,23 +2,23 @@
   <div class="navbar-item custom-width">
     <div class="control has-addons custom-width-child">
       <b-autocomplete
+        v-model="query"
         open-on-focus
         rounded
-        v-model="query"
         :data="results"
         placeholder="Search or jump to..."
         :loading="isFetching"
-        @typing="getAsyncData"
         custom-class="can-expand"
         icon="magnify"
-        @select="onSelect"
         max-height="500px"
+        @typing="getAsyncData"
+        @select="onSelect"
       >
         <template slot="header">
           <div class="truncate">
             <nuxt-link
-              :to="{ name: 'search', query: { query: query } }"
               v-if="query && query.length"
+              :to="{ name: 'search', query: { query: query } }"
             >
               Search whole site for
               <strong>{{ shortText }}</strong>
@@ -30,7 +30,7 @@
           <div v-else>Type in the search bar to see results</div>
         </template>
         <template slot-scope="props">
-          <div class="truncate" v-if="props.option.type == 'project'">
+          <div v-if="props.option.type == 'project'" class="truncate">
             <b-icon
               icon="folder-text-outline"
               size="is-small"
@@ -38,7 +38,7 @@
             ></b-icon>
             <span class="truncate">{{ props.option.name }}</span>
           </div>
-          <div class="truncate" v-if="props.option.type == 'sample'">
+          <div v-if="props.option.type == 'sample'" class="truncate">
             <b-icon
               icon="flask-outline"
               size="is-small"
@@ -46,7 +46,7 @@
             ></b-icon>
             <span class="truncate">{{ props.option.name }}</span>
           </div>
-          <div class="truncate" v-if="props.option.type == 'run'">
+          <div v-if="props.option.type == 'run'" class="truncate">
             <b-icon icon="dna" size="is-small" class="has-text-grey"></b-icon>
             <span class="truncate">{{ props.option.name }}</span>
           </div>
@@ -58,6 +58,7 @@
 
 <script>
 import debounce from "lodash/debounce";
+import { getApiErrorMessage } from "~/utils/apiError";
 
 export default {
   data() {
@@ -140,7 +141,17 @@ export default {
         .catch((err) => {
           this.isFetching = false;
           this.results = [];
-          console.error(err);
+          console.error("Nav search failed:", err);
+          // The global interceptor no longer toasts for these, and a search box
+          // that silently returns nothing on a server error is indistinguishable
+          // from one that found nothing.
+          this.$buefy.toast.open({
+            message: getApiErrorMessage(err, {
+              fallback: "Search is unavailable right now.",
+            }),
+            type: "is-danger",
+            duration: 4000,
+          });
         });
 
       // this.data = this.$store.getters.filteredProjects(query);

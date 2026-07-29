@@ -6,18 +6,31 @@
       </header>
       <section class="modal-card-body">
         <b-field label="Name">
-          <b-input type="text" placeholder="FASTQ - unpaired" v-model="name" required></b-input>
+          <b-input
+            v-model="name"
+            type="text"
+            placeholder="FASTQ - unpaired"
+            required
+          ></b-input>
         </b-field>
 
         <b-field>
           <label class="checkbox">
-            <input type="checkbox" v-model="paired" />
+            <input v-model="paired" type="checkbox" />
             Paired/Mated
           </label>
         </b-field>
         <br />
-        <b-field label="File extensions" message="Limit possible upload file types to those listed here. Leave blank for no limits on file type.">
-          <b-taginput v-model="extensions" ellipsis icon="label" placeholder=".fq.gz"></b-taginput>
+        <b-field
+          label="File extensions"
+          message="Limit possible upload file types to those listed here. Leave blank for no limits on file type."
+        >
+          <b-taginput
+            v-model="extensions"
+            ellipsis
+            icon="label"
+            placeholder=".fq.gz"
+          ></b-taginput>
         </b-field>
         <!-- George TODO what is the point of tags? -->
         <!-- <p class="content">
@@ -27,22 +40,27 @@
       </section>
       <footer class="modal-card-foot custom-wrapper">
         <div>
-
-        <button class="button" type="button" @click="$parent.close()">Cancel</button>
-        <button class="button is-primary" type="submit">Add</button>
+          <button class="button" type="button" @click="$parent.close()">
+            Cancel
+          </button>
+          <button class="button is-primary" type="submit">Add</button>
         </div>
-        <p class="errorMessage" v-if="errors.length">
+        <!-- A div, not a p: a <ul> inside a <p> implicitly closes it, so the
+             closing tag became a parse error and the list rendered outside. -->
+        <div v-if="errors.length" class="errorMessage">
           <b>Please correct the following error(s):</b>
           <ul>
             <li v-for="(error, index) in errors" :key="index">{{ error }}</li>
           </ul>
-        </p>
+        </div>
       </footer>
     </div>
   </form>
 </template>
 
 <script>
+import { getApiErrorMessage, isBodyError } from "~/utils/apiError";
+
 export default {
   props: ["existingNames"],
   data() {
@@ -50,50 +68,71 @@ export default {
       name: "",
       paired: false,
       extensions: [],
-      errors: []
+      errors: [],
     };
   },
   methods: {
-    postForm: function() {
-      if (this.existingNames.includes(this.name)){
-        const libraryTypeAlreadyExistsErrorStr = "Library type '" + this.name + "' already exists"
-        if (this.errors.indexOf(libraryTypeAlreadyExistsErrorStr) === -1){
+    postForm: function () {
+      if (this.existingNames.includes(this.name)) {
+        const libraryTypeAlreadyExistsErrorStr =
+          "Library type '" + this.name + "' already exists";
+        if (this.errors.indexOf(libraryTypeAlreadyExistsErrorStr) === -1) {
           this.errors.push(libraryTypeAlreadyExistsErrorStr);
         }
         return;
       }
 
-      this.extensions.forEach(extension => {
+      this.extensions.forEach((extension) => {
         // file extensions, i.e. .alphanumeric.repeated.pattern
-        if (!(/(\.[0-9a-z]+)+$/.test(extension))){
-          this.errors.push('Please ensure file extensions are alphanumeric and starting with a ., e.g. .fastq, .tar.gz');
+        if (!/(\.[0-9a-z]+)+$/.test(extension)) {
+          this.errors.push(
+            "Please ensure file extensions are alphanumeric and starting with a ., e.g. .fastq, .tar.gz"
+          );
           return;
         }
-      })
+      });
+
+      const name = this.name;
 
       this.$axios
         .post("/options/librarytype", {
-          value: this.name,
+          value: name,
           paired: this.paired,
-          extensions: this.extensions
+          extensions: this.extensions,
         })
-        .then(() => {
+        .then((response) => {
+          // The API confirms a create by returning the saved document.
+          if (isBodyError(response) || !response.data || !response.data.doc) {
+            throw response;
+          }
           this.$parent.close();
-          this.$store.dispatch("refreshLibraryTypes");
-          this.$buefy.toast.open({
-            message: `Added: ${this.name}`,
-            type: "is-success"
-          });
+          return this.$store
+            .dispatch("refreshLibraryTypes")
+            .then((refreshed) => {
+              this.$buefy.toast.open({
+                message: refreshed
+                  ? `Added: ${name}`
+                  : `Added: ${name} — but the list could not be reloaded. Refresh the page to see it.`,
+                type: refreshed ? "is-success" : "is-warning",
+                duration: refreshed ? 3000 : 6000,
+              });
+            });
         })
-        .catch(err => {
+        .catch((err) => {
+          console.error("Failed to save library type:", err);
           this.$parent.close();
           this.$buefy.toast.open({
-            message: `Failed to save option, error is: ${err}`,
-            type: "is-danger"
+            // Was `${err}`, which stringifies an axios rejection to
+            // "Error: Request failed with status code 400".
+            message: getApiErrorMessage(err, {
+              fallback: `Could not add "${name}".`,
+            }),
+            type: "is-danger",
+            duration: 5000,
           });
         });
-    }
-  }
+    },
+  },
 };
 </script>
 

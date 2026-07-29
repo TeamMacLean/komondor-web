@@ -1,27 +1,27 @@
 <template>
   <div id="login" class="card">
     <div v-if="!hideHeader">
-      <div class="card-header" v-show="!!!$store.state.user">
+      <div v-show="!!!$store.state.user" class="card-header">
         <p class="card-header-title">Please sign in</p>
       </div>
     </div>
 
     <div class="card-content">
-      <b-message type="is-danger" v-if="error">
+      <b-message v-if="error" type="is-danger">
         {{ error }}
       </b-message>
 
-      <form @submit.prevent="onSubmit" v-if="!$store.state.user">
+      <form v-if="!$store.state.user" @submit.prevent="onSubmit">
         <b-field label="Username">
           <div class="control">
             <div class="field has-addons">
               <b-input
+                v-model="credentials.username"
                 type="text"
                 name="username"
                 title="username"
                 spellcheck="false"
                 expanded
-                v-model="credentials.username"
                 required="required"
               >
               </b-input>
@@ -33,11 +33,11 @@
         <b-field label="Password">
           <b-input
             id="password"
+            v-model="credentials.password"
             type="password"
             name="password"
             title="password"
             autocomplete="current-password"
-            v-model="credentials.password"
             required
           >
           </b-input>
@@ -57,6 +57,8 @@
 </template>
 
 <script>
+import { getApiErrorMessage } from "~/utils/apiError";
+
 export default {
   props: ["hideHeader"],
   data() {
@@ -95,7 +97,13 @@ export default {
         })
         .catch((err) => {
           self.submitting = false;
-          self.error = err;
+          // `/login` is the one route that reports failure as `{message}`, so
+          // without this the user saw "Request failed with status code 401"
+          // instead of "Bad credentials".
+          self.error = getApiErrorMessage(err, {
+            fallback:
+              "Sign in failed. Please check your username and password.",
+          });
           console.error(err);
         });
     },

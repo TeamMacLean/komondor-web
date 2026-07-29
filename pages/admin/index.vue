@@ -7,41 +7,22 @@
         <b-tabs class="block" :animated="false">
           <!-- <b-tab-item label="General"></b-tab-item> -->
           <b-tab-item label="Options">
-            <b-field label="Library types">
-              <div>
-                <ul>
-                  <li v-for="option in libraryTypes" :key="option._id">
-                    <b-tag
-                      size="is-medium"
-                      closable
-                      aria-close-label="Close tag"
-                      @close="promptToDeleteLibraryType(option)"
-                      >{{ option.value }}</b-tag
-                    >
-                  </li>
-                </ul>
-                <button
-                  type="button"
-                  class="button is-success"
-                  @click="promptForNewLibraryType"
-                >
-                  New
-                </button>
-              </div>
-            </b-field>
-
-            <b-field label="Sequencing technologies">
+            <b-field
+              v-for="collection in optionCollections"
+              :key="collection.key"
+              :label="collection.label"
+            >
               <div>
                 <ul>
                   <li
-                    v-for="option in sequencingTechnologies"
+                    v-for="option in optionsFor(collection)"
                     :key="option._id"
                   >
                     <b-tag
                       size="is-medium"
                       closable
                       aria-close-label="Close tag"
-                      @close="promptToDeleteSequencingTechnology(option)"
+                      @close="promptToDeleteOption(collection, option)"
                       >{{ option.value }}</b-tag
                     >
                   </li>
@@ -49,73 +30,7 @@
                 <button
                   type="button"
                   class="button is-success"
-                  @click="promptForNewSequencingTechnology"
-                >
-                  New
-                </button>
-              </div>
-            </b-field>
-            <b-field label="Library sources">
-              <div>
-                <ul>
-                  <li v-for="option in librarySources" :key="option._id">
-                    <b-tag
-                      size="is-medium"
-                      closable
-                      aria-close-label="Close tag"
-                      @close="promptToDeleteLibrarySource(option)"
-                      >{{ option.value }}</b-tag
-                    >
-                  </li>
-                </ul>
-                <button
-                  type="button"
-                  class="button is-success"
-                  @click="promptForNewLibrarySource"
-                >
-                  New
-                </button>
-              </div>
-            </b-field>
-            <b-field label="Library selections">
-              <div>
-                <ul>
-                  <li v-for="option in librarySelections" :key="option._id">
-                    <b-tag
-                      size="is-medium"
-                      closable
-                      aria-close-label="Close tag"
-                      @close="promptToDeleteLibrarySelection(option)"
-                      >{{ option.value }}</b-tag
-                    >
-                  </li>
-                </ul>
-                <button
-                  type="button"
-                  class="button is-success"
-                  @click="promptForNewLibrarySelection"
-                >
-                  New
-                </button>
-              </div>
-            </b-field>
-            <b-field label="Library strategies">
-              <div>
-                <ul>
-                  <li v-for="option in libraryStrategies" :key="option._id">
-                    <b-tag
-                      size="is-medium"
-                      closable
-                      aria-close-label="Close tag"
-                      @close="promptToDeleteLibraryStrategy(option)"
-                      >{{ option.value }}</b-tag
-                    >
-                  </li>
-                </ul>
-                <button
-                  type="button"
-                  class="button is-success"
-                  @click="promptForNewLibraryStrategy"
+                  @click="promptForNewOption(collection)"
                 >
                   New
                 </button>
@@ -205,7 +120,55 @@
 import GroupModal from "~/components/groups/editModal.vue";
 import ProjectList from "~/components/projects/ProjectList.vue";
 
-import LibraryTypeModal from "./LibraryTypeModal";
+import LibraryTypeModal from "./LibraryTypeModal.vue";
+import { getApiErrorMessage, isBodyError } from "~/utils/apiError";
+
+/**
+ * The five controlled-vocabulary collections on /options/*.
+ *
+ * `key` is the store state array, `refresh` the action that reloads it, and
+ * `endpoint` the API route. Library types are the odd one out: they carry
+ * `paired` and `extensions` alongside `value`, so they need a form rather than
+ * a single-field prompt.
+ */
+const OPTION_COLLECTIONS = [
+  {
+    key: "libraryTypes",
+    label: "Library types",
+    singular: "Library Type",
+    endpoint: "/options/librarytype",
+    refresh: "refreshLibraryTypes",
+    useModal: true,
+  },
+  {
+    key: "sequencingTechnologies",
+    label: "Sequencing technologies",
+    singular: "Sequencing Technology",
+    endpoint: "/options/sequencingtechnology",
+    refresh: "refreshSequencingTechnologies",
+  },
+  {
+    key: "librarySources",
+    label: "Library sources",
+    singular: "Library Source",
+    endpoint: "/options/librarysource",
+    refresh: "refreshLibrarySources",
+  },
+  {
+    key: "librarySelections",
+    label: "Library selections",
+    singular: "Library Selection",
+    endpoint: "/options/libraryselection",
+    refresh: "refreshLibrarySelections",
+  },
+  {
+    key: "libraryStrategies",
+    label: "Library strategies",
+    singular: "Library Strategy",
+    endpoint: "/options/librarystrategy",
+    refresh: "refreshLibraryStrategies",
+  },
+];
 
 export default {
   components: { GroupModal, ProjectList },
@@ -219,6 +182,7 @@ export default {
 
       isGroupModalActive: false,
       groupToEdit: null,
+      optionCollections: OPTION_COLLECTIONS,
       // newGroupLdap: '',
       // newGroupsName: '',
       // groupLdapList: []
@@ -238,22 +202,10 @@ export default {
     groups() {
       return JSON.parse(JSON.stringify(this.$store.state.groups));
     },
+    // Kept because the library-type modal needs the existing names to check
+    // for duplicates; the other four collections are read via `optionsFor`.
     libraryTypes() {
       return JSON.parse(JSON.stringify(this.$store.state.libraryTypes));
-    },
-    sequencingTechnologies() {
-      return JSON.parse(
-        JSON.stringify(this.$store.state.sequencingTechnologies)
-      );
-    },
-    librarySources() {
-      return JSON.parse(JSON.stringify(this.$store.state.librarySources));
-    },
-    librarySelections() {
-      return JSON.parse(JSON.stringify(this.$store.state.librarySelections));
-    },
-    libraryStrategies() {
-      return JSON.parse(JSON.stringify(this.$store.state.libraryStrategies));
     },
   },
   mounted() {
@@ -291,263 +243,116 @@ export default {
           }),
       });
     },
-    promptForNewLibraryType() {
-      this.$buefy.modal.open({
-        parent: this,
-        component: LibraryTypeModal,
-        hasModalCard: true,
-        trapFocus: true,
-        props: {
-          existingNames: this.libraryTypes.map((lt) => lt.value),
-        },
-      });
+    /** The options in one collection, detached from store state. */
+    optionsFor(collection) {
+      return JSON.parse(
+        JSON.stringify(this.$store.state[collection.key] || [])
+      );
+    },
 
-      // this.$buefy.dialog.prompt({
-      //   message: `Library Type`,
-      //   inputAttrs: {
-      //     minlength: 2
-      //   },
-      //   onConfirm: value => {
-      //     this.$axios
-      //       .post("/options/librarytype", { value })
-      //       .then(() => {
-      //         this.$store.dispatch("refreshLibraryTypes");
-      //         this.$buefy.toast.open({
-      //           message: `Added: ${value}`,
-      //           type: "is-success"
-      //         });
-      //       })
-      //       .catch(err => {
-      //         this.$buefy.toast.open({
-      //           message: `Failed to save option`,
-      //           type: "is-danger"
-      //         });
-      //       });
-      //   }
-      // });
-    },
-    promptToDeleteLibraryType(option) {
-      this.$buefy.dialog.confirm({
-        message: `Delete ${option.value}?`,
-        onConfirm: () => {
-          this.$axios
-            .delete("/options/librarytype", { data: { id: option._id } })
-            .then(() => {
-              this.$store.dispatch("refreshLibraryTypes");
-              this.$buefy.toast.open({
-                message: `Deleted: ${option.value}`,
-                type: "is-success",
-              });
-            })
-            .catch((err) => {
-              console.error(err);
-              this.$buefy.toast.open({
-                message: `Failed to delete option`,
-                type: "is-danger",
-              });
-            });
-        },
-      });
-    },
-    promptForNewSequencingTechnology() {
+    promptForNewOption(collection) {
+      // Library types need more than a value, so they get a form.
+      if (collection.useModal) {
+        return this.$buefy.modal.open({
+          parent: this,
+          component: LibraryTypeModal,
+          hasModalCard: true,
+          trapFocus: true,
+          props: {
+            existingNames: this.libraryTypes.map((lt) => lt.value),
+          },
+        });
+      }
+
       this.$buefy.dialog.prompt({
-        message: `Sequencing Technology`,
+        message: collection.singular,
         inputAttrs: {
           minlength: 2,
         },
-        onConfirm: (value) => {
-          this.$axios
-            .post("/options/sequencingtechnology", { value })
-            .then(() => {
-              this.$store.dispatch("refreshSequencingTechnologies");
-              this.$buefy.toast.open({
-                message: `Added: ${value}`,
-                type: "is-success",
-              });
-            })
-            .catch((err) => {
-              console.error(err);
-              this.$buefy.toast.open({
-                message: `Failed to save option`,
-                type: "is-danger",
-              });
-            });
-        },
+        onConfirm: (value) => this.createOption(collection, value),
       });
     },
-    promptToDeleteSequencingTechnology(option) {
+
+    async createOption(collection, value) {
+      try {
+        const response = await this.$axios.post(collection.endpoint, { value });
+
+        // Success used to be inferred purely from axios not throwing. The API
+        // answers a successful create with the saved document, so check for it
+        // rather than assume it.
+        if (isBodyError(response)) {
+          throw response;
+        }
+        if (!response.data || !response.data.doc) {
+          throw new Error(
+            `The server accepted the request but did not confirm "${value}" was saved. Reload to check.`
+          );
+        }
+
+        const refreshed = await this.$store.dispatch(collection.refresh);
+        this.$buefy.toast.open({
+          message: refreshed
+            ? `Added: ${value}`
+            : `Added: ${value} — but the list could not be reloaded. Refresh the page to see it.`,
+          type: refreshed ? "is-success" : "is-warning",
+          duration: refreshed ? 3000 : 6000,
+        });
+      } catch (err) {
+        console.error(
+          `Failed to add an option to ${collection.endpoint}:`,
+          err
+        );
+        this.$buefy.toast.open({
+          message: getApiErrorMessage(err, {
+            fallback: `Could not add "${value}".`,
+          }),
+          type: "is-danger",
+          duration: 5000,
+        });
+      }
+    },
+
+    promptToDeleteOption(collection, option) {
       this.$buefy.dialog.confirm({
         message: `Delete ${option.value}?`,
-        onConfirm: () => {
-          this.$axios
-            .delete("/options/sequencingtechnology", {
-              data: { id: option._id },
-            })
-            .then(() => {
-              this.$store.dispatch("refreshSequencingTechnologies");
-              this.$buefy.toast.open({
-                message: `Deleted: ${option.value}`,
-                type: "is-success",
-              });
-            })
-            .catch((err) => {
-              console.error(err);
-              this.$buefy.toast.open({
-                message: `Failed to delete option, error: ${err}`,
-                type: "is-danger",
-              });
-            });
-        },
+        onConfirm: () => this.deleteOption(collection, option),
       });
     },
-    promptForNewLibrarySource() {
-      this.$buefy.dialog.prompt({
-        message: `Library Source`,
-        inputAttrs: {
-          minlength: 2,
-        },
-        onConfirm: (value) => {
-          this.$axios
-            .post("/options/librarysource", { value })
-            .then(() => {
-              this.$store.dispatch("refreshLibrarySources");
-              this.$buefy.toast.open({
-                message: `Added: ${value}`,
-                type: "is-success",
-              });
-            })
-            .catch((err) => {
-              console.error(err);
-              this.$buefy.toast.open({
-                message: `Failed to save option`,
-                type: "is-danger",
-              });
-            });
-        },
-      });
-    },
-    promptToDeleteLibrarySource(option) {
-      this.$buefy.dialog.confirm({
-        message: `Delete ${option.value}?`,
-        onConfirm: () => {
-          this.$axios
-            .delete("/options/librarysource", { data: { id: option._id } })
-            .then(() => {
-              this.$store.dispatch("refreshLibrarySources");
-              this.$buefy.toast.open({
-                message: `Deleted: ${option.value}`,
-                type: "is-success",
-              });
-            })
-            .catch((err) => {
-              console.error(err);
-              this.$buefy.toast.open({
-                message: `Failed to delete option`,
-                type: "is-danger",
-              });
-            });
-        },
-      });
-    },
-    promptForNewLibrarySelection() {
-      this.$buefy.dialog.prompt({
-        message: `Library Selection`,
-        inputAttrs: {
-          // placeholder: "e.g. jjones",
-          // maxlength: 20
-          minlength: 2,
-        },
-        onConfirm: (value) => {
-          this.$axios
-            .post("/options/libraryselection", { value })
-            .then(() => {
-              this.$store.dispatch("refreshLibrarySelections");
-              this.$buefy.toast.open({
-                message: `Added: ${value}`,
-                type: "is-success",
-              });
-            })
-            .catch((err) => {
-              console.error(err);
-              this.$buefy.toast.open({
-                message: `Failed to save option`,
-                type: "is-danger",
-              });
-            });
-        },
-      });
-    },
-    promptToDeleteLibrarySelection(option) {
-      this.$buefy.dialog.confirm({
-        message: `Delete ${option.value}?`,
-        onConfirm: () => {
-          this.$axios
-            .delete("/options/libraryselection", { data: { id: option._id } })
-            .then(() => {
-              this.$store.dispatch("refreshLibrarySelections");
-              this.$buefy.toast.open({
-                message: `Deleted: ${option.value}`,
-                type: "is-success",
-              });
-            })
-            .catch((err) => {
-              console.error(err);
-              this.$buefy.toast.open({
-                message: `Failed to delete option`,
-                type: "is-danger",
-              });
-            });
-        },
-      });
-    },
-    promptForNewLibraryStrategy() {
-      this.$buefy.dialog.prompt({
-        message: `Library Strategy`,
-        inputAttrs: {
-          minlength: 2,
-        },
-        onConfirm: (value) => {
-          this.$axios
-            .post("/options/librarystrategy", { value })
-            .then(() => {
-              this.$store.dispatch("refreshLibraryStrategies");
-              this.$buefy.toast.open({
-                message: `Added: ${value}`,
-                type: "is-success",
-              });
-            })
-            .catch((err) => {
-              console.error(err);
-              this.$buefy.toast.open({
-                message: `Failed to save option`,
-                type: "is-danger",
-              });
-            });
-        },
-      });
-    },
-    promptToDeleteLibraryStrategy(option) {
-      this.$buefy.dialog.confirm({
-        message: `Delete ${option.value}?`,
-        onConfirm: () => {
-          this.$axios
-            .delete("/options/librarystrategy", { data: { id: option._id } })
-            .then(() => {
-              this.$store.dispatch("refreshLibraryStrategies");
-              this.$buefy.toast.open({
-                message: `Deleted: ${option.value}`,
-                type: "is-success",
-              });
-            })
-            .catch((err) => {
-              console.error(err);
-              this.$buefy.toast.open({
-                message: `Failed to delete option, error: ${err}`,
-                type: "is-danger",
-              });
-            });
-        },
-      });
+
+    async deleteOption(collection, option) {
+      try {
+        const response = await this.$axios.delete(collection.endpoint, {
+          data: { id: option._id },
+        });
+
+        if (isBodyError(response)) {
+          throw response;
+        }
+
+        // A delete that matched nothing is a 404 since BREAKING_CHANGES §4, so
+        // reaching here means a document really was removed. The reload is what
+        // confirms it to the user.
+        const refreshed = await this.$store.dispatch(collection.refresh);
+        this.$buefy.toast.open({
+          message: refreshed
+            ? `Deleted: ${option.value}`
+            : `Deleted: ${option.value} — but the list could not be reloaded. Refresh the page.`,
+          type: refreshed ? "is-success" : "is-warning",
+          duration: refreshed ? 3000 : 6000,
+        });
+      } catch (err) {
+        console.error(
+          `Failed to delete an option from ${collection.endpoint}:`,
+          err
+        );
+        this.$buefy.toast.open({
+          message: getApiErrorMessage(err, {
+            fallback: `Could not delete "${option.value}".`,
+          }),
+          type: "is-danger",
+          duration: 5000,
+        });
+      }
     },
   },
 };
