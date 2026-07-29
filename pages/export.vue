@@ -32,6 +32,9 @@
 </template>
 <script>
 import moment from "moment";
+import { isEnaAdmin } from "~/utils/adminUsers";
+import { getApiErrorMessage } from "~/utils/apiError";
+
 export default {
   // components: {  },
   middleware: ["auth"],
@@ -42,11 +45,7 @@ export default {
   },
   computed: {
     showAdminSection() {
-      if (this?.$auth?.$state?.user?.username && process?.env?.ENA_ADMINS) {
-        return process.env.ENA_ADMINS.includes(this.$auth.$state.user.username);
-      } else {
-        return false;
-      }
+      return isEnaAdmin(this?.$auth?.$state?.user?.username);
     },
   },
   methods: {
@@ -69,9 +68,13 @@ export default {
         })
         .catch((err) => {
           this.csvFileLoading = false;
+          console.error("Failed to download accessions CSV:", err);
           this.$buefy.toast.open({
-            message: err,
+            message: getApiErrorMessage(err, {
+              fallback: "Could not download the CSV. Please try again.",
+            }),
             type: "is-danger",
+            duration: 5000,
           });
         });
     },

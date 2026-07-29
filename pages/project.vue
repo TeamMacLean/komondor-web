@@ -141,9 +141,12 @@
 </template>
 
 <script>
-import SampleList from "../components/samples/SampleList";
-import AdditionalFileList from "../components/AdditionalFileList";
-import AddAccessionModal from "../components/AddAccessionModal";
+import SampleList from "../components/samples/SampleList.vue";
+import AdditionalFileList from "../components/AdditionalFileList.vue";
+import AddAccessionModal from "../components/AddAccessionModal.vue";
+import { isEnaAdmin } from "~/utils/adminUsers";
+import { getApiErrorMessage, getApiErrorStatus } from "~/utils/apiError";
+
 export default {
   components: { SampleList, AdditionalFileList, AddAccessionModal },
   middleware: ["auth"],
@@ -178,12 +181,19 @@ export default {
             projectNudgeable: res.data.project.nudgeable,
           };
         } else {
-          error({ statusCode: 501, message: "Project not found" });
+          error({ statusCode: 404, message: "Project not found" });
         }
       })
       .catch((err) => {
-        console.error(err);
-        error({ statusCode: 501, message: "Project not found" });
+        console.error("Failed to load project:", err);
+        // Was a flat 501 "Project not found" for every cause, including an
+        // expired session and an unreachable API.
+        error({
+          statusCode: getApiErrorStatus(err) || 500,
+          message: getApiErrorMessage(err, {
+            fallback: "Could not load this project.",
+          }),
+        });
       });
   },
   computed: {
@@ -197,11 +207,7 @@ export default {
       return "ENA project release date: " + releaseDateText;
     },
     showAddAccession() {
-      if (this?.$auth?.$state?.user?.username && process?.env?.ENA_ADMINS) {
-        return process.env.ENA_ADMINS.includes(this.$auth.$state.user.username);
-      } else {
-        return false;
-      }
+      return isEnaAdmin(this?.$auth?.$state?.user?.username);
     },
     isSendingToEna() {
       const noBlockingOfSendingToEna = !this.project.doNotSendToEna;
@@ -215,10 +221,9 @@ export default {
       if (!this.isSendingToEna) {
         return false;
       }
-      const userIsEnaAdmin = process.env.ENA_ADMINS.includes(
-        this.$auth.$state.user.username
-      );
-      return userIsEnaAdmin;
+      // Unguarded before: an unset ENA_ADMINS threw a TypeError inside a
+      // computed, which takes the whole page render down.
+      return isEnaAdmin(this?.$auth?.$state?.user?.username);
     },
   },
   methods: {

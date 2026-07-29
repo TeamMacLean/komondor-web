@@ -18,7 +18,7 @@
           />
         </div>
 
-        <div class="buttons-wrapper" v-if="!sample.tplexCsv">
+        <div v-if="!sample.tplexCsv" class="buttons-wrapper">
           <b-button
             type="is-secondary"
             icon-left="content-copy"
@@ -169,10 +169,12 @@
 </template>
 
 <script>
-import RunList from "../components/runs/RunList";
-import AdditionalFileList from "../components/AdditionalFileList";
-import AddAccessionModal from "../components/AddAccessionModal";
+import RunList from "../components/runs/RunList.vue";
+import AdditionalFileList from "../components/AdditionalFileList.vue";
+import AddAccessionModal from "../components/AddAccessionModal.vue";
 import Papa from "papaparse"; // Import papaparse
+import { isEnaAdmin } from "~/utils/adminUsers";
+import { getApiErrorMessage, getApiErrorStatus } from "~/utils/apiError";
 
 export default {
   components: { RunList, AdditionalFileList, AddAccessionModal },
@@ -203,12 +205,19 @@ export default {
             additionalFiles: additionalFilesWithVerifiedField,
           };
         } else {
-          error({ statusCode: 501, message: "Sample not found" });
+          error({ statusCode: 404, message: "Sample not found" });
         }
       })
       .catch((err) => {
-        console.error(err);
-        error({ statusCode: 501, message: "Sample not found" });
+        console.error("Failed to load sample:", err);
+        // Was a flat 501 "Sample not found" for every cause, including an
+        // expired session and an unreachable API.
+        error({
+          statusCode: getApiErrorStatus(err) || 500,
+          message: getApiErrorMessage(err, {
+            fallback: "Could not load this sample.",
+          }),
+        });
       });
   },
   data() {
@@ -219,11 +228,7 @@ export default {
   },
   computed: {
     showAddAcession() {
-      if (this?.$auth?.$state?.user?.username && process?.env?.ENA_ADMINS) {
-        return process.env.ENA_ADMINS.includes(this.$auth.$state.user.username);
-      } else {
-        return false;
-      }
+      return isEnaAdmin(this?.$auth?.$state?.user?.username);
     },
     parsedTplexCsv() {
       // Parse TPlex CSV - handle both old (CSV text) and new (JSON array) formats

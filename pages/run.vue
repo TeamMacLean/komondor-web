@@ -146,9 +146,11 @@
 </template>
 
 <script>
-import AdditionalFileList from "../components/AdditionalFileList";
-import ReadList from "../components/ReadList";
-import AddAccessionModal from "../components/AddAccessionModal";
+import AdditionalFileList from "../components/AdditionalFileList.vue";
+import ReadList from "../components/ReadList.vue";
+import AddAccessionModal from "../components/AddAccessionModal.vue";
+import { isEnaAdmin } from "~/utils/adminUsers";
+import { getApiErrorMessage, getApiErrorStatus } from "~/utils/apiError";
 
 export default {
   components: {
@@ -185,7 +187,14 @@ export default {
       };
     } catch (err) {
       console.error("Failed to fetch run data:", err);
-      return error({ statusCode: 500, message: "Could not retrieve run." });
+      // Was a flat 500 for every cause, so a 404 or an expired session read as
+      // a server fault.
+      return error({
+        statusCode: getApiErrorStatus(err) || 500,
+        message: getApiErrorMessage(err, {
+          fallback: "Could not retrieve this run.",
+        }),
+      });
     }
   },
   data() {
@@ -239,9 +248,7 @@ export default {
       return insertSize == null ? "(not set)" : insertSize.toString();
     },
     showAddAcession() {
-      const username = this?.$auth?.$state?.user?.username;
-      const admins = process?.env?.ENA_ADMINS || "";
-      return username && admins.includes(username);
+      return isEnaAdmin(this?.$auth?.$state?.user?.username);
     },
   },
   async created() {

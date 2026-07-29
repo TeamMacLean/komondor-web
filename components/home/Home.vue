@@ -146,7 +146,8 @@
 
 <script>
 import { mapState } from "vuex";
-import NewsCard from "./NewsCard";
+import NewsCard from "./NewsCard.vue";
+import { isEnaAdmin } from "~/utils/adminUsers";
 
 export default {
   components: {
@@ -173,10 +174,9 @@ export default {
     },
 
     isAdmin() {
-      // Safely access nested properties and environment variables
-      const username = this?.$auth?.$state?.user?.username;
-      const enaAdmins = process?.env?.ENA_ADMINS || "";
-      return username && enaAdmins.includes(username);
+      // Named for the box it gates, which links to the ENA CSV export — this is
+      // ENA-admin, not the `isAdmin` token claim behind $store.getters.isAdmin.
+      return isEnaAdmin(this?.$auth?.$state?.user?.username);
     },
 
     filteredProjects() {
