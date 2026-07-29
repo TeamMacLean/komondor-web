@@ -100,6 +100,19 @@ import ThumbnailGenerator from "@uppy/thumbnail-generator";
 import { v4 as uuidv4 } from "uuid";
 import { CHECKSUM_EXTENSIONS } from "~/utils/constants";
 
+/**
+ * Uppy lifecycle tracing.
+ *
+ * Uploads are the flow that goes wrong most often and these traces are worth
+ * keeping, but they are diagnostics rather than something a user should see in
+ * a production console. Genuine failures still go through console.error.
+ */
+const traceUpload = (...args) => {
+  if (process.env.NODE_ENV === "development") {
+    console.log(...args);
+  }
+};
+
 import "@uppy/core/dist/style.css";
 import "@uppy/dashboard/dist/style.css";
 
@@ -306,18 +319,20 @@ export default {
           resume: true,
           limit: 10,
           retryDelays: [0, 1000, 3000, 5000],
-          headers: {
-            "Access-Control-Allow-Origin": "*",
-          },
+          // No `headers` here on purpose. This used to send
+          // "Access-Control-Allow-Origin: *" as a *request* header, which is
+          // meaningless — it is a response header the server sets — and it
+          // forced a CORS preflight on every upload by making the request
+          // non-simple.
         });
 
       // Handle restriction-failed events - we handle restrictions in onBeforeFileAdded
-      this.uppyInstance.on("restriction-failed", (file, error) => {
+      this.uppyInstance.on("restriction-failed", (_file, _error) => {
         // Restrictions are handled in onBeforeFileAdded with custom error messages
       });
 
       this.uppyInstance.on("file-added", (file) => {
-        console.log("file-added event for:", file.name);
+        traceUpload("file-added event for:", file.name);
         this.$nextTick(() => {
           if (this.allowedExtensions && this.allowedExtensions.length > 0) {
             this.validateFileCount();
@@ -326,7 +341,7 @@ export default {
       });
 
       this.uppyInstance.on("file-removed", (file, reason) => {
-        console.log("file-removed event for:", file.name, "reason:", reason);
+        traceUpload("file-removed event for:", file.name, "reason:", reason);
         this.$nextTick(() => {
           if (this.allowedExtensions && this.allowedExtensions.length > 0) {
             this.validateFileCount();
@@ -336,16 +351,16 @@ export default {
 
       this.uppyInstance.on("upload", (data) => {
         const { id, fileIDs } = data;
-        console.log(`Starting upload ${id} for files ${fileIDs}`);
+        traceUpload(`Starting upload ${id} for files ${fileIDs}`);
       });
 
       this.uppyInstance.on("progress", (progress) => {
-        console.log("progress update:", progress);
+        traceUpload("progress update:", progress);
       });
 
       this.uppyInstance.on("upload-progress", (file, progress) => {
         const { bytesUploaded, bytesTotal } = progress;
-        console.log(
+        traceUpload(
           "upload-progress event:" +
             `${Math.round(
               (bytesUploaded / bytesTotal) * 100
@@ -354,7 +369,7 @@ export default {
       });
 
       this.uppyInstance.on("upload-success", (file, response) => {
-        console.log(
+        traceUpload(
           "upload-success for:",
           file && file.name,
           "response URL:",
@@ -365,12 +380,12 @@ export default {
       });
 
       this.uppyInstance.on("complete", (result) => {
-        console.log("completed event, success and fails:");
-        console.log(
+        traceUpload("completed event, success and fails:");
+        traceUpload(
           "successful files:",
           result.successful.map((f) => `${f.name}`)
         );
-        console.log("failed files:", result.failed);
+        traceUpload("failed files:", result.failed);
         // Force re-check of canConfirm
         this.$forceUpdate();
       });
@@ -380,13 +395,13 @@ export default {
       });
 
       this.uppyInstance.on("upload-error", (file, error, response) => {
-        console.log("upload error event! with file:", file);
-        console.log("error message for this:", error);
-        response && console.log("response obj", response);
+        traceUpload("upload error event! with file:", file);
+        traceUpload("error message for this:", error);
+        response && traceUpload("response obj", response);
       });
 
       this.uppyInstance.on("upload-retry", (fileID) => {
-        console.log("upload retried event:", fileID);
+        traceUpload("upload retried event:", fileID);
       });
     },
     validateFileCount() {

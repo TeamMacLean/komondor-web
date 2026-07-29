@@ -9,22 +9,22 @@
                 icon="folder-text-outline"
                 :label="getComputedLabel('projects')"
                 :active="type === 'project'"
-                @click="searchType('project')"
                 :disabled="getDisabledStatus('projects')"
+                @click="searchType('project')"
               ></b-menu-item>
               <b-menu-item
                 icon="flask-outline"
                 :label="getComputedLabel('samples')"
                 :active="type === 'sample'"
-                @click="searchType('sample')"
                 :disabled="getDisabledStatus('samples')"
+                @click="searchType('sample')"
               ></b-menu-item>
               <b-menu-item
                 icon="dna"
                 :label="getComputedLabel('runs')"
                 :active="type === 'run'"
-                @click="searchType('run')"
                 :disabled="getDisabledStatus('runs')"
+                @click="searchType('run')"
               ></b-menu-item>
               <!-- <b-menu-item
                 icon="current-dc"
@@ -38,11 +38,11 @@
         <div class="column is-9">
           <div class="container">
             <b-notification
-              v-if="this.error"
+              v-if="error"
               type="is-danger"
               aria-close-label="Close notification"
               role="alert"
-              >{{ this.error }}</b-notification
+              >{{ error }}</b-notification
             >
             <!-- <b-icon pack="fas" icon="sync-alt" size="is-large" custom-class="fa-spin"></b-icon> -->
             <div v-if="isSearching">
@@ -72,17 +72,17 @@
                 <div v-if="type === 'project'">
                   <ProjectList
                     :projects="results.projects"
-                    showNewButton="false"
+                    show-new-button="false"
                   />
                 </div>
                 <div v-if="type === 'sample'">
                   <SampleList
                     :samples="results.samples"
-                    showNewButton="false"
+                    show-new-button="false"
                   />
                 </div>
                 <div v-if="type === 'run'">
-                  <RunList :runs="results.runs" showNewButton="false" />
+                  <RunList :runs="results.runs" show-new-button="false" />
                 </div>
               </div>
             </div>
@@ -94,19 +94,13 @@
 </template>
 
 <script>
-import ProjectList from "../components/projects/ProjectList";
-import SampleList from "../components/samples/SampleList";
-import RunList from "../components/runs/RunList";
+import ProjectList from "../components/projects/ProjectList.vue";
+import SampleList from "../components/samples/SampleList.vue";
+import RunList from "../components/runs/RunList.vue";
+import { getApiErrorMessage, readErrorBody } from "~/utils/apiError";
 
 export default {
   components: { ProjectList, SampleList, RunList },
-  watch: {
-    "$route.query": "$fetch",
-  },
-  async fetch() {
-    this.query = this.$route.query.query;
-    this.searchAndUpdateType();
-  },
   data() {
     return {
       isSearching: false,
@@ -116,7 +110,8 @@ export default {
       error: null,
     };
   },
-  mounted() {
+  async fetch() {
+    this.query = this.$route.query.query;
     this.searchAndUpdateType();
   },
   computed: {
@@ -149,13 +144,16 @@ export default {
       return result;
     },
   },
+  watch: {
+    "$route.query": "$fetch",
+  },
+  mounted() {
+    this.searchAndUpdateType();
+  },
   methods: {
-    setQuery(query) {
-      this.query = query || "";
-    },
-    setType() {
-      this.type = type || "project";
-    },
+    // `setQuery` and `setType` were removed: neither had a call site, and
+    // `setType` referenced an undefined `type`, so it would have thrown a
+    // ReferenceError if anything had ever called it.
     searchAndUpdateType() {
       this.isSearching = true;
       let url = "/search";
@@ -168,8 +166,20 @@ export default {
         })
         .then((res) => {
           this.isSearching = false;
-          // console.log('asda ', this.results)
-          var parsedObj = JSON.parse(JSON.stringify(res.data.results));
+          this.error = null;
+
+          // The /search/* routes answer 200 with `{results: [], error}` when the
+          // search itself failed, so "no matches" and "it broke" look alike
+          // until you read the body (BREAKING_CHANGES §6).
+          const bodyError = readErrorBody(res.data);
+          if (bodyError) {
+            this.error = bodyError;
+            this.results = {};
+            this.type = null;
+            return;
+          }
+
+          var parsedObj = JSON.parse(JSON.stringify(res.data.results || {}));
 
           this.results = {};
 
@@ -189,7 +199,10 @@ export default {
         })
         .catch((err) => {
           this.isSearching = false;
-          this.error = err;
+          console.error("Search failed:", err);
+          this.error = getApiErrorMessage(err, {
+            fallback: "Search failed. Please try again.",
+          });
         });
     },
     searchType(type) {

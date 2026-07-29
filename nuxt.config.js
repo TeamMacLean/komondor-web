@@ -4,15 +4,10 @@ export default {
   render: {
     ssr: false,
   },
-  http: {
-    // global, so try to avoid
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      // 'Access-Control-Allow-Methods': 'GET, HEAD, POST, OPTIONS, PUT, PATCH, DELETE',
-      // 'Access-Control-Allow-Headers': 'X-Requested-With, Content-Type, Authorization, Origin, Accept',
-      // 'Access-Control-Allow-Credentials': false,
-    },
-  },
+  // An `http` block used to sit here setting "Access-Control-Allow-Origin: *".
+  // It configured @nuxt/http, which this project does not install — the modules
+  // list below uses @nuxtjs/axios — so it never took effect. CORS is decided by
+  // komondor-api's own `cors` middleware.
   env: {
     // baseURL: process.env.HOST,
     API_URL: process.env.API_URL,

@@ -1,16 +1,17 @@
 <template>
   <div>
-    <Header />
+    <SiteHeader />
     <nuxt />
   </div>
 </template>
 
 <script>
-import Header from "~/components/Header.vue";
+// Named SiteHeader because "Header" collides with the reserved HTML element.
+import SiteHeader from "~/components/Header.vue";
 
 export default {
   components: {
-    Header,
+    SiteHeader,
   },
   data() {
     return {

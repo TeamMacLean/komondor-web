@@ -15,8 +15,13 @@
 
             <b-field label="LDAP Groups">
               <div class="list is-hoverable">
+                <!-- Keyed by index, not by value: some groups carry the same
+                     LDAP string twice (two_blades does), and a duplicate key
+                     makes Vue's patching unreliable. This list is display-only
+                     and never reordered, so the index is stable. -->
                 <span
-                  v-for="groupLdap in ldapGroups"
+                  v-for="(groupLdap, index) in ldapGroups"
+                  :key="index"
                   class="list-item message-header has-background-light has-text-info"
                 >
                   {{ groupLdap }}
@@ -102,6 +107,8 @@
 </template>
 
 <script>
+import { getApiErrorMessage } from "~/utils/apiError";
+
 export default {
   props: ["groupToEdit"],
   data() {
@@ -109,23 +116,42 @@ export default {
       newGroupsName: "",
       newGroupLdap: "",
       ldapGroups: [],
+      // Was never declared, so the computed below added it after instantiation
+      // — where Vue 2 cannot make it reactive, and the switch never updated.
+      sendToEna: false,
     };
   },
   computed: {
     isEdit() {
-      if (this.groupToEdit) {
-        this.newGroupsName = this.groupToEdit.name;
-        this.ldapGroups = this.groupToEdit.ldapGroups;
-        this.sendToEna = this.groupToEdit.sendToEna;
-      } else {
-        this.newGroupsName = "";
-        this.ldapGroups = [];
-        this.sendToEna = false;
-      }
-      return this.groupToEdit;
+      return Boolean(this.groupToEdit);
+    },
+  },
+  watch: {
+    groupToEdit: {
+      immediate: true,
+      handler(group) {
+        this.loadForm(group);
+      },
     },
   },
   methods: {
+    /**
+     * Copies the selected group into the form fields.
+     *
+     * This used to live inside the `isEdit` computed. A computed that assigns
+     * to data is re-run by Vue whenever it likes and skipped when its result is
+     * cached, so which fields were showing depended on render timing rather
+     * than on the selected group.
+     */
+    loadForm(group) {
+      this.newGroupsName = group ? group.name || "" : "";
+      // A copy: `addLdapGroup` pushes onto this array, and sharing the store's
+      // own array would edit the group in place even if the user cancels.
+      this.ldapGroups =
+        group && Array.isArray(group.ldapGroups) ? [...group.ldapGroups] : [];
+      this.sendToEna = group ? Boolean(group.sendToEna) : false;
+      this.newGroupLdap = "";
+    },
     handleSubmit() {},
     handleSubmit2() {
       //save vs edit
@@ -138,7 +164,7 @@ export default {
             ldapGroups: this.ldapGroups,
             sendToEna: this.sendToEna,
           })
-          .then((savedGroup) => {
+          .then(() => {
             this.$parent.isGroupModalActive = false;
             this.$store.dispatch("refreshGroups");
             this.$buefy.toast.open({
@@ -147,9 +173,12 @@ export default {
             });
           })
           .catch((err) => {
+            console.error("Group operation failed:", err);
             this.$buefy.dialog.alert({
               title: "Error",
-              message: err.message,
+              // `err.message` on an axios rejection is "Request failed with
+              // status code 500"; the API's own reason is in the body.
+              message: getApiErrorMessage(err),
               type: "is-danger",
             });
           });
@@ -159,7 +188,7 @@ export default {
             name: this.newGroupsName,
             ldapGroups: this.ldapGroups,
           })
-          .then((savedGroup) => {
+          .then(() => {
             this.$parent.isGroupModalActive = false;
             this.$store.dispatch("refreshGroups");
             this.$buefy.toast.open({
@@ -168,18 +197,19 @@ export default {
             });
           })
           .catch((err) => {
+            console.error("Group operation failed:", err);
             this.$buefy.dialog.alert({
               title: "Error",
-              message: err.message,
+              // `err.message` on an axios rejection is "Request failed with
+              // status code 500"; the API's own reason is in the body.
+              message: getApiErrorMessage(err),
               type: "is-danger",
             });
           });
       }
     },
     removeLdapGroup(item) {
-      this.ldapGroups = this.ldapGroups.filter(function (value, index, arr) {
-        return value !== item;
-      });
+      this.ldapGroups = this.ldapGroups.filter((value) => value !== item);
     },
     addLdapGroup() {
       if (this.newGroupLdap) {
@@ -206,9 +236,10 @@ export default {
                 this.$parent.isGroupModalActive = false;
               })
               .catch((err) => {
+                console.error("Group operation failed:", err);
                 this.$buefy.dialog.alert({
                   title: "Error",
-                  message: err.message,
+                  message: getApiErrorMessage(err),
                   type: "is-danger",
                 });
               });
@@ -243,9 +274,10 @@ export default {
                 this.$parent.isGroupModalActive = false;
               })
               .catch((err) => {
+                console.error("Group operation failed:", err);
                 this.$buefy.dialog.alert({
                   title: "Error",
-                  message: err.message,
+                  message: getApiErrorMessage(err),
                   type: "is-danger",
                 });
               });

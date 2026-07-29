@@ -36,10 +36,10 @@
             <div class="fileNamePadding">{{ file.fileName }}</div>
 
             <b-button
-              type="button"
               v-clipboard:copy="getFullFilePath(file.fileName)"
               v-clipboard:success="onCopy"
               v-clipboard:error="onError"
+              type="button"
             >
               Copy HPC filepath
             </b-button>
@@ -72,37 +72,17 @@
 <script>
 import path from "path";
 export default {
+  props: ["files", "parentPath"],
   data() {
     return {
       datastoreRoot: "",
     };
   },
-  mounted() {
-    this.datastoreRoot = process.env.HPC_DATASTORE_ROOT.replace(/['"]+/g, "");
-  },
-  methods: {
-    onCopy: function (e) {
-      alert("You just copied onto your clipboard: " + e.text);
-    },
-    onError: function (e) {
-      alert("Failed to copy texts");
-    },
-    getFullFilePath: function (fileName) {
-      const unixDirConverter = fileName.replace(/\s/g, "\\ ");
-      return path.join(
-        this.datastoreRoot,
-        this.parentPath,
-        "additional",
-        unixDirConverter
-      );
-    },
-  },
-  props: ["files", "parentPath"],
   computed: {
     emailLink() {
       const { path, query } = this.$route;
       const { id } = query;
-      const trimmedPath = path.replace("\/", "");
+      const trimmedPath = path.replace("/", "");
 
       const bodyTextUnformatted =
         "I am looking at a " +
@@ -119,6 +99,31 @@ export default {
         "mailto:george.deeks@tsl.ac.uk?subject=Issue%20with%20missing%20Komondor%20files&body=" +
         bodyText;
       return result;
+    },
+  },
+  mounted() {
+    // Guarded: an unset HPC_DATASTORE_ROOT threw a TypeError in mounted(),
+    // which takes the surrounding page down rather than just this file list.
+    this.datastoreRoot = (process.env.HPC_DATASTORE_ROOT || "").replace(
+      /['"]+/g,
+      ""
+    );
+  },
+  methods: {
+    onCopy: function (e) {
+      alert("You just copied onto your clipboard: " + e.text);
+    },
+    onError: function () {
+      alert("Failed to copy texts");
+    },
+    getFullFilePath: function (fileName) {
+      const unixDirConverter = fileName.replace(/\s/g, "\\ ");
+      return path.join(
+        this.datastoreRoot,
+        this.parentPath,
+        "additional",
+        unixDirConverter
+      );
     },
   },
   // computed: {

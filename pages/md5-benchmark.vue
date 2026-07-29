@@ -34,9 +34,9 @@
 
       <b-button
         type="is-primary"
-        @click="startBenchmark"
         :disabled="!selectedFile || isProcessing"
         :loading="isProcessing"
+        @click="startBenchmark"
       >
         Run Benchmark
       </b-button>
@@ -79,6 +79,9 @@ import SparkMD5 from "spark-md5";
 
 export default {
   name: "MD5BenchmarkPage",
+  // A development-only tool (the nav link is hidden in production), but the
+  // route is reachable by URL, so it is gated like every other page.
+  middleware: "auth",
   data() {
     return {
       selectedFile: null,
