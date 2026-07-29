@@ -97,12 +97,10 @@ export default {
   computed: {
     icon() {
       const placeholder = "https://bulma.io/images/placeholders/256x256.png";
-      if (this.user.username && this.user._doc && this.user._doc._id) {
+      const id = this.userField("_id");
+      if (this.user.username && id) {
         try {
-          var data = new Identicon(
-            this.user.username + this.user._doc._id,
-            256
-          ).toString();
+          var data = new Identicon(this.user.username + id, 256).toString();
           return "data:image/png;base64," + data;
         } catch (err) {
           console.error(err);
@@ -123,8 +121,9 @@ export default {
       return "unknown";
     },
     fullName() {
-      if (this.user && this.user._doc && this.user._doc.name) {
-        return this.user._doc.name;
+      const name = this.userField("name");
+      if (name) {
+        return name;
       }
       if (this.$route.query.username) {
         return this.$route.query.username;
@@ -132,16 +131,10 @@ export default {
       return "Unknown full name";
     },
     email() {
-      if (this.user && this.user._doc && this.user._doc.email) {
-        return this.user._doc.email;
-      }
-      return "Unknown email";
+      return this.userField("email") || "Unknown email";
     },
     company() {
-      if (this.user && this.user._doc && this.user._doc.company) {
-        return this.user._doc.company;
-      }
-      return "Unknown company";
+      return this.userField("company") || "Unknown company";
     },
     projects() {
       if (this.user && this.user.projects && this.user.projects.length) {
@@ -157,6 +150,26 @@ export default {
       } else {
         return this.fullName + "'s";
       }
+    },
+  },
+  methods: {
+    /**
+     * Reads a field from the /user response.
+     *
+     * The API used to spread the mongoose document, which put the real fields
+     * under `_doc` and left mongoose internals at the top level. It now
+     * returns them flat. Both shapes are checked so this page renders
+     * correctly whichever version of komondor-api it is talking to — drop the
+     * `_doc` branch once the hardening release is deployed everywhere.
+     */
+    userField(name) {
+      if (!this.user) {
+        return null;
+      }
+      if (this.user[name]) {
+        return this.user[name];
+      }
+      return (this.user._doc && this.user._doc[name]) || null;
     },
   },
 };
