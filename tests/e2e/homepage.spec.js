@@ -26,8 +26,11 @@ test.describe("Homepage", () => {
     const response = await page.goto("/");
     await page.waitForLoadState("domcontentloaded");
 
-    // Check that the page loaded without server error
-    expect(response?.status()).toBeLessThan(500);
+    // `render.ssr` is false, so every route — valid or not — is served as the
+    // same 200 HTML shell. Asserting on the status cannot fail; assert that the
+    // app actually rendered instead.
+    expect(response?.ok()).toBe(true);
+    await expect(page.locator("#__nuxt")).toBeVisible();
 
     const body = page.locator("body");
     await expect(body).toBeVisible();
@@ -94,8 +97,11 @@ test.describe("Homepage", () => {
   test("should load all critical resources", async ({ page }) => {
     const response = await page.goto("/");
 
-    // Check that the main page loaded successfully (not a server error)
-    expect(response?.status()).toBeLessThan(500);
+    // `render.ssr` is false, so every route — valid or not — is served as the
+    // same 200 HTML shell. Asserting on the status cannot fail; assert that the
+    // app actually rendered instead.
+    expect(response?.ok()).toBe(true);
+    await expect(page.locator("#__nuxt")).toBeVisible();
   });
 
   test("should be accessible", async ({ page }) => {

@@ -54,8 +54,11 @@ test.describe("Navigation", () => {
     const body = page.locator("body");
     await expect(body).toBeVisible({ timeout: 10000 });
 
-    // Response should not be a server error
-    expect(response?.status()).toBeLessThan(500);
+    // `render.ssr` is false, so every route — valid or not — is served as the
+    // same 200 HTML shell. Asserting on the status cannot fail; assert that the
+    // app actually rendered instead.
+    expect(response?.ok()).toBe(true);
+    await expect(page.locator("#__nuxt")).toBeVisible();
   });
 
   test("should handle back navigation", async ({ page }) => {

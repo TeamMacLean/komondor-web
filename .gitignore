@@ -99,3 +99,6 @@ components/projects/ProjectList.vue
 
 # Test results
 test-results
+
+# Playwright's shared authenticated session (tests/e2e/auth.setup.js)
+playwright/.auth/

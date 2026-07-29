@@ -30,8 +30,11 @@ test.describe("Smoke Tests", () => {
     // Navigate to the homepage
     const response = await page.goto("/");
 
-    // Verify we got a successful response
-    expect(response?.status()).toBeLessThan(500);
+    // `render.ssr` is false, so every route — valid or not — is served as the
+    // same 200 HTML shell. Asserting on the status cannot fail; assert that the
+    // app actually rendered instead.
+    expect(response?.ok()).toBe(true);
+    await expect(page.locator("#__nuxt")).toBeVisible();
 
     // Wait for the page to be loaded
     await page.waitForLoadState("domcontentloaded");
@@ -154,8 +157,11 @@ test.describe("Smoke Tests - Basic Navigation", () => {
     const response = await page.goto("/signin");
     await page.waitForLoadState("domcontentloaded");
 
-    // Verify we're on a valid page
-    expect(response?.status()).toBeLessThan(500);
+    // `render.ssr` is false, so every route — valid or not — is served as the
+    // same 200 HTML shell. Asserting on the status cannot fail; assert that the
+    // app actually rendered instead.
+    expect(response?.ok()).toBe(true);
+    await expect(page.locator("#login")).toBeVisible();
 
     const body = page.locator("body");
     await expect(body).toBeVisible();
@@ -165,7 +171,11 @@ test.describe("Smoke Tests - Basic Navigation", () => {
     const response = await page.goto("/help");
     await page.waitForLoadState("domcontentloaded");
 
-    expect(response?.status()).toBeLessThan(500);
+    // `render.ssr` is false, so every route — valid or not — is served as the
+    // same 200 HTML shell. Asserting on the status cannot fail; assert that the
+    // app actually rendered instead.
+    expect(response?.ok()).toBe(true);
+    await expect(page.locator("#__nuxt")).toBeVisible();
 
     const body = page.locator("body");
     await expect(body).toBeVisible();

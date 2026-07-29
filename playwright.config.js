@@ -41,9 +41,21 @@ export default defineConfig({
 
   /* Configure projects for major browsers */
   projects: [
+    /**
+     * Signs in once and saves the session to playwright/.auth/user.json. Specs
+     * that need an authenticated page opt in with
+     * `test.use({ storageState: AUTH_STATE_PATH })` rather than logging in per
+     * test, which was slow and flaky under parallel load.
+     */
+    {
+      name: "setup",
+      testMatch: /auth\.setup\.js/,
+      use: { ...devices["Desktop Chrome"] },
+    },
     {
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
+      dependencies: ["setup"],
     },
 
     // {

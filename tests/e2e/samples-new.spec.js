@@ -1,7 +1,13 @@
 // E2E tests for New Sample page
-// Note: This page requires authentication. Tests verify page behavior
-// whether authenticated or redirected to signin.
+// This page requires authentication. The specs run against the shared session
+// from the `setup` project — without it, the `if (!url.includes(...)) return;`
+// guards below turn every test into a silent pass.
 import { test, expect } from "@playwright/test";
+import { AUTH_STATE_PATH, SIGNED_OUT } from "./helpers";
+
+// Reuse the session established by the `setup` project instead of signing in
+// per test; see tests/e2e/auth.setup.js.
+test.use({ storageState: AUTH_STATE_PATH });
 
 // Helper function to wait for app to load beyond initial loading state
 async function waitForAppReady(page, timeout = 10000) {
@@ -28,8 +34,10 @@ test.describe("New Sample Page", () => {
     const response = await page.goto("/samples/new?projectId=test123");
     await page.waitForLoadState("domcontentloaded");
 
-    // Check that the page loaded without server error
-    expect(response?.status()).toBeLessThan(500);
+    // `render.ssr` is false, so every route is served as the same 200 shell —
+    // a status assertion here cannot fail. Assert the app mounted instead.
+    expect(response?.ok()).toBe(true);
+    await expect(page.locator("#__nuxt")).toBeVisible();
 
     const body = page.locator("body");
     await expect(body).toBeVisible();
@@ -39,8 +47,10 @@ test.describe("New Sample Page", () => {
     const response = await page.goto("/samples/new");
     await page.waitForLoadState("domcontentloaded");
 
-    // Page should load (may show error or redirect)
-    expect(response?.status()).toBeLessThan(500);
+    // `render.ssr` is false, so every route is served as the same 200 shell —
+    // a status assertion here cannot fail. Assert the app mounted instead.
+    expect(response?.ok()).toBe(true);
+    await expect(page.locator("#__nuxt")).toBeVisible();
 
     const body = page.locator("body");
     await expect(body).toBeVisible();
@@ -162,6 +172,9 @@ test.describe("New Sample Page - Error Handling", () => {
 });
 
 test.describe("New Sample Page - Authentication", () => {
+  // This block checks the redirect for a visitor who is not signed in.
+  test.use({ storageState: SIGNED_OUT });
+
   test("should handle authentication redirect if not logged in", async ({
     page,
   }) => {
@@ -176,8 +189,10 @@ test.describe("New Sample Page - Authentication", () => {
 
     expect(isOnSamplesNew || isOnSignin || isOnError || true).toBe(true);
 
-    // Response should be successful or redirect - no server errors
-    expect(response?.status()).toBeLessThan(500);
+    // `render.ssr` is false, so every route is served as the same 200 shell —
+    // a status assertion here cannot fail. Assert the app mounted instead.
+    expect(response?.ok()).toBe(true);
+    await expect(page.locator("#__nuxt")).toBeVisible();
   });
 });
 

@@ -1,11 +1,16 @@
 // E2E tests for New Project page
-// Note: This page requires authentication. Tests verify page behavior
-// whether authenticated or redirected to signin.
+// This page requires authentication. The specs run against the shared session
+// from the `setup` project — without it, the `if (!url.includes(...)) return;`
+// guards below turn every test into a silent pass.
 import { test, expect } from "@playwright/test";
+import { AUTH_STATE_PATH, SIGNED_OUT } from "./helpers";
+
+// Reuse the session established by the `setup` project instead of signing in
+// per test; see tests/e2e/auth.setup.js.
+test.use({ storageState: AUTH_STATE_PATH });
 
 test.describe("New Project Page", () => {
   test.beforeEach(async ({ page }) => {
-    // Navigate to the page before each test
     await page.goto("/projects/new");
     await page.waitForLoadState("domcontentloaded");
   });
@@ -257,19 +262,6 @@ test.describe("New Project Page", () => {
     }
   });
 
-  test("should handle authentication redirect if not logged in", async ({
-    page,
-  }) => {
-    // Either page loads (authenticated) or redirects to login (not authenticated)
-    // Both are valid responses
-    const url = page.url();
-    expect(url).toBeTruthy();
-
-    // Response should be successful or redirect - no server errors
-    const body = page.locator("body");
-    await expect(body).toBeVisible();
-  });
-
   test("should render without critical JavaScript errors", async ({ page }) => {
     const errors = [];
 
@@ -469,5 +461,18 @@ test.describe("New Project Page - Accessibility", () => {
         await expect(submitButton).toBeVisible();
       }
     }
+  });
+});
+
+test.describe("New Project Page - Authentication", () => {
+  // This block checks the redirect for a visitor who is not signed in.
+  test.use({ storageState: SIGNED_OUT });
+
+  test("sends a signed-out visitor to signin", async ({ page }) => {
+    await page.goto("/projects/new");
+    // Previously this asserted only that the URL was truthy and the body was
+    // visible, which holds either way.
+    await expect(page).toHaveURL(/\/signin/, { timeout: 15000 });
+    await expect(page.locator("#login")).toBeVisible();
   });
 });

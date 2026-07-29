@@ -1,7 +1,13 @@
 // E2E tests for form submission functionality across all "new" pages
-// Note: These pages require authentication. Tests verify page behavior
-// whether authenticated or redirected to signin.
+// These pages require authentication. The specs run against the shared session
+// from the `setup` project — without it, the `if (isOnX)` guards below skip
+// every real assertion.
 import { test, expect } from "@playwright/test";
+import { AUTH_STATE_PATH } from "./helpers";
+
+// Reuse the session established by the `setup` project instead of signing in
+// per test; see tests/e2e/auth.setup.js.
+test.use({ storageState: AUTH_STATE_PATH });
 
 test.describe("Form Submissions - New Project", () => {
   test("should load new project page or redirect to signin", async ({
@@ -35,8 +41,10 @@ test.describe("Form Submissions - New Project", () => {
       }
     }
 
-    // Response should be successful
-    expect(response?.status()).toBeLessThan(500);
+    // `render.ssr` is false, so every route is served as the same 200 shell —
+    // a status assertion here cannot fail. Assert the app mounted instead.
+    expect(response?.ok()).toBe(true);
+    await expect(page.locator("#__nuxt")).toBeVisible();
   });
 
   test("should have disabled submit button when form is incomplete", async ({
@@ -202,8 +210,10 @@ test.describe("Form Submissions - New Sample", () => {
     const body = page.locator("body");
     await expect(body).toBeVisible();
 
-    // Response should not be a server error
-    expect(response?.status()).toBeLessThan(500);
+    // `render.ssr` is false, so every route is served as the same 200 shell —
+    // a status assertion here cannot fail. Assert the app mounted instead.
+    expect(response?.ok()).toBe(true);
+    await expect(page.locator("#__nuxt")).toBeVisible();
   });
 
   test("should handle page load gracefully", async ({ page }) => {
@@ -263,8 +273,12 @@ test.describe("Form Submissions - New Run", () => {
     // Page should load (even if it shows an error about missing sample)
     const body = page.locator("body");
     await expect(body).toBeVisible();
+    // `render.ssr` is false, so every route is served as the same 200 shell —
+    // a status assertion here cannot fail. Assert the app mounted instead.
 
-    expect(response?.status()).toBeLessThan(500);
+    expect(response?.ok()).toBe(true);
+
+    await expect(page.locator("#__nuxt")).toBeVisible();
   });
 
   test("should handle missing sample ID gracefully", async ({ page }) => {
@@ -331,8 +345,10 @@ test.describe("Form Submissions - Cross-page validation", () => {
       const body = page.locator("body");
       await expect(body).toBeVisible();
 
-      // Page should load without server errors (may redirect to signin)
-      expect(response?.status()).toBeLessThan(500);
+      // `render.ssr` is false, so every route is served as the same 200 shell —
+      // a status assertion here cannot fail. Assert the app mounted instead.
+      expect(response?.ok()).toBe(true);
+      await expect(page.locator("#__nuxt")).toBeVisible();
     }
   });
 
