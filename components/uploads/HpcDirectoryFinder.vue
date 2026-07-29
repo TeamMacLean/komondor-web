@@ -60,18 +60,18 @@
     <div class="buttons">
       <b-button
         v-if="!filesFound"
-        @click="findFiles"
         :loading="isFinding"
         :disabled="!directoryName || disabled"
         type="is-primary"
+        @click="findFiles"
       >
         Find Files
       </b-button>
       <b-button
         v-if="filesFound"
-        @click="resetAndClear"
         type="is-warning"
         icon-left="refresh"
+        @click="resetAndClear"
       >
         Start Over
       </b-button>
@@ -81,7 +81,11 @@
       <div class="content">
         <p>
           <b-icon icon="alert-circle-outline" size="is-small"></b-icon>
-          <strong>Error:</strong> <span v-html="errorMessage"></span>
+          <strong>Error:</strong> <span>{{ error }}</span>
+        </p>
+        <p v-if="errorIsFromServer" class="mt-2">
+          If you believe this is incorrect, please contact
+          <a href="mailto:george.deeks@tsl.ac.uk">george.deeks@tsl.ac.uk</a>.
         </p>
         <div
           v-if="invalidFiles.length > 0"
@@ -152,6 +156,7 @@
 <script>
 import { CHECKSUM_EXTENSIONS } from "~/utils/constants";
 import { getMatchingExtension } from "~/utils/validators";
+import { describeDirectoryError, isBodyError } from "~/utils/apiError";
 
 export default {
   name: "HpcDirectoryFinder",
@@ -184,6 +189,9 @@ export default {
       filesFound: false,
       foundFiles: [],
       error: null,
+      // Only server-side failures are worth reporting to an admin; a wrong file
+      // extension is the user's to fix.
+      errorIsFromServer: false,
       invalidFiles: [],
       allFilesFromServer: [],
     };
@@ -215,18 +223,39 @@ export default {
         return "Single-end library: Must have at least 1 file (excluding checksum files).";
       }
     },
-    errorMessage() {
-      if (!this.error) return "";
-      if (this.error.includes('<a href="mailto:')) {
-        return this.error;
-      }
-      return this.error.replace(
-        /george\.deeks@tsl\.ac\.uk/g,
-        '<a href="mailto:george.deeks@tsl.ac.uk">george.deeks@tsl.ac.uk</a>'
-      );
-    },
     selectableFileCount() {
       return this.foundFiles.filter((f) => !this.isChecksumFile(f.name)).length;
+    },
+  },
+  watch: {
+    sampleId: {
+      immediate: true,
+      handler() {
+        this.resetAndClear();
+      },
+    },
+    paired() {
+      // If files were found, re-validate count
+      if (this.filesFound) {
+        const countValidation = this.validateFileCount(this.foundFiles);
+        if (!countValidation.valid) {
+          this.error = countValidation.message;
+          this.filesFound = false;
+          this.$emit("files-found", [], "");
+        }
+      }
+    },
+    allowedExtensions() {
+      // If allowed extensions change, reset
+      if (this.filesFound) {
+        this.$buefy.toast.open({
+          message:
+            "Library type changed. Please click 'Find Files' again to re-validate.",
+          type: "is-info",
+          duration: 4000,
+        });
+        this.resetState();
+      }
     },
   },
   methods: {
@@ -234,9 +263,15 @@ export default {
       this.foundFiles = [];
       this.filesFound = false;
       this.error = null;
+      this.errorIsFromServer = false;
       this.invalidFiles = [];
       this.allFilesFromServer = [];
       this.$emit("files-found", [], "");
+    },
+    /** Reports a failure that came back from the API. */
+    setServerError(error) {
+      this.error = describeDirectoryError(error, this.fullDirectoryPath);
+      this.errorIsFromServer = true;
     },
     resetAndClear() {
       this.directoryName = "";
@@ -283,27 +318,15 @@ export default {
       this.resetState();
       this.isFinding = true;
       try {
-        const response = await this.$axios.get(
-          `/directory-files?targetDirectoryName=${encodeURIComponent(
-            this.directoryName
-          )}`
-        );
+        const response = await this.$axios.get("/directory-files", {
+          params: { targetDirectoryName: this.directoryName },
+        });
 
-        if (response.data.error) {
-          let errorMessage = "";
-          if (response.data.error === "Issue reading target directory") {
-            errorMessage = `Cannot access directory: The path "${this.fullDirectoryPath}" could not be read.`;
-          } else if (response.data.error === "Directory does not exist") {
-            errorMessage = `Directory not found: The path "${this.fullDirectoryPath}" does not exist.`;
-          } else if (
-            response.data.error === "No files found in target directory"
-          ) {
-            errorMessage = `Empty directory: The directory "${this.fullDirectoryPath}" exists but contains no files.`;
-          } else {
-            errorMessage = `Error: ${response.data.error}`;
-          }
-          errorMessage += ` If you believe this is incorrect, please contact george.deeks@tsl.ac.uk`;
-          this.error = errorMessage;
+        // `/directory-files` answers 200 with `{error}` for an unreadable,
+        // missing or empty directory, and throws only for a rejected path or a
+        // dead connection. Both routes end up at `setServerError`.
+        if (isBodyError(response)) {
+          this.setServerError(response);
           this.isFinding = false;
           return;
         }
@@ -354,10 +377,7 @@ export default {
         this.$emit("files-found", this.foundFiles, this.directoryName);
       } catch (e) {
         console.error("Error finding HPC files:", e);
-        this.error =
-          e.response?.data?.error ||
-          e.message ||
-          "An unexpected error occurred.";
+        this.setServerError(e);
       } finally {
         this.isFinding = false;
       }
@@ -365,37 +385,6 @@ export default {
     // Public method to clear state (called by parent)
     clear() {
       this.resetAndClear();
-    },
-  },
-  watch: {
-    sampleId: {
-      immediate: true,
-      handler() {
-        this.resetAndClear();
-      },
-    },
-    paired() {
-      // If files were found, re-validate count
-      if (this.filesFound) {
-        const countValidation = this.validateFileCount(this.foundFiles);
-        if (!countValidation.valid) {
-          this.error = countValidation.message;
-          this.filesFound = false;
-          this.$emit("files-found", [], "");
-        }
-      }
-    },
-    allowedExtensions() {
-      // If allowed extensions change, reset
-      if (this.filesFound) {
-        this.$buefy.toast.open({
-          message:
-            "Library type changed. Please click 'Find Files' again to re-validate.",
-          type: "is-info",
-          duration: 4000,
-        });
-        this.resetState();
-      }
     },
   },
 };
