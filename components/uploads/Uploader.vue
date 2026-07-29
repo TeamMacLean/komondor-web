@@ -474,6 +474,27 @@ export default {
         });
       }
     },
+    /**
+     * Whether every added file has finished uploading.
+     *
+     * pages/projects/new.vue and pages/samples/new.vue both gate submission on
+     * this, guarded with `typeof ... === "function"` and falling back to `true`.
+     * The method did not exist, so that fallback always won and the "All file
+     * uploads must be complete or cancelled" requirement was never enforced —
+     * a form could be submitted with a large additional file still in flight,
+     * sending the API an entry with no uploadName.
+     *
+     * Unlike `canConfirm`, no files at all counts as complete: additional files
+     * are optional on both of those pages.
+     */
+    isUploadComplete() {
+      if (!this.uppyInstance) {
+        return true;
+      }
+      return this.uppyInstance
+        .getFiles()
+        .every((f) => f.progress && f.progress.uploadComplete);
+    },
     // Public method to check if files are confirmed
     isConfirmed() {
       return this.confirmed;
