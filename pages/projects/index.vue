@@ -3,7 +3,7 @@
     <div class="container">
       <h1 class="title">{{ pageTitle }}</h1>
 
-      <ProjectList showNewButton="true" />
+      <ProjectList show-new-button="true" />
     </div>
   </div>
 </template>
@@ -12,10 +12,10 @@
 import ProjectList from "~/components/projects/ProjectList.vue";
 
 export default {
-  middleware: "auth",
   components: {
     ProjectList,
   },
+  middleware: "auth",
   fetch({ store }) {
     return Promise.all([
       store.dispatch("refreshProjects"),

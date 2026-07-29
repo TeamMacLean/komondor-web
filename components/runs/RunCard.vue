@@ -3,7 +3,7 @@
     <div class="card-content">
       <div>
         <b-tooltip
-          v-if="this.run.name.length > 40"
+          v-if="run.name.length > 40"
           position="is-bottom"
           :label="multilinedLabel"
           multilined
@@ -25,7 +25,7 @@
             :to="{ name: 'run', query: { id: run._id } }"
             class="title is-5"
           >
-            <span class="truncate">{{ this.run.name }}</span>
+            <span class="truncate">{{ run.name }}</span>
           </nuxt-link>
         </p>
       </div>

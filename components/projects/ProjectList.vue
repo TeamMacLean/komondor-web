@@ -3,20 +3,20 @@
     <div class="field is-grouped">
       <p class="control is-expanded is-hidden-mobile">
         <input
+          v-model="filterText"
           class="input"
           type="text"
           placeholder="Filter by name"
-          v-model="filterText"
         />
       </p>
       <div class="control">
         <div class="select">
-          <b-select placeholder="Filter by group" v-model="groupFilter">
-            <option :value="-1" :key="-1">All</option>
+          <b-select v-model="groupFilter" placeholder="Filter by group">
+            <option :key="-1" :value="-1">All</option>
             <option
               v-for="group in $store.state.groups"
-              :value="group._id"
               :key="group._id"
+              :value="group._id"
             >
               {{ group.name }}
             </option>
@@ -25,25 +25,25 @@
       </div>
       <div class="control">
         <div class="select">
-          <b-select placeholder="Sort by" v-model="sortBy">
+          <b-select v-model="sortBy" placeholder="Sort by">
             <option :value="0">Date</option>
             <option :value="1">Name</option>
           </b-select>
         </div>
       </div>
-      <p class="control" v-if="showNewButton">
+      <p v-if="showNewButton" class="control">
         <nuxt-link to="/projects/new" class="button is-success">New</nuxt-link>
       </p>
     </div>
     <div
-      class="columns"
       v-for="i in Math.ceil(filteredProjects.length / 2)"
       :key="i"
+      class="columns"
     >
       <div
-        class="column is-6"
         v-for="(project, index) in filteredProjects.slice((i - 1) * 2, i * 2)"
         :key="index"
+        class="column is-6"
       >
         <ProjectCard :project="project" />
       </div>

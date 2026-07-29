@@ -3,7 +3,7 @@
     <div class="card-content">
       <div>
         <b-tooltip
-          v-if="this.sample.name && this.sample.name.length > 40"
+          v-if="sample.name && sample.name.length > 40"
           position="is-bottom"
           :label="multilinedLabel"
           multilined
