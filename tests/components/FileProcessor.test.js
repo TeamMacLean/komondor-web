@@ -770,10 +770,11 @@ describe("FileProcessor.vue", () => {
   describe("validateChecksums — HPC flow", () => {
     const validMd5 = "d41d8cd98f00b204e9800998ecf8427e";
 
-    it("sets status to 'valid' when API returns matching MD5", async () => {
-      const mockAxiosPost = vi.fn().mockResolvedValue({
-        data: { calculatedMd5: validMd5 },
-      });
+    it("bypasses the API check and sets status to 'valid' immediately", async () => {
+      // The old behaviour called the API, but this hung the proxy on large files.
+      // Now it trusts the format validation on the frontend and defers actual
+      // checking to a background job.
+      const mockAxiosPost = vi.fn().mockRejectedValue(new Error("Should not be called"));
 
       wrapper = createWrapper(
         {
@@ -797,132 +798,11 @@ describe("FileProcessor.vue", () => {
       await wrapper.vm.validateChecksums();
       await flushPromises();
 
-      expect(mockAxiosPost).toHaveBeenCalledWith(
-        "/directory-files/verify-md5",
-        {
-          directoryName: "/data/run001",
-          fileName: "sample.fq.gz",
-          expectedMd5: validMd5,
-        }
-      );
+      expect(mockAxiosPost).not.toHaveBeenCalled();
 
       const status = wrapper.vm.fileValidationStatus["sample.fq.gz"];
       expect(status.status).toBe("valid");
-    });
-
-    it("sets status to 'invalid' when API returns different MD5", async () => {
-      const differentMd5 = "aaaabbbbccccddddeeeeffffaaaabbbb";
-      const mockAxiosPost = vi.fn().mockResolvedValue({
-        data: { calculatedMd5: differentMd5 },
-      });
-
-      wrapper = createWrapper(
-        {
-          files: [{ name: "sample.fq.gz" }],
-          source: "hpc-mv",
-          directoryName: "/data/run001",
-        },
-        {
-          mocks: {
-            $buefy: { toast: { open: vi.fn() }, dialog: { alert: vi.fn() } },
-            $axios: { post: mockAxiosPost },
-          },
-        }
-      );
-
-      wrapper.vm.selectedFileNames = ["sample.fq.gz"];
-      wrapper.vm.$set(wrapper.vm.fileMd5Inputs, "sample.fq.gz", validMd5);
-      await wrapper.vm.$nextTick();
-
-      await wrapper.vm.validateChecksums();
-      await flushPromises();
-
-      const status = wrapper.vm.fileValidationStatus["sample.fq.gz"];
-      expect(status.status).toBe("invalid");
-      expect(status.message).toContain("Mismatch!");
-    });
-
-    it("sets status to 'error' with API error message", async () => {
-      const mockAxiosPost = vi.fn().mockRejectedValue({
-        response: {
-          data: {
-            error: "File not found on server",
-          },
-        },
-      });
-
-      wrapper = createWrapper(
-        {
-          files: [{ name: "missing.fq.gz" }],
-          source: "hpc-mv",
-          directoryName: "/data/run001",
-        },
-        {
-          mocks: {
-            $buefy: { toast: { open: vi.fn() }, dialog: { alert: vi.fn() } },
-            $axios: { post: mockAxiosPost },
-          },
-        }
-      );
-
-      wrapper.vm.selectedFileNames = ["missing.fq.gz"];
-      wrapper.vm.$set(wrapper.vm.fileMd5Inputs, "missing.fq.gz", validMd5);
-      await wrapper.vm.$nextTick();
-
-      const consoleSpy = vi
-        .spyOn(console, "error")
-        .mockImplementation(() => {});
-
-      await wrapper.vm.validateChecksums();
-      await flushPromises();
-
-      const status = wrapper.vm.fileValidationStatus["missing.fq.gz"];
-      expect(status.status).toBe("error");
-      expect(status.message).toBe("File not found on server");
-
-      consoleSpy.mockRestore();
-    });
-
-    it("appends requestId reference to API error message when present", async () => {
-      const mockAxiosPost = vi.fn().mockRejectedValue({
-        response: {
-          data: {
-            error: "Internal server error",
-            requestId: "req-12345",
-          },
-        },
-      });
-
-      wrapper = createWrapper(
-        {
-          files: [{ name: "sample.fq.gz" }],
-          source: "hpc-mv",
-          directoryName: "/data/run001",
-        },
-        {
-          mocks: {
-            $buefy: { toast: { open: vi.fn() }, dialog: { alert: vi.fn() } },
-            $axios: { post: mockAxiosPost },
-          },
-        }
-      );
-
-      wrapper.vm.selectedFileNames = ["sample.fq.gz"];
-      wrapper.vm.$set(wrapper.vm.fileMd5Inputs, "sample.fq.gz", validMd5);
-      await wrapper.vm.$nextTick();
-
-      const consoleSpy = vi
-        .spyOn(console, "error")
-        .mockImplementation(() => {});
-
-      await wrapper.vm.validateChecksums();
-      await flushPromises();
-
-      const status = wrapper.vm.fileValidationStatus["sample.fq.gz"];
-      expect(status.status).toBe("error");
-      expect(status.message).toBe("Internal server error (Ref: req-12345)");
-
-      consoleSpy.mockRestore();
+      expect(status.message).toContain("background");
     });
   });
 
@@ -1350,89 +1230,6 @@ describe("FileProcessor.vue", () => {
       const status = wrapper.vm.fileValidationStatus["sample.fq.gz"];
       expect(status.status).toBe("error");
       expect(status.message).toBe("Out of memory");
-
-      consoleSpy.mockRestore();
-    });
-
-    it("API error still shows API error message", async () => {
-      const mockAxiosPost = vi.fn().mockRejectedValue({
-        response: {
-          data: {
-            error: "Permission denied for directory",
-          },
-        },
-      });
-
-      wrapper = createWrapper(
-        {
-          files: [{ name: "sample.fq.gz" }],
-          source: "hpc-mv",
-          directoryName: "/restricted/dir",
-        },
-        {
-          mocks: {
-            $buefy: { toast: { open: vi.fn() }, dialog: { alert: vi.fn() } },
-            $axios: { post: mockAxiosPost },
-          },
-        }
-      );
-
-      wrapper.vm.selectedFileNames = ["sample.fq.gz"];
-      wrapper.vm.$set(wrapper.vm.fileMd5Inputs, "sample.fq.gz", validMd5);
-      await wrapper.vm.$nextTick();
-
-      const consoleSpy = vi
-        .spyOn(console, "error")
-        .mockImplementation(() => {});
-
-      await wrapper.vm.validateChecksums();
-      await flushPromises();
-
-      const status = wrapper.vm.fileValidationStatus["sample.fq.gz"];
-      expect(status.status).toBe("error");
-      expect(status.message).toBe("Permission denied for directory");
-
-      consoleSpy.mockRestore();
-    });
-
-    it("API error with requestId appends reference to message", async () => {
-      const mockAxiosPost = vi.fn().mockRejectedValue({
-        response: {
-          data: {
-            error: "Timeout reading file",
-            requestId: "abc-789",
-          },
-        },
-      });
-
-      wrapper = createWrapper(
-        {
-          files: [{ name: "sample.fq.gz" }],
-          source: "hpc-mv",
-          directoryName: "/data/run",
-        },
-        {
-          mocks: {
-            $buefy: { toast: { open: vi.fn() }, dialog: { alert: vi.fn() } },
-            $axios: { post: mockAxiosPost },
-          },
-        }
-      );
-
-      wrapper.vm.selectedFileNames = ["sample.fq.gz"];
-      wrapper.vm.$set(wrapper.vm.fileMd5Inputs, "sample.fq.gz", validMd5);
-      await wrapper.vm.$nextTick();
-
-      const consoleSpy = vi
-        .spyOn(console, "error")
-        .mockImplementation(() => {});
-
-      await wrapper.vm.validateChecksums();
-      await flushPromises();
-
-      const status = wrapper.vm.fileValidationStatus["sample.fq.gz"];
-      expect(status.status).toBe("error");
-      expect(status.message).toBe("Timeout reading file (Ref: abc-789)");
 
       consoleSpy.mockRestore();
     });

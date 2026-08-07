@@ -5,6 +5,15 @@
         <div class="title-wrapper">
           <div class="is-flex is-align-items-center">
             <h1 class="title mb-0">{{ run.name }}</h1>
+            <b-tag
+              v-if="md5Status.show"
+              :type="md5Status.type"
+              size="is-medium"
+              class="ml-3"
+            >
+              <b-icon :icon="md5Status.icon" size="is-small" class="mr-1"></b-icon>
+              {{ md5Status.text }}
+            </b-tag>
           </div>
           <AddAccessionModal
             v-if="showAddAcession"
@@ -243,6 +252,37 @@ export default {
           };
       }
     },
+    md5Status() {
+      if (!this.run || !this.run.md5VerificationStatus) {
+        return { show: false };
+      }
+      switch (this.run.md5VerificationStatus) {
+        case "pending":
+        case "in_progress":
+          return {
+            show: true,
+            text: "Verifying Checksums...",
+            type: "is-warning",
+            icon: "clock-outline",
+          };
+        case "failed":
+          return {
+            show: true,
+            text: "Checksum Verification Failed",
+            type: "is-danger",
+            icon: "alert-circle",
+          };
+        case "complete":
+          return {
+            show: true,
+            text: "Checksums Verified",
+            type: "is-success",
+            icon: "check-circle",
+          };
+        default:
+          return { show: false };
+      }
+    },
     insertSizeString() {
       const insertSize = this.run.insertSize;
       return insertSize == null ? "(not set)" : insertSize.toString();
@@ -256,7 +296,7 @@ export default {
     await this.$store.dispatch("refreshOptions");
   },
   mounted() {
-    if (this.run && this.run.status === "pending") {
+    if (this.run && (this.run.status === "pending" || this.run.md5VerificationStatus === "pending" || this.run.md5VerificationStatus === "in_progress")) {
       this.startPolling();
     }
   },
@@ -291,13 +331,32 @@ export default {
           params: { id: this.run._id },
         });
         const updatedRun = response.data.run;
-        if (updatedRun.status !== "pending") {
-          this.run = updatedRun;
-          this.stopPolling();
+        
+        const wasPending = this.run.status === "pending";
+        const wasMd5Pending = this.run.md5VerificationStatus === "pending" || this.run.md5VerificationStatus === "in_progress";
+        
+        this.run = updatedRun;
+
+        const isNowComplete = updatedRun.status !== "pending";
+        const isMd5NowComplete = updatedRun.md5VerificationStatus === "complete" || updatedRun.md5VerificationStatus === "failed";
+
+        if (wasPending && isNowComplete) {
           this.$buefy.toast.open({
-            message: `Run status updated to: ${updatedRun.status}`,
-            type: "is-success",
+            message: `Run file processing updated to: ${updatedRun.status}`,
+            type: updatedRun.status === "complete" ? "is-success" : "is-danger",
           });
+        }
+        
+        if (wasMd5Pending && isMd5NowComplete) {
+          this.$buefy.toast.open({
+            message: `Run checksum verification updated to: ${updatedRun.md5VerificationStatus}`,
+            type: updatedRun.md5VerificationStatus === "complete" ? "is-success" : "is-danger",
+          });
+        }
+
+        // Only stop polling when BOTH operations are finished (if they apply)
+        if (isNowComplete && isMd5NowComplete) {
+          this.stopPolling();
         }
       } catch (err) {
         console.error("Polling error:", err);
