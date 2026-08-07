@@ -309,14 +309,15 @@ export default {
         });
         const clonedSample = data.sample;
         if (clonedSample) {
-          this.sample.name = `${clonedSample.name || ""}_clone`;
+          this.sample.name = ""; // Leave blank so user is forced to enter a unique name
           this.sample.scientificName = clonedSample.scientificName || "";
           this.sample.commonName = clonedSample.commonName || "";
           this.sample.ncbi = clonedSample.ncbi || null;
           this.sample.conditions = clonedSample.conditions || "";
           this.$buefy.toast.open({
-            message: "Form pre-filled from cloned sample.",
+            message: "Form pre-filled from cloned sample. Please enter a new Sample Name.",
             type: "is-info",
+            duration: 5000,
           });
         }
       } catch (err) {

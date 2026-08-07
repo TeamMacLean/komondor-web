@@ -656,7 +656,7 @@ describe("NewSample.vue", () => {
         expect(wrapper.vm.$axios.get).toHaveBeenCalledWith("/sample", {
           params: { id: "cloned123" },
         });
-        expect(wrapper.vm.sample.name).toBe("Original Sample_clone");
+        expect(wrapper.vm.sample.name).toBe("");
         expect(wrapper.vm.sample.scientificName).toBe("Canis lupus");
         expect(wrapper.vm.sample.commonName).toBe("Wolf");
         expect(wrapper.vm.sample.ncbi).toBe(9612);
@@ -664,8 +664,9 @@ describe("NewSample.vue", () => {
           "Wild habitat conditions with natural prey availability"
         );
         expect(wrapper.vm.$buefy.toast.open).toHaveBeenCalledWith({
-          message: "Form pre-filled from cloned sample.",
+          message: "Form pre-filled from cloned sample. Please enter a new Sample Name.",
           type: "is-info",
+          duration: 5000,
         });
       });
 

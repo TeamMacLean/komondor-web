@@ -481,7 +481,7 @@ export default {
         });
         const clonedRun = data.run;
         if (clonedRun) {
-          this.run.name = `${clonedRun.name || ""}_clone`;
+          this.run.name = ""; // Leave blank so user is forced to enter a unique name
           this.run.sequencingProvider = clonedRun.sequencingProvider || "";
           this.run.libraryType = clonedRun.libraryType || null;
           this.run.sequencingTechnology =
@@ -491,8 +491,9 @@ export default {
           this.run.libraryStrategy = clonedRun.libraryStrategy || null;
           this.run.insertSize = clonedRun.insertSize || null;
           this.$buefy.toast.open({
-            message: "Form pre-filled from cloned run.",
+            message: "Form pre-filled from cloned run. Please enter a new Run Name.",
             type: "is-info",
+            duration: 5000,
           });
         }
       } catch (err) {

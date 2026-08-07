@@ -170,7 +170,7 @@ it("should fetch cloned sample data and populate form", async () => {
     .mockResolvedValueOnce({ data: clonedSampleData });
   await wrapper.vm.initializeFromClonedSample("cloned123");
   await wrapper.vm.$nextTick();
-  expect(wrapper.vm.sample.name).toBe("Original Sample_clone");
+  expect(wrapper.vm.sample.name).toBe("");
 });
 ```
 
