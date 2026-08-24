@@ -239,12 +239,47 @@ export default {
 }
 
 .sidebar {
-  overflow-y: auto;
   border-right: 1px solid #dbdbdb;
-  position: sticky;
-  top: 52px;
-  height: calc(100vh - 52px);
-  align-self: flex-start;
+}
+
+/* Stick the sidebar only where it sits beside the content — Bulma stacks the
+   columns below the tablet breakpoint, and a full-height sticky column there
+   would push the main content off screen. `top: 0` rather than the navbar
+   height: the navbar is not fixed, so once it scrolls away the sidebar should
+   sit flush with the viewport instead of leaving a gap where it used to be. */
+@media screen and (min-width: 769px) {
+  .sidebar {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    align-self: flex-start;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Pin the title and search field; only the project list scrolls. */
+  .sidebar > .section {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .sidebar .container {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+  }
+
+  #sidebar-projects {
+    /* Positioned so the b-loading overlay covers the list, not the page. */
+    position: relative;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+  }
 }
 
 .fill-height {
