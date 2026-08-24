@@ -8,6 +8,11 @@
     border: 1px solid $text;
     border-radius: 16px;
     padding: 5px 10px 4px;
+    /* Long labels wrap instead of stretching the bubble wider than the
+       viewport, which no amount of repositioning could keep on screen. */
+    max-width: 320px;
+    white-space: normal;
+    overflow-wrap: break-word;
   }
 
   .tooltip-arrow {
