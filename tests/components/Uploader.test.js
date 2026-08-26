@@ -132,6 +132,9 @@ describe("Uploader.vue", () => {
       },
       mocks: {
         $buefy: mockBuefy,
+        $auth: {
+          getToken: vi.fn().mockReturnValue("Bearer test-jwt"),
+        },
         $nuxt: {
           context: {
             store: {
@@ -831,6 +834,43 @@ describe("Uploader.vue", () => {
         expect(wrapper.vm.fileCountError).toBeNull();
         expect(mockCancelAll).toHaveBeenCalled();
       });
+    });
+  });
+
+  describe("tus authentication", () => {
+    // The API requires authentication on every tus request. Without a header
+    // the upload endpoint returns 401 for every POST/PATCH, which is a
+    // complete outage for browser uploads rather than a degraded case.
+    const tusOptions = () => {
+      const call = mockUse.mock.calls.find(
+        (args) => args[1] && typeof args[1].endpoint === "string",
+      );
+      return call && call[1];
+    };
+
+    it("sends the bearer token on every tus request", () => {
+      createWrapper();
+
+      const options = tusOptions();
+      expect(options).toBeTruthy();
+      expect(typeof options.onBeforeRequest).toBe("function");
+
+      const setHeader = vi.fn();
+      options.onBeforeRequest({ setHeader });
+
+      expect(setHeader).toHaveBeenCalledWith("Authorization", "Bearer test-jwt");
+    });
+
+    it("does not set an empty Authorization header when there is no token", () => {
+      // Sending "Authorization: " would be worse than sending nothing: it
+      // forces the preflight and still fails auth.
+      const wrapper = createWrapper();
+      wrapper.vm.$auth.getToken.mockReturnValue(null);
+
+      const setHeader = vi.fn();
+      tusOptions().onBeforeRequest({ setHeader });
+
+      expect(setHeader).not.toHaveBeenCalled();
     });
   });
 });

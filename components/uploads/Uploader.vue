@@ -319,11 +319,24 @@ export default {
           resume: true,
           limit: 10,
           retryDelays: [0, 1000, 3000, 5000],
-          // No `headers` here on purpose. This used to send
+          // The API requires authentication on every tus request (POST, HEAD,
+          // PATCH, DELETE), so without this the upload endpoint returns 401.
+          //
+          // onBeforeRequest, not a static `headers` object: it runs per
+          // request, so a long upload picks up a refreshed token instead of
+          // reusing whichever one happened to be current when Uppy was
+          // constructed. $auth.getToken already includes the "Bearer " prefix.
+          //
+          // A `headers` object here previously sent
           // "Access-Control-Allow-Origin: *" as a *request* header, which is
-          // meaningless — it is a response header the server sets — and it
-          // forced a CORS preflight on every upload by making the request
-          // non-simple.
+          // meaningless — it is a response header the server sets. Authorization
+          // does force a CORS preflight, which the API's cors() answers.
+          onBeforeRequest: (req) => {
+            const token = this.$auth && this.$auth.getToken("local");
+            if (token) {
+              req.setHeader("Authorization", token);
+            }
+          },
         });
 
       // Handle restriction-failed events - we handle restrictions in onBeforeFileAdded
