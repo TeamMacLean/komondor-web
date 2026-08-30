@@ -323,9 +323,11 @@ export default {
           // PATCH, DELETE), so without this the upload endpoint returns 401.
           //
           // onBeforeRequest, not a static `headers` object: it runs per
-          // request, so a long upload picks up a refreshed token instead of
-          // reusing whichever one happened to be current when Uppy was
-          // constructed. $auth.getToken already includes the "Bearer " prefix.
+          // request, so it re-reads the current stored token each time rather
+          // than capturing one when Uppy was constructed. (@nuxtjs/auth's local
+          // scheme has no silent refresh, so a token expiring mid-upload still
+          // 401s — this just avoids pinning a stale one.) $auth.getToken
+          // returns the value with its "Bearer " prefix already applied.
           //
           // A `headers` object here previously sent
           // "Access-Control-Allow-Origin: *" as a *request* header, which is
