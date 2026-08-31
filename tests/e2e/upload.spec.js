@@ -94,7 +94,12 @@ test.describe("Uppy/tus upload", () => {
     const [file] = uploaded.files;
     expect(file.name).toBe("e2e-upload-probe.txt");
     expect(file.progress.uploadComplete).toBe(true);
-    expect(file.uploadURL).toMatch(/\/uploads\/files\/[0-9a-f]{32}$/);
+    // @tus/server (the API's current tus implementation) generates
+    // /uploads/<id> — no /files/ segment. That path used to exist under
+    // tus-node-server, the library the API replaced; this assertion still
+    // expected it and would have passed only against a server nobody runs
+    // any more.
+    expect(file.uploadURL).toMatch(/\/uploads\/[0-9a-f]{32}$/);
     expect(file.uploadName).toMatch(/^[0-9a-f]{32}$/);
     expect(uploaded.complete).toBe(true);
   });
