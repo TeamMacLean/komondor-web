@@ -767,6 +767,80 @@ describe("FileProcessor.vue", () => {
   // -------------------------------------------------------
   // 7. validateChecksums — HPC flow
   // -------------------------------------------------------
+  // -------------------------------------------------------
+  // Cross-repo contract: what this component actually sends the API
+  // -------------------------------------------------------
+  describe("the payload shape komondor-api validates against", () => {
+    // The mirror of __tests__/contract/web-paired-payload.test.js in
+    // komondor-api. That repo spent three audit rounds enforcing a `rowID`
+    // field on paired local uploads and pairing reads by it — a contract this
+    // component has never emitted. The result was first that every paired
+    // local upload landed unpaired, and then that the API rejected this
+    // component's ordinary output with 400.
+    //
+    // The API side now pins the exact fixture below. If this component's
+    // serialisation changes, this test goes red here and the API's contract
+    // test goes stale — change both together, or the two repos drift again in
+    // silence, which is precisely how the original bug survived.
+    it("emits reciprocal sibling and paired, and never a rowID", async () => {
+      // confirmSelection reads no file bytes, so no FileReader stub is needed.
+      const blob = new Blob(["data"], { type: "application/octet-stream" });
+      wrapper = createWrapper({
+        files: [
+          { name: "SampleA_R1.fastq.gz", data: blob },
+          { name: "SampleA_R2.fastq.gz", data: blob },
+        ],
+        source: "local-filesystem",
+        paired: true,
+      });
+
+      wrapper.vm.$set(wrapper.vm, "filePairings", [
+        { file1: "SampleA_R1.fastq.gz", file2: "SampleA_R2.fastq.gz" },
+      ]);
+      await wrapper.vm.$nextTick();
+
+      wrapper.vm.confirmSelection();
+
+      const emissions = wrapper.emitted("input");
+      const files = emissions[emissions.length - 1][0];
+
+      expect(files).toHaveLength(2);
+
+      const r1 = files.find((f) => f.name === "SampleA_R1.fastq.gz");
+      const r2 = files.find((f) => f.name === "SampleA_R2.fastq.gz");
+
+      // Reciprocal siblings, both flagged paired.
+      expect(r1.sibling).toBe("SampleA_R2.fastq.gz");
+      expect(r2.sibling).toBe("SampleA_R1.fastq.gz");
+      expect(r1.paired).toBe(true);
+      expect(r2.paired).toBe(true);
+
+      // No rowID, on either. This is the assertion that matters: the API must
+      // not be allowed to require a field this component does not send.
+      expect(r1.rowID).toBeUndefined();
+      expect(r2.rowID).toBeUndefined();
+    });
+
+    it("sends md5 as null, not undefined, when no checksum was typed", async () => {
+      // pages/runs/new.vue posts `processedFiles` straight through, so this
+      // explicit null reaches the API. It rejected a non-string md5, which
+      // 400'd every upload where the user did not type a checksum.
+      const blob = new Blob(["data"], { type: "application/octet-stream" });
+      wrapper = createWrapper({
+        files: [{ name: "SampleA.fastq.gz", data: blob }],
+        source: "local-filesystem",
+      });
+
+      wrapper.vm.confirmSelection();
+
+      const emissions = wrapper.emitted("input");
+      const files = emissions[emissions.length - 1][0];
+
+      expect(files[0].md5).toBeNull();
+      expect("md5" in files[0]).toBe(true);
+    });
+  });
+
   describe("validateChecksums — HPC flow", () => {
     const validMd5 = "d41d8cd98f00b204e9800998ecf8427e";
 
@@ -774,7 +848,9 @@ describe("FileProcessor.vue", () => {
       // The old behaviour called the API, but this hung the proxy on large files.
       // Now it trusts the format validation on the frontend and defers actual
       // checking to a background job.
-      const mockAxiosPost = vi.fn().mockRejectedValue(new Error("Should not be called"));
+      const mockAxiosPost = vi
+        .fn()
+        .mockRejectedValue(new Error("Should not be called"));
 
       wrapper = createWrapper(
         {
