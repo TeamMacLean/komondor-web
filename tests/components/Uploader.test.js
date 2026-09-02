@@ -843,7 +843,7 @@ describe("Uploader.vue", () => {
     // complete outage for browser uploads rather than a degraded case.
     const tusOptions = () => {
       const call = mockUse.mock.calls.find(
-        (args) => args[1] && typeof args[1].endpoint === "string",
+        (args) => args[1] && typeof args[1].endpoint === "string"
       );
       return call && call[1];
     };
@@ -858,7 +858,10 @@ describe("Uploader.vue", () => {
       const setHeader = vi.fn();
       options.onBeforeRequest({ setHeader });
 
-      expect(setHeader).toHaveBeenCalledWith("Authorization", "Bearer test-jwt");
+      expect(setHeader).toHaveBeenCalledWith(
+        "Authorization",
+        "Bearer test-jwt"
+      );
     });
 
     it("does not set an empty Authorization header when there is no token", () => {
