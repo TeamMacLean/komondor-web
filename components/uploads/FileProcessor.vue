@@ -32,7 +32,7 @@
           <b-checkbox
             v-model="selectedFileNames"
             :native-value="file.name"
-            :disabled="validationComplete"
+            :disabled="validationComplete || isValidating"
             @input="onFileSelectionChange(file.name, $event)"
           ></b-checkbox>
         </div>
@@ -86,7 +86,7 @@
         <b-select
           v-model="indexFile"
           placeholder="Select the index file"
-          :disabled="validationComplete"
+          :disabled="validationComplete || isValidating"
           expanded
         >
           <option :value="null">-- Select index file --</option>
@@ -128,7 +128,8 @@
         File Pairing
       </h4>
       <p class="mb-3 has-text-grey">
-        Link paired-end read files together. At least one pairing is required.
+        Link paired-end read files together. Every read file must be assigned to
+        exactly one complete pairing.
         <span v-if="indexed">Files used as index cannot be paired.</span>
       </p>
 
@@ -145,7 +146,7 @@
               <b-select
                 v-model="pairing.file1"
                 placeholder="Select first file"
-                :disabled="validationComplete"
+                :disabled="validationComplete || isValidating"
                 expanded
               >
                 <option :value="null">-- Select file --</option>
@@ -171,7 +172,7 @@
               <b-select
                 v-model="pairing.file2"
                 placeholder="Select second file"
-                :disabled="validationComplete || !pairing.file1"
+                :disabled="validationComplete || isValidating || !pairing.file1"
                 expanded
               >
                 <option :value="null">-- Select file --</option>
@@ -189,7 +190,7 @@
             <b-button
               type="is-danger"
               icon-left="delete"
-              :disabled="validationComplete"
+              :disabled="validationComplete || isValidating"
               @click="removePairing(index)"
             >
             </b-button>
@@ -199,6 +200,9 @@
           <b-icon icon="check" size="is-small"></b-icon>
           Pairing complete
         </p>
+        <p v-else class="help is-danger">
+          Select both files to complete this pairing.
+        </p>
       </div>
 
       <!-- Add pairing button -->
@@ -206,14 +210,17 @@
         v-if="filesAvailableForPairing.length >= 2"
         type="is-info"
         icon-left="plus"
-        :disabled="validationComplete"
+        :disabled="validationComplete || isValidating"
         @click="addPairing"
       >
         Add Pairing
       </b-button>
 
       <p v-if="filePairings.length === 0" class="help is-danger mt-2">
-        At least one file pairing is required for paired library types.
+        Configure a complete pairing for every read file.
+      </p>
+      <p v-else-if="!isPairingValid" class="help is-danger mt-2">
+        Every read file must appear in exactly one complete pairing.
       </p>
       <p v-else-if="isPairingValid" class="help is-success mt-2">
         <b-icon icon="check" size="is-small"></b-icon>
@@ -252,7 +259,7 @@
           >Please enter a valid MD5 checksum for all selected files.</span
         >
         <span v-else-if="paired && !isPairingValid">
-          At least one file pairing is required.</span
+          Complete the pairings so every read file appears exactly once.</span
         >
         <span v-else-if="indexed && !isIndexingValid">
           Please select an index file and ensure there is at least one non-index
@@ -399,7 +406,41 @@ export default {
     },
     isPairingValid() {
       if (!this.paired) return true;
-      return this.filePairings.length > 0;
+
+      const eligibleFileNames = this.selectedNonChecksumFiles
+        .map((file) => file.name)
+        .filter((name) => name !== this.indexFile);
+
+      // Paired libraries cannot contain an unpaired non-index read. Requiring
+      // exactly half as many rows also rejects empty or surplus pairing rows.
+      if (
+        eligibleFileNames.length < 2 ||
+        eligibleFileNames.length % 2 !== 0 ||
+        this.filePairings.length !== eligibleFileNames.length / 2
+      ) {
+        return false;
+      }
+
+      const eligibleFileNameSet = new Set(eligibleFileNames);
+      const pairedFileNames = [];
+
+      for (const pairing of this.filePairings) {
+        if (
+          !pairing.file1 ||
+          !pairing.file2 ||
+          pairing.file1 === pairing.file2 ||
+          !eligibleFileNameSet.has(pairing.file1) ||
+          !eligibleFileNameSet.has(pairing.file2)
+        ) {
+          return false;
+        }
+        pairedFileNames.push(pairing.file1, pairing.file2);
+      }
+
+      return (
+        new Set(pairedFileNames).size === eligibleFileNames.length &&
+        pairedFileNames.length === eligibleFileNames.length
+      );
     },
     isIndexingValid() {
       if (!this.indexed) return true;
@@ -619,14 +660,14 @@ export default {
             // blocking the form submission with a 10-minute HTTP request.
             // The actual file contents will be hashed in a background job
             // by the API after the run is created.
-            
+
             // To pass the local comparison below, just echo back the expected MD5.
             // (The input format was already validated by MD5_REGEX earlier).
             calculatedMd5 = expectedMd5.toLowerCase();
-            
-            // Artificial tiny delay just for UX so the loading spinner flashes 
+
+            // Artificial tiny delay just for UX so the loading spinner flashes
             // and the user sees progress happen.
-            await new Promise(resolve => setTimeout(resolve, 300));
+            await new Promise((resolve) => setTimeout(resolve, 300));
           } else {
             // Client-side validation for local files
             const fileSize = this.formatFileSize(file.data.size);
@@ -642,9 +683,9 @@ export default {
             calculatedMd5.toLowerCase() === expectedMd5.toLowerCase();
 
           if (matches) {
-            const message = 
-              this.source === "hpc-mv" 
-                ? "Format valid. Will be verified in background." 
+            const message =
+              this.source === "hpc-mv"
+                ? "Format valid. Will be verified in background."
                 : `Checksum verified: ${calculatedMd5}`;
 
             this.$set(this.fileValidationStatus, file.name, {
@@ -677,7 +718,11 @@ export default {
 
       this.isValidating = false;
 
-      if (this.allChecksumsValidated) {
+      // The local checksum pass can run for minutes. Fail closed if file,
+      // pairing, or index state changed after validation started; otherwise
+      // confirmSelection would serialize relationships that were never part of
+      // the entry checks above.
+      if (this.allChecksumsValidated && this.canStartValidation) {
         this.confirmSelection();
         this.$buefy.toast.open({
           message:
@@ -741,12 +786,12 @@ export default {
     },
     confirmSelection() {
       // Build sibling map for paired files
-      const siblingMap = {};
+      const siblingMap = new Map();
       if (this.paired) {
         this.filePairings.forEach((pairing) => {
           if (pairing.file1 && pairing.file2) {
-            siblingMap[pairing.file1] = pairing.file2;
-            siblingMap[pairing.file2] = pairing.file1;
+            siblingMap.set(pairing.file1, pairing.file2);
+            siblingMap.set(pairing.file2, pairing.file1);
           }
         });
       }
@@ -769,8 +814,8 @@ export default {
         }
 
         // Add pairing info
-        if (this.paired && siblingMap[file.name]) {
-          fileData.sibling = siblingMap[file.name];
+        if (this.paired && siblingMap.has(file.name)) {
+          fileData.sibling = siblingMap.get(file.name);
           fileData.paired = true;
         } else if (this.paired) {
           fileData.paired = false;

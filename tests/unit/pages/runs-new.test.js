@@ -138,6 +138,7 @@ describe("NewRun.vue", () => {
       processedFiles: [],
       consent: false,
       isSubmitting: false,
+      additionalUploadsComplete: true,
       ...dataOverrides,
     };
 
@@ -683,6 +684,26 @@ describe("NewRun.vue", () => {
     });
 
     describe("submitForm", () => {
+      const validSubmissionData = () => ({
+        consent: true,
+        uploadMethod: "hpc-mv",
+        hpcDirectoryName: "test-dir",
+        processedFiles: [
+          { name: "file1.fq.gz", md5: "abc123", relativePath: "test-dir" },
+          { name: "file2.fq.gz", md5: "def456", relativePath: "test-dir" },
+        ],
+        run: {
+          name: "Valid Run",
+          sequencingProvider: "Novogene",
+          libraryType: "Paired-end",
+          sequencingTechnology: "Illumina",
+          librarySource: "GENOMIC",
+          librarySelection: "RANDOM",
+          libraryStrategy: "WGS",
+          insertSize: null,
+        },
+      });
+
       it("should show warning when form invalid", async () => {
         wrapper = createWrapper({
           consent: false,
@@ -695,6 +716,68 @@ describe("NewRun.vue", () => {
           type: "is-warning",
         });
         expect(mockAxios.post).not.toHaveBeenCalled();
+      });
+
+      it("does not submit an in-flight additional upload even from a stale enabled state", async () => {
+        wrapper = createWrapper(validSubmissionData());
+
+        // Prime the computed property while the mounted uploader reports no
+        // files, then replace the ref without changing any reactive form data.
+        expect(wrapper.vm.canSubmit).toBe(true);
+        wrapper.vm.$refs.additionalUploader = {
+          isUploadComplete: vi.fn().mockReturnValue(false),
+          getFiles: vi.fn().mockReturnValue([
+            {
+              name: "notes.pdf",
+              progress: { uploadComplete: false },
+            },
+          ]),
+        };
+
+        await wrapper.vm.submitForm();
+
+        expect(mockAxios.post).not.toHaveBeenCalled();
+        expect(mockBuefy.toast.open).toHaveBeenCalledWith({
+          message: "Please correct the errors before submitting.",
+          type: "is-warning",
+        });
+      });
+
+      it("submits after an additional upload is complete", async () => {
+        wrapper = createWrapper(validSubmissionData());
+        const completedFile = {
+          name: "notes.pdf",
+          uploadName: "server-upload-id",
+          progress: { uploadComplete: true },
+        };
+        wrapper.vm.$refs.additionalUploader = {
+          isUploadComplete: vi.fn().mockReturnValue(true),
+          getFiles: vi.fn().mockReturnValue([completedFile]),
+        };
+        wrapper.vm.handleAdditionalUploadStatusChange(true);
+
+        await wrapper.vm.submitForm();
+
+        expect(mockAxios.post).toHaveBeenCalledWith(
+          "/runs/new",
+          expect.objectContaining({ additionalFiles: [completedFile] })
+        );
+      });
+
+      it("submits when the optional additional uploader has no files", async () => {
+        wrapper = createWrapper(validSubmissionData());
+        wrapper.vm.$refs.additionalUploader = {
+          isUploadComplete: vi.fn().mockReturnValue(true),
+          getFiles: vi.fn().mockReturnValue([]),
+        };
+        wrapper.vm.handleAdditionalUploadStatusChange(true);
+
+        await wrapper.vm.submitForm();
+
+        expect(mockAxios.post).toHaveBeenCalledWith(
+          "/runs/new",
+          expect.objectContaining({ additionalFiles: [] })
+        );
       });
 
       it("should set isSubmitting to true during submission", async () => {

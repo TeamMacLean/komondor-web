@@ -348,6 +348,7 @@ export default {
 
       this.uppyInstance.on("file-added", (file) => {
         traceUpload("file-added event for:", file.name);
+        this.notifyUploadStatusChange();
         this.$nextTick(() => {
           if (this.allowedExtensions && this.allowedExtensions.length > 0) {
             this.validateFileCount();
@@ -357,6 +358,7 @@ export default {
 
       this.uppyInstance.on("file-removed", (file, reason) => {
         traceUpload("file-removed event for:", file.name, "reason:", reason);
+        this.notifyUploadStatusChange();
         this.$nextTick(() => {
           if (this.allowedExtensions && this.allowedExtensions.length > 0) {
             this.validateFileCount();
@@ -390,6 +392,7 @@ export default {
           "response URL:",
           response && response.uploadURL
         );
+        this.notifyUploadStatusChange();
         // Force re-check of canConfirm
         this.$forceUpdate();
       });
@@ -401,6 +404,7 @@ export default {
           result.successful.map((f) => `${f.name}`)
         );
         traceUpload("failed files:", result.failed);
+        this.notifyUploadStatusChange();
         // Force re-check of canConfirm
         this.$forceUpdate();
       });
@@ -413,11 +417,22 @@ export default {
         traceUpload("upload error event! with file:", file);
         traceUpload("error message for this:", error);
         response && traceUpload("response obj", response);
+        this.notifyUploadStatusChange();
       });
 
       this.uppyInstance.on("upload-retry", (fileID) => {
         traceUpload("upload retried event:", fileID);
+        this.notifyUploadStatusChange();
       });
+
+      this.notifyUploadStatusChange();
+    },
+    notifyUploadStatusChange() {
+      const isComplete = this.isUploadComplete();
+      this.$emit("upload-status-change", isComplete);
+      if (this.onUploadStatusChange) {
+        this.onUploadStatusChange(isComplete);
+      }
     },
     validateFileCount() {
       const files = this.uppyInstance.getFiles();

@@ -162,6 +162,7 @@ describe("Uploader.vue", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetFiles.mockReturnValue([]);
     mockSetOptions.mockClear();
     capturedOnBeforeFileAdded = null;
     _capturedRestrictions = null;
@@ -662,6 +663,49 @@ describe("Uploader.vue", () => {
   });
 
   describe("Methods", () => {
+    describe("upload status notifications", () => {
+      const handlerFor = (eventName) =>
+        mockOn.mock.calls.find(([name]) => name === eventName)?.[1];
+
+      it("reports no optional files as complete when mounted", () => {
+        const onUploadStatusChange = vi.fn();
+        wrapper = createWrapper({ onUploadStatusChange });
+
+        expect(wrapper.emitted("upload-status-change")).toEqual([[true]]);
+        expect(onUploadStatusChange).toHaveBeenCalledWith(true);
+      });
+
+      it("reports false as soon as an in-flight file is added", () => {
+        const onUploadStatusChange = vi.fn();
+        wrapper = createWrapper({ onUploadStatusChange });
+        onUploadStatusChange.mockClear();
+        mockGetFiles.mockReturnValue([
+          { name: "notes.pdf", progress: { uploadComplete: false } },
+        ]);
+
+        handlerFor("file-added")({ name: "notes.pdf" });
+
+        const events = wrapper.emitted("upload-status-change");
+        expect(events[events.length - 1]).toEqual([false]);
+        expect(onUploadStatusChange).toHaveBeenCalledWith(false);
+      });
+
+      it("reports true when all files have completed", () => {
+        wrapper = createWrapper();
+        mockGetFiles.mockReturnValue([
+          { name: "notes.pdf", progress: { uploadComplete: true } },
+        ]);
+
+        handlerFor("complete")({
+          successful: [{ name: "notes.pdf" }],
+          failed: [],
+        });
+
+        const events = wrapper.emitted("upload-status-change");
+        expect(events[events.length - 1]).toEqual([true]);
+      });
+    });
+
     describe("validateFileCount", () => {
       it("should accept 2+ files for paired library", () => {
         wrapper = createWrapper({

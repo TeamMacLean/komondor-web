@@ -765,41 +765,48 @@ describe("FileProcessor.vue", () => {
   });
 
   // -------------------------------------------------------
-  // 7. validateChecksums — HPC flow
-  // -------------------------------------------------------
-  // -------------------------------------------------------
   // Cross-repo contract: what this component actually sends the API
   // -------------------------------------------------------
   describe("the payload shape komondor-api validates against", () => {
-    // The mirror of __tests__/contract/web-paired-payload.test.js in
-    // komondor-api. That repo spent three audit rounds enforcing a `rowID`
-    // field on paired local uploads and pairing reads by it — a contract this
-    // component has never emitted. The result was first that every paired
-    // local upload landed unpaired, and then that the API rejected this
-    // component's ordinary output with 400.
-    //
-    // The API side now pins the exact fixture below. If this component's
-    // serialisation changes, this test goes red here and the API's contract
-    // test goes stale — change both together, or the two repos drift again in
-    // silence, which is precisely how the original bug survived.
-    it("emits reciprocal sibling and paired, and never a rowID", async () => {
-      // confirmSelection reads no file bytes, so no FileReader stub is needed.
+    const validMd5 = "d41d8cd98f00b204e9800998ecf8427e";
+
+    it("emits a reciprocal pair through the reachable validation workflow", async () => {
       const blob = new Blob(["data"], { type: "application/octet-stream" });
       wrapper = createWrapper({
         files: [
-          { name: "SampleA_R1.fastq.gz", data: blob },
-          { name: "SampleA_R2.fastq.gz", data: blob },
+          {
+            name: "SampleA_R1.fastq.gz",
+            data: blob,
+            uploadName: "upload-r1",
+          },
+          {
+            name: "SampleA_R2.fastq.gz",
+            data: blob,
+            uploadName: "upload-r2",
+          },
         ],
         source: "local-filesystem",
         paired: true,
       });
 
+      vi.spyOn(wrapper.vm, "calculateMd5").mockResolvedValue(validMd5);
+      wrapper.vm.$set(
+        wrapper.vm.fileMd5Inputs,
+        "SampleA_R1.fastq.gz",
+        validMd5
+      );
+      wrapper.vm.$set(
+        wrapper.vm.fileMd5Inputs,
+        "SampleA_R2.fastq.gz",
+        validMd5
+      );
       wrapper.vm.$set(wrapper.vm, "filePairings", [
         { file1: "SampleA_R1.fastq.gz", file2: "SampleA_R2.fastq.gz" },
       ]);
       await wrapper.vm.$nextTick();
 
-      wrapper.vm.confirmSelection();
+      expect(wrapper.vm.canStartValidation).toBe(true);
+      await wrapper.vm.validateChecksums();
 
       const emissions = wrapper.emitted("input");
       const files = emissions[emissions.length - 1][0];
@@ -814,33 +821,143 @@ describe("FileProcessor.vue", () => {
       expect(r2.sibling).toBe("SampleA_R1.fastq.gz");
       expect(r1.paired).toBe(true);
       expect(r2.paired).toBe(true);
+      expect(r1.uploadName).toBe("upload-r1");
+      expect(r2.uploadName).toBe("upload-r2");
+      expect(r1.md5).toBe(validMd5);
+      expect(r2.md5).toBe(validMd5);
 
-      // No rowID, on either. This is the assertion that matters: the API must
-      // not be allowed to require a field this component does not send.
       expect(r1.rowID).toBeUndefined();
       expect(r2.rowID).toBeUndefined();
     });
 
-    it("sends md5 as null, not undefined, when no checksum was typed", async () => {
-      // pages/runs/new.vue posts `processedFiles` straight through, so this
-      // explicit null reaches the API. It rejected a non-string md5, which
-      // 400'd every upload where the user did not type a checksum.
+    it("keeps reciprocal sibling names as strings for special object keys", () => {
+      const blob = new Blob(["data"], { type: "application/octet-stream" });
+      const fileMd5Inputs = Object.create(null);
+      fileMd5Inputs.__proto__ = validMd5;
+      fileMd5Inputs["mate.fq.gz"] = validMd5;
+      const emit = vi.fn();
+      const context = {
+        paired: true,
+        indexed: false,
+        source: "local-filesystem",
+        filePairings: [{ file1: "__proto__", file2: "mate.fq.gz" }],
+        selectedNonChecksumFiles: [
+          { name: "__proto__", data: blob, uploadName: "upload-special" },
+          { name: "mate.fq.gz", data: blob, uploadName: "upload-mate" },
+        ],
+        fileMd5Inputs,
+        fileValidationStatus: Object.create(null),
+        validatedFiles: [],
+        validationComplete: false,
+        $emit: emit,
+      };
+
+      FileProcessor.methods.confirmSelection.call(context);
+
+      const files = emit.mock.calls.find(([event]) => event === "input")[1];
+      const special = files.find((file) => file.name === "__proto__");
+      const mate = files.find((file) => file.name === "mate.fq.gz");
+      expect(special.sibling).toBe("mate.fq.gz");
+      expect(mate.sibling).toBe("__proto__");
+      expect(typeof special.sibling).toBe("string");
+      expect(typeof mate.sibling).toBe("string");
+    });
+
+    it("does not emit a payload when a paired workflow has an incomplete row", async () => {
       const blob = new Blob(["data"], { type: "application/octet-stream" });
       wrapper = createWrapper({
-        files: [{ name: "SampleA.fastq.gz", data: blob }],
+        files: [
+          { name: "SampleA_R1.fastq.gz", data: blob },
+          { name: "SampleA_R2.fastq.gz", data: blob },
+        ],
         source: "local-filesystem",
+        paired: true,
       });
 
-      wrapper.vm.confirmSelection();
+      const calculateMd5 = vi
+        .spyOn(wrapper.vm, "calculateMd5")
+        .mockResolvedValue(validMd5);
+      wrapper.vm.$set(
+        wrapper.vm.fileMd5Inputs,
+        "SampleA_R1.fastq.gz",
+        validMd5
+      );
+      wrapper.vm.$set(
+        wrapper.vm.fileMd5Inputs,
+        "SampleA_R2.fastq.gz",
+        validMd5
+      );
+      wrapper.vm.addPairing();
+      await wrapper.vm.$nextTick();
 
+      expect(wrapper.vm.filePairings).toEqual([{ file1: null, file2: null }]);
+      expect(wrapper.vm.isPairingValid).toBe(false);
+      expect(wrapper.vm.canStartValidation).toBe(false);
+
+      await wrapper.vm.validateChecksums();
+
+      expect(calculateMd5).not.toHaveBeenCalled();
+      expect(wrapper.vm.validationComplete).toBe(false);
       const emissions = wrapper.emitted("input");
-      const files = emissions[emissions.length - 1][0];
+      expect(emissions[emissions.length - 1][0]).toEqual([]);
+    });
 
-      expect(files[0].md5).toBeNull();
-      expect("md5" in files[0]).toBe(true);
+    it("does not emit changed pairing state from an in-flight checksum validation", async () => {
+      const blob = new Blob(["data"], { type: "application/octet-stream" });
+      wrapper = createWrapper({
+        files: [
+          { name: "SampleA_R1.fastq.gz", data: blob },
+          { name: "SampleA_R2.fastq.gz", data: blob },
+        ],
+        source: "local-filesystem",
+        paired: true,
+      });
+
+      wrapper.vm.$set(
+        wrapper.vm.fileMd5Inputs,
+        "SampleA_R1.fastq.gz",
+        validMd5
+      );
+      wrapper.vm.$set(
+        wrapper.vm.fileMd5Inputs,
+        "SampleA_R2.fastq.gz",
+        validMd5
+      );
+      wrapper.vm.$set(wrapper.vm, "filePairings", [
+        { file1: "SampleA_R1.fastq.gz", file2: "SampleA_R2.fastq.gz" },
+      ]);
+
+      let finishFirstHash;
+      const firstHash = new Promise((resolve) => {
+        finishFirstHash = resolve;
+      });
+      vi.spyOn(wrapper.vm, "calculateMd5")
+        .mockImplementationOnce(() => firstHash)
+        .mockResolvedValue(validMd5);
+
+      const validation = wrapper.vm.validateChecksums();
+      await wrapper.vm.$nextTick();
+      expect(wrapper.vm.isValidating).toBe(true);
+
+      // A long local-file hash leaves enough time for a relationship control
+      // to change. The completion boundary must not serialize that invalid
+      // state even if every byte checksum itself succeeds.
+      wrapper.vm.$set(wrapper.vm, "filePairings", [
+        { file1: "SampleA_R1.fastq.gz", file2: null },
+      ]);
+      finishFirstHash(validMd5);
+      await validation;
+
+      expect(wrapper.vm.isPairingValid).toBe(false);
+      expect(wrapper.vm.validationComplete).toBe(false);
+      const emissions = wrapper.emitted("input");
+      expect(emissions[emissions.length - 1][0]).toEqual([]);
     });
   });
 
+  // -------------------------------------------------------
+  // 7. validateChecksums — HPC flow
+  // -------------------------------------------------------
   describe("validateChecksums — HPC flow", () => {
     const validMd5 = "d41d8cd98f00b204e9800998ecf8427e";
 
@@ -1097,6 +1214,78 @@ describe("FileProcessor.vue", () => {
         expect(wrapper.vm.canStartValidation).toBe(false);
       });
 
+      it("returns false when a pairing row is incomplete", () => {
+        wrapper = createWrapper({
+          files: [{ name: "file1.fq.gz" }, { name: "file2.fq.gz" }],
+          source: "local-filesystem",
+          paired: true,
+        });
+
+        wrapper.vm.$set(
+          wrapper.vm.fileMd5Inputs,
+          "file1.fq.gz",
+          "d41d8cd98f00b204e9800998ecf8427e"
+        );
+        wrapper.vm.$set(
+          wrapper.vm.fileMd5Inputs,
+          "file2.fq.gz",
+          "aaaabbbbccccddddeeeeffffaaaabbbb"
+        );
+        wrapper.vm.filePairings = [{ file1: "file1.fq.gz", file2: null }];
+
+        expect(wrapper.vm.isPairingValid).toBe(false);
+        expect(wrapper.vm.canStartValidation).toBe(false);
+      });
+
+      it("returns false when any selected read is left outside a pair", () => {
+        const files = ["r1", "r2", "r3", "r4"].map((name) => ({
+          name: `${name}.fq.gz`,
+        }));
+        wrapper = createWrapper({
+          files,
+          source: "local-filesystem",
+          paired: true,
+        });
+
+        files.forEach((file) => {
+          wrapper.vm.$set(
+            wrapper.vm.fileMd5Inputs,
+            file.name,
+            "d41d8cd98f00b204e9800998ecf8427e"
+          );
+        });
+        wrapper.vm.filePairings = [{ file1: "r1.fq.gz", file2: "r2.fq.gz" }];
+
+        expect(wrapper.vm.isPairingValid).toBe(false);
+        expect(wrapper.vm.canStartValidation).toBe(false);
+      });
+
+      it("returns false when a read is repeated across pairing rows", () => {
+        const files = ["r1", "r2", "r3", "r4"].map((name) => ({
+          name: `${name}.fq.gz`,
+        }));
+        wrapper = createWrapper({
+          files,
+          source: "local-filesystem",
+          paired: true,
+        });
+
+        files.forEach((file) => {
+          wrapper.vm.$set(
+            wrapper.vm.fileMd5Inputs,
+            file.name,
+            "d41d8cd98f00b204e9800998ecf8427e"
+          );
+        });
+        wrapper.vm.filePairings = [
+          { file1: "r1.fq.gz", file2: "r2.fq.gz" },
+          { file1: "r1.fq.gz", file2: "r3.fq.gz" },
+        ];
+
+        expect(wrapper.vm.isPairingValid).toBe(false);
+        expect(wrapper.vm.canStartValidation).toBe(false);
+      });
+
       it("returns true when paired with valid pairings", () => {
         wrapper = createWrapper({
           files: [{ name: "file1.fq.gz" }, { name: "file2.fq.gz" }],
@@ -1119,6 +1308,33 @@ describe("FileProcessor.vue", () => {
           { file1: "file1.fq.gz", file2: "file2.fq.gz" },
         ];
 
+        expect(wrapper.vm.canStartValidation).toBe(true);
+      });
+
+      it("excludes the selected index file from complete-pair coverage", () => {
+        const files = [
+          { name: "r1.fq.gz" },
+          { name: "r2.fq.gz" },
+          { name: "index.fq.gz" },
+        ];
+        wrapper = createWrapper({
+          files,
+          source: "local-filesystem",
+          paired: true,
+          indexed: true,
+        });
+
+        files.forEach((file) => {
+          wrapper.vm.$set(
+            wrapper.vm.fileMd5Inputs,
+            file.name,
+            "d41d8cd98f00b204e9800998ecf8427e"
+          );
+        });
+        wrapper.vm.indexFile = "index.fq.gz";
+        wrapper.vm.filePairings = [{ file1: "r1.fq.gz", file2: "r2.fq.gz" }];
+
+        expect(wrapper.vm.isPairingValid).toBe(true);
         expect(wrapper.vm.canStartValidation).toBe(true);
       });
 

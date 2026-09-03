@@ -258,7 +258,10 @@
         <p class="subtitle is-6">
           Optionally, upload any documentation specific to this run.
         </p>
-        <Uploader ref="additionalUploader" />
+        <Uploader
+          ref="additionalUploader"
+          @upload-status-change="handleAdditionalUploadStatusChange"
+        />
         <CollapsibleUploaderHelp />
 
         <hr />
@@ -363,6 +366,7 @@ export default {
       // Form state
       consent: false,
       isSubmitting: false,
+      additionalUploadsComplete: true,
     };
   },
 
@@ -415,8 +419,11 @@ export default {
     },
 
     uploadsAreComplete() {
-      // Additional files uploader
-      const additionalComplete = true; // Additional files are optional
+      // Keep this dependency explicit: uploader internals are not reactive in
+      // the parent, so its lifecycle event invalidates this computed value.
+      const additionalComplete = this.areAdditionalUploadsComplete(
+        this.additionalUploadsComplete
+      );
 
       // Raw files must be processed
       if (this.processedFiles.length === 0) return false;
@@ -474,6 +481,20 @@ export default {
   },
 
   methods: {
+    handleAdditionalUploadStatusChange(isComplete) {
+      this.additionalUploadsComplete = isComplete;
+    },
+
+    areAdditionalUploadsComplete(
+      fallbackStatus = this.additionalUploadsComplete
+    ) {
+      const uploader = this.$refs.additionalUploader;
+      if (uploader && typeof uploader.isUploadComplete === "function") {
+        return uploader.isUploadComplete();
+      }
+      return fallbackStatus;
+    },
+
     async initializeFromClonedRun(clonedRunId) {
       try {
         const { data } = await this.$axios.get("/run", {
@@ -491,7 +512,8 @@ export default {
           this.run.libraryStrategy = clonedRun.libraryStrategy || null;
           this.run.insertSize = clonedRun.insertSize || null;
           this.$buefy.toast.open({
-            message: "Form pre-filled from cloned run. Please enter a new Run Name.",
+            message:
+              "Form pre-filled from cloned run. Please enter a new Run Name.",
             type: "is-info",
             duration: 5000,
           });
@@ -634,7 +656,10 @@ export default {
     },
 
     async submitForm() {
-      if (!this.canSubmit) {
+      // Re-read the uploader at the submission boundary as well as using the
+      // reactive button gate. This prevents a stale render from ever posting
+      // an in-flight file without its server-issued uploadName.
+      if (!this.canSubmit || !this.areAdditionalUploadsComplete()) {
         this.$buefy.toast.open({
           message: "Please correct the errors before submitting.",
           type: "is-warning",
