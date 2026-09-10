@@ -11,9 +11,18 @@
               size="is-medium"
               class="ml-3"
             >
-              <b-icon :icon="md5Status.icon" size="is-small" class="mr-1"></b-icon>
+              <b-icon
+                :icon="md5Status.icon"
+                size="is-small"
+                class="mr-1"
+              ></b-icon>
               {{ md5Status.text }}
             </b-tag>
+            <StorageBadge
+              :storage="projectStorage"
+              size="is-medium"
+              class="ml-3"
+            />
           </div>
           <AddAccessionModal
             v-if="showAddAcession"
@@ -22,6 +31,12 @@
             :initial-accessions="run.accessions"
           />
         </div>
+
+        <StorageReadOnlyNotice
+          v-if="storageDescription.readOnly"
+          :storage="projectStorage"
+          class="mt-4"
+        />
 
         <p class="subtitle mt-2">
           <b-icon
@@ -66,7 +81,7 @@
           administrator for assistance.
         </div>
 
-        <div class="buttons-wrapper">
+        <div v-if="!storageDescription.readOnly" class="buttons-wrapper">
           <b-button
             type="is-secondary"
             icon-left="content-copy"
@@ -125,8 +140,25 @@
           </div>
         </div>
 
-        <b-field label="File path">
-          <p>/tsl/data/reads{{ run.path }}</p>
+        <b-field :label="locationLabel">
+          <div v-if="fileLocation && fileLocation.baseUri">
+            <code class="location-text">{{ fileLocation.baseUri }}</code>
+            <b-button
+              size="is-small"
+              icon-left="clipboard-text-outline"
+              class="ml-2"
+              @click="copyLocation(fileLocation.baseUri)"
+            >
+              Copy
+            </b-button>
+          </div>
+          <p v-else class="has-text-danger">Storage location unavailable</p>
+        </b-field>
+        <b-field
+          v-if="fileLocation && fileLocation.plannedS3Uri"
+          label="Planned S3 location (not yet verified)"
+        >
+          <code class="location-text">{{ fileLocation.plannedS3Uri }}</code>
         </b-field>
 
         <div class="bottomPadding"></div>
@@ -134,7 +166,9 @@
         <b-field label="Additional Files">
           <AdditionalFileList
             :files="additionalFiles"
-            :parent-path="run.path"
+            :location="fileLocation"
+            :archived="isArchived"
+            :read-only="storageDescription.readOnly"
           />
         </b-field>
 
@@ -143,9 +177,11 @@
         <b-field label="Raw Files">
           <ReadList
             :reads="run.rawFiles"
-            :run-path="run.path"
+            :location="fileLocation"
             :allowed-extensions="libraryTypeExtensions"
             :run-status="run.status"
+            :archived="isArchived"
+            :read-only="storageDescription.readOnly"
           />
         </b-field>
         <hr />
@@ -158,14 +194,19 @@
 import AdditionalFileList from "../components/AdditionalFileList.vue";
 import ReadList from "../components/ReadList.vue";
 import AddAccessionModal from "../components/AddAccessionModal.vue";
+import StorageBadge from "~/components/storage/StorageBadge.vue";
+import StorageReadOnlyNotice from "~/components/storage/StorageReadOnlyNotice.vue";
 import { isEnaAdmin } from "~/utils/adminUsers";
 import { getApiErrorMessage, getApiErrorStatus } from "~/utils/apiError";
+import { describeStorage } from "~/utils/storageState";
 
 export default {
   components: {
     AdditionalFileList,
     ReadList,
     AddAccessionModal,
+    StorageBadge,
+    StorageReadOnlyNotice,
   },
   middleware: ["auth"],
   async asyncData({ route, $axios, error }) {
@@ -180,19 +221,29 @@ export default {
 
       // This logic compares DB records with actual files on disk.
       // It's useful for detecting orphaned files but can be simplified if the API is the single source of truth.
-      const verifiedAdditionalFileNames = runData.additionalFiles.map(
+      const recordedAdditionalFiles = runData.additionalFiles || [];
+      const verifiedAdditionalFileNames = recordedAdditionalFiles.map(
         (af) => af.file.originalName
       );
-      const actualAdditionalFileNames =
-        response.data.actualAdditionalFiles || [];
-      const additionalFiles = actualAdditionalFileNames.map((fileName) => ({
-        fileName,
-        verified: verifiedAdditionalFileNames.includes(fileName),
-      }));
+      const actualAdditionalFileNames = response.data.actualAdditionalFiles;
+      const additionalFiles = Array.isArray(actualAdditionalFileNames)
+        ? actualAdditionalFileNames.map((fileName) => ({
+            fileName,
+            verified: verifiedAdditionalFileNames.includes(fileName),
+          }))
+        : recordedAdditionalFiles
+            .map((additionalFile) => ({
+              _id: additionalFile._id,
+              fileName: additionalFile.file?.originalName,
+              verified: true,
+              archived: true,
+            }))
+            .filter((additionalFile) => additionalFile.fileName);
 
       return {
         run: runData,
         additionalFiles: additionalFiles,
+        fileLocation: response.data.location || null,
       };
     } catch (err) {
       console.error("Failed to fetch run data:", err);
@@ -212,6 +263,25 @@ export default {
     };
   },
   computed: {
+    projectStorage() {
+      return (
+        this.run?.projectStorage ||
+        this.run?.sample?.projectStorage ||
+        this.run?.sample?.project?.storage ||
+        null
+      );
+    },
+    storageDescription() {
+      return describeStorage(this.projectStorage);
+    },
+    isArchived() {
+      return this.storageDescription.authoritative === "s3";
+    },
+    locationLabel() {
+      return this.fileLocation?.authoritative === "s3"
+        ? "S3 location"
+        : "HPC file path";
+    },
     libraryTypeExtensions() {
       // Get the allowed extensions for this run's library type
       if (!this.run?.libraryType) return [];
@@ -256,6 +326,25 @@ export default {
       if (!this.run || !this.run.md5VerificationStatus) {
         return { show: false };
       }
+      if (this.storageDescription.readOnly) {
+        if (this.run.md5VerificationStatus === "complete") {
+          return {
+            show: true,
+            text: "Checksums verified before archive",
+            type: "is-success",
+            icon: "check-circle",
+          };
+        }
+        if (this.run.md5VerificationStatus === "failed") {
+          return {
+            show: true,
+            text: "Checksum verification failed before archive",
+            type: "is-danger",
+            icon: "alert-circle",
+          };
+        }
+        return { show: false };
+      }
       switch (this.run.md5VerificationStatus) {
         case "pending":
         case "in_progress":
@@ -296,7 +385,13 @@ export default {
     await this.$store.dispatch("refreshOptions");
   },
   mounted() {
-    if (this.run && (this.run.status === "pending" || this.run.md5VerificationStatus === "pending" || this.run.md5VerificationStatus === "in_progress")) {
+    if (
+      !this.storageDescription.readOnly &&
+      this.run &&
+      (this.run.status === "pending" ||
+        this.run.md5VerificationStatus === "pending" ||
+        this.run.md5VerificationStatus === "in_progress")
+    ) {
       this.startPolling();
     }
   },
@@ -304,6 +399,22 @@ export default {
     this.stopPolling();
   },
   methods: {
+    copyLocation(value) {
+      return this.$copyText(value).then(
+        () =>
+          this.$buefy.toast.open({
+            message: "Storage location copied to clipboard!",
+            type: "is-success",
+            position: "is-bottom",
+          }),
+        () =>
+          this.$buefy.toast.open({
+            message: "Failed to copy storage location.",
+            type: "is-danger",
+            position: "is-bottom",
+          })
+      );
+    },
     cloneRun() {
       this.$router.push({
         path: "/runs/new",
@@ -331,14 +442,29 @@ export default {
           params: { id: this.run._id },
         });
         const updatedRun = response.data.run;
-        
+        this.fileLocation = response.data.location || this.fileLocation;
+
         const wasPending = this.run.status === "pending";
-        const wasMd5Pending = this.run.md5VerificationStatus === "pending" || this.run.md5VerificationStatus === "in_progress";
-        
+        const wasMd5Pending =
+          this.run.md5VerificationStatus === "pending" ||
+          this.run.md5VerificationStatus === "in_progress";
+
         this.run = updatedRun;
 
+        const updatedStorage =
+          updatedRun.projectStorage ||
+          updatedRun.sample?.projectStorage ||
+          updatedRun.sample?.project?.storage ||
+          null;
+        if (describeStorage(updatedStorage).readOnly) {
+          this.stopPolling();
+          return;
+        }
+
         const isNowComplete = updatedRun.status !== "pending";
-        const isMd5NowComplete = updatedRun.md5VerificationStatus === "complete" || updatedRun.md5VerificationStatus === "failed";
+        const isMd5NowComplete =
+          updatedRun.md5VerificationStatus === "complete" ||
+          updatedRun.md5VerificationStatus === "failed";
 
         if (wasPending && isNowComplete) {
           this.$buefy.toast.open({
@@ -346,11 +472,14 @@ export default {
             type: updatedRun.status === "complete" ? "is-success" : "is-danger",
           });
         }
-        
+
         if (wasMd5Pending && isMd5NowComplete) {
           this.$buefy.toast.open({
             message: `Run checksum verification updated to: ${updatedRun.md5VerificationStatus}`,
-            type: updatedRun.md5VerificationStatus === "complete" ? "is-success" : "is-danger",
+            type:
+              updatedRun.md5VerificationStatus === "complete"
+                ? "is-success"
+                : "is-danger",
           });
         }
 
@@ -378,5 +507,8 @@ export default {
 }
 .buttons-wrapper {
   margin-bottom: 2rem;
+}
+.location-text {
+  overflow-wrap: anywhere;
 }
 </style>

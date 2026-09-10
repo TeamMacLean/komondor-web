@@ -50,6 +50,7 @@
         ></b-icon>
         {{ run.group.name }}
       </p>
+      <StorageBadge :storage="effectiveStorage" />
       <!-- <p>{{sample.commonName}}</p> -->
 
       <p class="truncate">{{ run.conditions }}</p>
@@ -58,9 +59,24 @@
 </template>
 
 <script>
+import StorageBadge from "~/components/storage/StorageBadge.vue";
+
 export default {
-  props: ["run"],
+  components: { StorageBadge },
+  props: {
+    run: {
+      type: Object,
+      required: true,
+    },
+    projectStorage: {
+      type: Object,
+      default: null,
+    },
+  },
   computed: {
+    effectiveStorage() {
+      return this.run.projectStorage || this.projectStorage;
+    },
     truncatedRunName() {
       const totalLength = this.run.name.length;
       const beginning = this.run.name.substring(0, 24);

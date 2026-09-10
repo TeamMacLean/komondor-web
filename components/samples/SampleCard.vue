@@ -57,6 +57,7 @@
         ></b-icon>
         {{ sample.group.name }}
       </p>
+      <StorageBadge :storage="effectiveStorage" />
       <p>
         {{ sample.ncbi || (sample.tplexCsv ? "TPlex data in CSV" : "N/A") }}
       </p>
@@ -78,9 +79,24 @@
 </template>
 
 <script>
+import StorageBadge from "~/components/storage/StorageBadge.vue";
+
 export default {
-  props: ["sample"],
+  components: { StorageBadge },
+  props: {
+    sample: {
+      type: Object,
+      required: true,
+    },
+    projectStorage: {
+      type: Object,
+      default: null,
+    },
+  },
   computed: {
+    effectiveStorage() {
+      return this.sample.projectStorage || this.projectStorage;
+    },
     truncatedSampleName() {
       if (!this.sample.name) {
         return "[No Name]";

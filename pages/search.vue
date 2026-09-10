@@ -72,17 +72,17 @@
                 <div v-if="type === 'project'">
                   <ProjectList
                     :projects="results.projects"
-                    show-new-button="false"
+                    :show-new-button="false"
                   />
                 </div>
                 <div v-if="type === 'sample'">
                   <SampleList
                     :samples="results.samples"
-                    show-new-button="false"
+                    :show-new-button="false"
                   />
                 </div>
                 <div v-if="type === 'run'">
-                  <RunList :runs="results.runs" show-new-button="false" />
+                  <RunList :runs="results.runs" :show-new-button="false" />
                 </div>
               </div>
             </div>

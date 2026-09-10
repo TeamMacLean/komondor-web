@@ -6,6 +6,8 @@ import {
   isBodyError,
   getApiErrorMessage,
   getApiErrorStatus,
+  getApiErrorCode,
+  isStorageReadOnlyError,
   describeDirectoryError,
 } from "~/utils/apiError";
 
@@ -187,6 +189,21 @@ describe("getApiErrorStatus", () => {
     expect(getApiErrorStatus(networkRejection())).toBeNull();
     expect(getApiErrorStatus(new Error("boom"))).toBeNull();
     expect(getApiErrorStatus(null)).toBeNull();
+  });
+});
+
+describe("machine-readable API errors", () => {
+  it("recognises a project storage refusal", () => {
+    const err = axiosRejection(409, {
+      error: "This project's storage is read-only",
+      code: "PROJECT_STORAGE_READ_ONLY",
+    });
+    expect(getApiErrorCode(err)).toBe("PROJECT_STORAGE_READ_ONLY");
+    expect(isStorageReadOnlyError(err)).toBe(true);
+  });
+
+  it("does not mistake an ordinary conflict for storage read-only", () => {
+    expect(isStorageReadOnlyError(axiosRejection(409, {}))).toBe(false);
   });
 });
 

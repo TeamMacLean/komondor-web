@@ -31,7 +31,7 @@
           </b-select>
         </div>
       </div>
-      <p v-if="showNewButton" class="control">
+      <p v-if="shouldShowNewButton" class="control">
         <nuxt-link to="/projects/new" class="button is-success">New</nuxt-link>
       </p>
     </div>
@@ -58,7 +58,16 @@ export default {
   components: {
     ProjectCard,
   },
-  props: ["projects", "showNewButton"],
+  props: {
+    projects: {
+      type: Array,
+      default: null,
+    },
+    showNewButton: {
+      type: [Boolean, String],
+      default: false,
+    },
+  },
   data() {
     return {
       filterText: "",
@@ -67,6 +76,9 @@ export default {
     };
   },
   computed: {
+    shouldShowNewButton() {
+      return this.showNewButton === true || this.showNewButton === "true";
+    },
     projectsList() {
       if (this.projects) {
         return this.projects;

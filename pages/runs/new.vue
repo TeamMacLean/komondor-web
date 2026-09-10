@@ -291,7 +291,12 @@ import HpcDirectoryFinder from "~/components/uploads/HpcDirectoryFinder.vue";
 import FileProcessor from "~/components/uploads/FileProcessor.vue";
 import FormConsentCheckbox from "~/components/formHelpers/FormConsentCheckbox.vue";
 import CollapsibleUploaderHelp from "~/components/formHelpers/CollapsibleUploaderHelp.vue";
-import { getApiErrorMessage, getApiErrorStatus } from "~/utils/apiError";
+import {
+  getApiErrorMessage,
+  getApiErrorStatus,
+  isStorageReadOnlyError,
+} from "~/utils/apiError";
+import { describeStorage, storageReadOnlyMessage } from "~/utils/storageState";
 
 export default {
   name: "NewRun",
@@ -318,13 +323,20 @@ export default {
       const sampleResponse = await $axios.get("/sample", {
         params: { id: sampleId },
       });
+      const sample = sampleResponse.data.sample;
+      const projectStorage =
+        sample.projectStorage || sample.project?.storage || null;
+      if (describeStorage(projectStorage).readOnly) {
+        return error({
+          statusCode: 409,
+          message: storageReadOnlyMessage(projectStorage),
+        });
+      }
 
-      const namesResponse = await $axios.get(
-        `/runs/names/${sampleResponse.data.sample._id}`
-      );
+      const namesResponse = await $axios.get(`/runs/names/${sample._id}`);
 
       return {
-        sample: sampleResponse.data.sample,
+        sample,
         existingRunNames: namesResponse.data.runNames || [],
       };
     } catch (err) {
@@ -698,6 +710,19 @@ export default {
         });
       } catch (err) {
         console.error("Error creating run:", err);
+
+        if (isStorageReadOnlyError(err)) {
+          this.$buefy.toast.open({
+            message: getApiErrorMessage(err),
+            type: "is-warning",
+            duration: 5000,
+          });
+          this.$router.push({
+            name: "sample",
+            query: { id: this.sample._id },
+          });
+          return;
+        }
 
         this.$buefy.dialog.alert({
           title: "Submission Failed",

@@ -161,7 +161,12 @@ import Papa from "papaparse";
 import Uploader from "~/components/uploads/Uploader.vue";
 import FormConsentCheckbox from "~/components/formHelpers/FormConsentCheckbox.vue";
 import CollapsibleUploaderHelp from "~/components/formHelpers/CollapsibleUploaderHelp.vue";
-import { getApiErrorMessage, getApiErrorStatus } from "~/utils/apiError";
+import {
+  getApiErrorMessage,
+  getApiErrorStatus,
+  isStorageReadOnlyError,
+} from "~/utils/apiError";
+import { describeStorage, storageReadOnlyMessage } from "~/utils/storageState";
 
 export default {
   name: "NewSample",
@@ -184,13 +189,18 @@ export default {
       const projectResponse = await $axios.get("/project", {
         params: { id: projectId },
       });
+      const project = projectResponse.data.project;
+      if (describeStorage(project.storage).readOnly) {
+        return error({
+          statusCode: 409,
+          message: storageReadOnlyMessage(project.storage),
+        });
+      }
 
-      const namesResponse = await $axios.get(
-        `/samples/names/${projectResponse.data.project._id}`
-      );
+      const namesResponse = await $axios.get(`/samples/names/${project._id}`);
 
       return {
-        project: projectResponse.data.project,
+        project,
         existingSampleNames: namesResponse.data.sampleNames || [],
       };
     } catch (err) {
@@ -315,7 +325,8 @@ export default {
           this.sample.ncbi = clonedSample.ncbi || null;
           this.sample.conditions = clonedSample.conditions || "";
           this.$buefy.toast.open({
-            message: "Form pre-filled from cloned sample. Please enter a new Sample Name.",
+            message:
+              "Form pre-filled from cloned sample. Please enter a new Sample Name.",
             type: "is-info",
             duration: 5000,
           });
@@ -457,6 +468,18 @@ export default {
         });
       } catch (err) {
         console.error("Error creating sample(s):", err);
+        if (isStorageReadOnlyError(err)) {
+          this.$buefy.toast.open({
+            message: getApiErrorMessage(err),
+            type: "is-warning",
+            duration: 5000,
+          });
+          this.$router.push({
+            name: "project",
+            query: { id: this.project._id },
+          });
+          return;
+        }
         let message = getApiErrorMessage(err);
         if (getApiErrorStatus(err) === 413) {
           message =

@@ -3,7 +3,7 @@
     <div class="container">
       <h1 class="title">{{ pageTitle }}</h1>
 
-      <ProjectList show-new-button="true" />
+      <ProjectList :show-new-button="true" />
     </div>
   </div>
 </template>

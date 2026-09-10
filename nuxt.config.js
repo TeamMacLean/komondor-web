@@ -12,6 +12,7 @@ export default {
     // baseURL: process.env.HOST,
     API_URL: process.env.API_URL,
     HOST: process.env.HOST,
+    // Deprecated: retained for one rolling release; components use API paths.
     HPC_DATASTORE_ROOT: process.env.HPC_DATASTORE_ROOT,
     HPC_DIRECTORY_PREFIX: process.env.HPC_DIRECTORY_PREFIX,
     DATAHOG_DEATH: process.env.DATAHOG_DEATH,

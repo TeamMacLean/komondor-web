@@ -57,13 +57,17 @@
         ></b-icon>
         {{ project.group.name }}
       </p>
+      <StorageBadge :storage="project.storage" />
       <p class="truncate">{{ project.shortDesc }}</p>
     </div>
   </div>
 </template>
 
 <script>
+import StorageBadge from "~/components/storage/StorageBadge.vue";
+
 export default {
+  components: { StorageBadge },
   props: ["project"],
   computed: {
     truncatedProjectName() {

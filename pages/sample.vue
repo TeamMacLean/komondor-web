@@ -3,12 +3,19 @@
     <div class="container">
       <div v-if="sample">
         <div class="title-wrapper">
-          <div class="title">
-            {{
-              sample.scientificName ||
-              (sample.tplexCsv ? "TPlex Sample" : "Sample")
-            }}
-            - {{ sample.name }}
+          <div class="is-flex is-align-items-center is-flex-wrap-wrap">
+            <div class="title mb-0">
+              {{
+                sample.scientificName ||
+                (sample.tplexCsv ? "TPlex Sample" : "Sample")
+              }}
+              - {{ sample.name }}
+            </div>
+            <StorageBadge
+              :storage="projectStorage"
+              size="is-medium"
+              class="ml-3"
+            />
           </div>
           <AddAccessionModal
             v-if="!!showAddAcession"
@@ -18,7 +25,16 @@
           />
         </div>
 
-        <div v-if="!sample.tplexCsv" class="buttons-wrapper">
+        <StorageReadOnlyNotice
+          v-if="storageDescription.readOnly"
+          :storage="projectStorage"
+          class="mt-4"
+        />
+
+        <div
+          v-if="!sample.tplexCsv && !storageDescription.readOnly"
+          class="buttons-wrapper"
+        >
           <b-button
             type="is-secondary"
             icon-left="content-copy"
@@ -149,11 +165,30 @@
         >
           <AdditionalFileList
             :files="additionalFiles"
-            :parent-path="sample.path"
+            :location="fileLocation"
+            :archived="isArchived"
+            :read-only="storageDescription.readOnly"
           />
         </b-field>
-        <b-field label="File path">
-          <p>/tsl/data/reads{{ sample.path }}</p>
+        <b-field :label="locationLabel">
+          <div v-if="fileLocation && fileLocation.baseUri">
+            <code class="location-text">{{ fileLocation.baseUri }}</code>
+            <b-button
+              size="is-small"
+              icon-left="clipboard-text-outline"
+              class="ml-2"
+              @click="copyLocation(fileLocation.baseUri)"
+            >
+              Copy
+            </b-button>
+          </div>
+          <p v-else class="has-text-danger">Storage location unavailable</p>
+        </b-field>
+        <b-field
+          v-if="fileLocation && fileLocation.plannedS3Uri"
+          label="Planned S3 location (not yet verified)"
+        >
+          <code class="location-text">{{ fileLocation.plannedS3Uri }}</code>
         </b-field>
         <hr />
         <p class="title is-4">Runs</p>
@@ -161,7 +196,8 @@
           v-if="sample.runs"
           :sample="sample"
           :runs="sample.runs"
-          show-new-button="true"
+          :project-storage="projectStorage"
+          :show-new-button="!storageDescription.readOnly"
         />
       </div>
     </div>
@@ -172,12 +208,21 @@
 import RunList from "../components/runs/RunList.vue";
 import AdditionalFileList from "../components/AdditionalFileList.vue";
 import AddAccessionModal from "../components/AddAccessionModal.vue";
+import StorageBadge from "~/components/storage/StorageBadge.vue";
+import StorageReadOnlyNotice from "~/components/storage/StorageReadOnlyNotice.vue";
 import Papa from "papaparse"; // Import papaparse
 import { isEnaAdmin } from "~/utils/adminUsers";
 import { getApiErrorMessage, getApiErrorStatus } from "~/utils/apiError";
+import { describeStorage } from "~/utils/storageState";
 
 export default {
-  components: { RunList, AdditionalFileList, AddAccessionModal },
+  components: {
+    RunList,
+    AdditionalFileList,
+    AddAccessionModal,
+    StorageBadge,
+    StorageReadOnlyNotice,
+  },
   middleware: ["auth"],
   asyncData({ route, $axios, error }) {
     if (!route.query.id) {
@@ -188,21 +233,32 @@ export default {
       .get("/sample", { params: { id: route.query.id } })
       .then((res) => {
         if (res.status === 200 && res.data.sample) {
-          const verifiedAdditionalFileNames =
-            res.data.sample.additionalFiles.map((rf) => rf.file.originalName);
-          const actualAdditionalFileNames = res.data.actualAdditionalFiles
-            ? JSON.parse(JSON.stringify(res.data.actualAdditionalFiles))
-            : [];
-          const additionalFilesWithVerifiedField =
-            actualAdditionalFileNames.map((additionalFileName) => ({
-              fileName: additionalFileName,
-              verified:
-                !!verifiedAdditionalFileNames.includes(additionalFileName),
-            }));
+          const recordedAdditionalFiles = res.data.sample.additionalFiles || [];
+          const verifiedAdditionalFileNames = recordedAdditionalFiles.map(
+            (rf) => rf.file.originalName
+          );
+          const actualAdditionalFileNames = res.data.actualAdditionalFiles;
+          const additionalFilesWithVerifiedField = Array.isArray(
+            actualAdditionalFileNames
+          )
+            ? actualAdditionalFileNames.map((additionalFileName) => ({
+                fileName: additionalFileName,
+                verified:
+                  !!verifiedAdditionalFileNames.includes(additionalFileName),
+              }))
+            : recordedAdditionalFiles
+                .map((additionalFile) => ({
+                  _id: additionalFile._id,
+                  fileName: additionalFile.file?.originalName,
+                  verified: true,
+                  archived: true,
+                }))
+                .filter((additionalFile) => additionalFile.fileName);
 
           return {
             sample: res.data.sample,
             additionalFiles: additionalFilesWithVerifiedField,
+            fileLocation: res.data.location || null,
           };
         } else {
           error({ statusCode: 404, message: "Sample not found" });
@@ -227,6 +283,22 @@ export default {
     };
   },
   computed: {
+    projectStorage() {
+      return (
+        this.sample?.projectStorage || this.sample?.project?.storage || null
+      );
+    },
+    storageDescription() {
+      return describeStorage(this.projectStorage);
+    },
+    isArchived() {
+      return this.storageDescription.authoritative === "s3";
+    },
+    locationLabel() {
+      return this.fileLocation?.authoritative === "s3"
+        ? "S3 location"
+        : "HPC file path";
+    },
     showAddAcession() {
       return isEnaAdmin(this?.$auth?.$state?.user?.username);
     },
@@ -299,6 +371,22 @@ export default {
     },
   },
   methods: {
+    copyLocation(value) {
+      return this.$copyText(value).then(
+        () =>
+          this.$buefy.toast.open({
+            message: "Storage location copied to clipboard!",
+            type: "is-success",
+            position: "is-bottom",
+          }),
+        () =>
+          this.$buefy.toast.open({
+            message: "Failed to copy storage location.",
+            type: "is-danger",
+            position: "is-bottom",
+          })
+      );
+    },
     cloneSample() {
       this.$router.push({
         path: "/samples/new",
@@ -440,5 +528,9 @@ export default {
 
 .additional-files-field {
   margin-top: 2rem;
+}
+
+.location-text {
+  overflow-wrap: anywhere;
 }
 </style>

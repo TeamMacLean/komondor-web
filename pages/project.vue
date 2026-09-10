@@ -3,9 +3,13 @@
     <div class="container">
       <div v-if="project">
         <div class="title-wrapper">
-          <div class="title">
-            <!-- <b-icon icon="folder-text-outline" size="is-small" class="has-text-grey" /> -->
-            {{ project.name }}
+          <div class="is-flex is-align-items-center is-flex-wrap-wrap">
+            <div class="title mb-0">{{ project.name }}</div>
+            <StorageBadge
+              :storage="project.storage"
+              size="is-medium"
+              class="ml-3"
+            />
           </div>
           <AddAccessionModal
             v-if="!!showAddAccession"
@@ -15,6 +19,12 @@
             :initial-release-date="project.releaseDate"
           />
         </div>
+
+        <StorageReadOnlyNotice
+          v-if="storageDescription.readOnly"
+          :storage="project.storage"
+          class="mt-4"
+        />
 
         <p class="subtitle">
           <nuxt-link
@@ -118,12 +128,31 @@
         <b-field label="Additional files">
           <AdditionalFileList
             :files="additionalFiles"
-            :parent-path="project.path"
+            :location="fileLocation"
+            :archived="isArchived"
+            :read-only="storageDescription.readOnly"
           />
         </b-field>
 
-        <b-field label="File path">
-          <p>/tsl/data/reads{{ project.path }}</p>
+        <b-field :label="locationLabel">
+          <div v-if="fileLocation && fileLocation.baseUri">
+            <code class="location-text">{{ fileLocation.baseUri }}</code>
+            <b-button
+              size="is-small"
+              icon-left="clipboard-text-outline"
+              class="ml-2"
+              @click="copyLocation(fileLocation.baseUri)"
+            >
+              Copy
+            </b-button>
+          </div>
+          <p v-else class="has-text-danger">Storage location unavailable</p>
+        </b-field>
+        <b-field
+          v-if="fileLocation && fileLocation.plannedS3Uri"
+          label="Planned S3 location (not yet verified)"
+        >
+          <code class="location-text">{{ fileLocation.plannedS3Uri }}</code>
         </b-field>
 
         <hr />
@@ -133,7 +162,8 @@
           v-if="project.samples"
           :project="project"
           :samples="project.samples"
-          show-new-button="true"
+          :project-storage="project.storage"
+          :show-new-button="!storageDescription.readOnly"
         />
       </div>
     </div>
@@ -144,11 +174,20 @@
 import SampleList from "../components/samples/SampleList.vue";
 import AdditionalFileList from "../components/AdditionalFileList.vue";
 import AddAccessionModal from "../components/AddAccessionModal.vue";
+import StorageBadge from "~/components/storage/StorageBadge.vue";
+import StorageReadOnlyNotice from "~/components/storage/StorageReadOnlyNotice.vue";
 import { isEnaAdmin } from "~/utils/adminUsers";
 import { getApiErrorMessage, getApiErrorStatus } from "~/utils/apiError";
+import { describeStorage } from "~/utils/storageState";
 
 export default {
-  components: { SampleList, AdditionalFileList, AddAccessionModal },
+  components: {
+    SampleList,
+    AdditionalFileList,
+    AddAccessionModal,
+    StorageBadge,
+    StorageReadOnlyNotice,
+  },
   middleware: ["auth"],
 
   asyncData({ route, $axios, error }) {
@@ -160,21 +199,33 @@ export default {
       .get("/project", { params: { id: route.query.id } })
       .then((res) => {
         if (res.status === 200 && res.data.project) {
-          const verifiedAdditionalFileNames =
-            res.data.project.additionalFiles.map((rf) => rf.file.originalName);
-          const actualAdditionalFileNames = res.data.actualAdditionalFiles
-            ? JSON.parse(JSON.stringify(res.data.actualAdditionalFiles))
-            : [];
-          const additionalFilesWithVerifiedField =
-            actualAdditionalFileNames.map((additionalFileName) => ({
-              fileName: additionalFileName,
-              verified:
-                !!verifiedAdditionalFileNames.includes(additionalFileName),
-            }));
+          const recordedAdditionalFiles =
+            res.data.project.additionalFiles || [];
+          const verifiedAdditionalFileNames = recordedAdditionalFiles.map(
+            (rf) => rf.file.originalName
+          );
+          const actualAdditionalFileNames = res.data.actualAdditionalFiles;
+          const additionalFilesWithVerifiedField = Array.isArray(
+            actualAdditionalFileNames
+          )
+            ? actualAdditionalFileNames.map((additionalFileName) => ({
+                fileName: additionalFileName,
+                verified:
+                  !!verifiedAdditionalFileNames.includes(additionalFileName),
+              }))
+            : recordedAdditionalFiles
+                .map((additionalFile) => ({
+                  _id: additionalFile._id,
+                  fileName: additionalFile.file?.originalName,
+                  verified: true,
+                  archived: true,
+                }))
+                .filter((additionalFile) => additionalFile.fileName);
 
           return {
             project: res.data.project,
             additionalFiles: additionalFilesWithVerifiedField,
+            fileLocation: res.data.location || null,
             isModalActive: false,
             pendingChange: null,
             loading: false,
@@ -197,6 +248,17 @@ export default {
       });
   },
   computed: {
+    storageDescription() {
+      return describeStorage(this.project?.storage);
+    },
+    isArchived() {
+      return this.storageDescription.authoritative === "s3";
+    },
+    locationLabel() {
+      return this.fileLocation?.authoritative === "s3"
+        ? "S3 location"
+        : "HPC file path";
+    },
     enaInfo() {
       if (!this.isSendingToEna) {
         return "Project not being sent to ENA";
@@ -227,6 +289,22 @@ export default {
     },
   },
   methods: {
+    copyLocation(value) {
+      return this.$copyText(value).then(
+        () =>
+          this.$buefy.toast.open({
+            message: "Storage location copied to clipboard!",
+            type: "is-success",
+            position: "is-bottom",
+          }),
+        () =>
+          this.$buefy.toast.open({
+            message: "Failed to copy storage location.",
+            type: "is-danger",
+            position: "is-bottom",
+          })
+      );
+    },
     openModal() {
       this.isModalActive = true;
     },
@@ -302,5 +380,9 @@ export default {
 
 .custom-modal-text > * {
   padding-bottom: 1rem;
+}
+
+.location-text {
+  overflow-wrap: anywhere;
 }
 </style>

@@ -25,6 +25,10 @@
         <p class="spacing">
           Note: run creation date does not predate migration to Komondor.
         </p>
+        <p class="spacing">
+          For projects archived in AWS, read-file locations are
+          <code>s3://</code> URIs rather than HPC paths.
+        </p>
       </div>
     </div>
   </div>

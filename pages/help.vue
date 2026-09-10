@@ -19,6 +19,16 @@
         'runs' (which are roughly similar to runs of a sequencer machine).
       </p>
 
+      <h3 class="subtitle-override">What does “Archived in AWS” mean?</h3>
+
+      <p>
+        Older projects may be moved from the HPC to long-term storage in AWS.
+        Their metadata and recorded file lists remain visible here, but new
+        samples, runs and files cannot be added. Komondor shows the archived
+        <code>s3://</code> location for reference; retrieval and downloads are
+        handled separately by the Bioinformatics team.
+      </p>
+
       <h3 class="subtitle-override">Do you upload to ENA?</h3>
 
       <p>

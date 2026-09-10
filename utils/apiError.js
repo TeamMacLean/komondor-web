@@ -123,6 +123,15 @@ export const getApiErrorStatus = (error) => {
   return typeof status === "number" ? status : null;
 };
 
+/** The stable machine-readable code returned by newer API error envelopes. */
+export const getApiErrorCode = (error) => {
+  const body = error && (error.response ? error.response.data : error.data);
+  return body && typeof body.code === "string" ? body.code : null;
+};
+
+export const isStorageReadOnlyError = (error) =>
+  getApiErrorCode(error) === "PROJECT_STORAGE_READ_ONLY";
+
 /**
  * Failure conditions of `GET /directory-files`, and how to describe each one.
  *

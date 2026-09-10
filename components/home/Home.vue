@@ -45,6 +45,7 @@
                       class="has-text-grey mr-1"
                     />
                     {{ project.name }}
+                    <StorageBadge :storage="project.storage" class="ml-1" />
                   </nuxt-link>
                 </li>
                 <li v-if="canShowMore" class="mt-2">
@@ -147,11 +148,13 @@
 <script>
 import { mapState } from "vuex";
 import NewsCard from "./NewsCard.vue";
+import StorageBadge from "~/components/storage/StorageBadge.vue";
 import { isEnaAdmin } from "~/utils/adminUsers";
 
 export default {
   components: {
     NewsCard,
+    StorageBadge,
   },
   data() {
     return {

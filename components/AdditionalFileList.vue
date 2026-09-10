@@ -1,10 +1,11 @@
 <template>
   <div v-if="!files.length">
-    <p>
+    <p v-if="readOnly">No additional files were recorded.</p>
+    <p v-else>
       No additional files detected in HPC. (Try refreshing if recently
       uploaded.)
     </p>
-    <p>
+    <p v-if="!readOnly">
       If you think this is in error, please
       <a :href="emailLink">contact admin</a>
       to resolve this issue.
@@ -13,12 +14,16 @@
   <div v-else>
     <div>
       <ul>
-        <li v-for="file in files" :key="file._id">
+        <li v-for="file in files" :key="file._id || file.fileName">
           <div class="fileInfo">
             <b-tooltip
               v-if="file.verified"
               position="is-right"
-              label="Additional file verified in database"
+              :label="
+                archived
+                  ? 'Archived file recorded in the database'
+                  : 'Additional file verified in database'
+              "
             >
               <b-icon type="is-success" icon="check" size="is-small"></b-icon>
             </b-tooltip>
@@ -36,12 +41,11 @@
             <div class="fileNamePadding">{{ file.fileName }}</div>
 
             <b-button
-              v-clipboard:copy="getFullFilePath(file.fileName)"
-              v-clipboard:success="onCopy"
-              v-clipboard:error="onError"
+              :disabled="!getFullFilePath(file.fileName)"
               type="button"
+              @click="copyPath(file.fileName)"
             >
-              Copy HPC filepath
+              {{ copyButtonLabel }}
             </b-button>
           </div>
         </li>
@@ -70,15 +74,31 @@
 </template>
 
 <script>
-import path from "path";
 export default {
-  props: ["files", "parentPath"],
-  data() {
-    return {
-      datastoreRoot: "",
-    };
+  props: {
+    files: {
+      type: Array,
+      default: () => [],
+    },
+    location: {
+      type: Object,
+      default: null,
+    },
+    archived: {
+      type: Boolean,
+      default: false,
+    },
+    readOnly: {
+      type: Boolean,
+      default: false,
+    },
   },
   computed: {
+    copyButtonLabel() {
+      return this.location?.authoritative === "s3"
+        ? "Copy S3 location"
+        : "Copy HPC filepath";
+    },
     emailLink() {
       const { path, query } = this.$route;
       const { id } = query;
@@ -101,28 +121,31 @@ export default {
       return result;
     },
   },
-  mounted() {
-    // Guarded: an unset HPC_DATASTORE_ROOT threw a TypeError in mounted(),
-    // which takes the surrounding page down rather than just this file list.
-    this.datastoreRoot = (process.env.HPC_DATASTORE_ROOT || "").replace(
-      /['"]+/g,
-      ""
-    );
-  },
   methods: {
-    onCopy: function (e) {
-      alert("You just copied onto your clipboard: " + e.text);
-    },
-    onError: function () {
-      alert("Failed to copy texts");
-    },
     getFullFilePath: function (fileName) {
-      const unixDirConverter = fileName.replace(/\s/g, "\\ ");
-      return path.join(
-        this.datastoreRoot,
-        this.parentPath,
-        "additional",
-        unixDirConverter
+      const baseUri = this.location?.additionalUri;
+      if (!baseUri || !fileName) return "";
+      return `${baseUri.replace(/\/$/, "")}/${fileName}`;
+    },
+    copyPath(fileName) {
+      const fullPath = this.getFullFilePath(fileName);
+      if (!fullPath) return;
+
+      this.$copyText(fullPath).then(
+        () => {
+          this.$buefy.toast.open({
+            message: "File location copied to clipboard!",
+            type: "is-success",
+            position: "is-bottom",
+          });
+        },
+        () => {
+          this.$buefy.toast.open({
+            message: "Failed to copy file location.",
+            type: "is-danger",
+            position: "is-bottom",
+          });
+        }
       );
     },
   },

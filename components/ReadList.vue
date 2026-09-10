@@ -1,11 +1,12 @@
 <template>
   <div>
     <div v-if="!reads || !reads.length">
-      <p>
+      <p v-if="readOnly">No read files are recorded for this run.</p>
+      <p v-else>
         No read files found for this run. This may be because processing is
         still in progress.
       </p>
-      <p>
+      <p v-if="!readOnly">
         If you believe this is an error, please
         <a :href="emailLink">contact an administrator</a>.
       </p>
@@ -66,6 +67,12 @@
                 >—</span
               >
               <span v-else-if="!read.MD5" class="has-text-grey-light">—</span>
+              <span
+                v-else-if="readOnly && !read.destinationMd5"
+                class="has-text-grey is-italic"
+              >
+                Not checked before {{ archived ? "archive" : "move" }}
+              </span>
               <span v-else-if="read.destinationMd5" class="md5-text">{{
                 read.destinationMd5
               }}</span>
@@ -122,9 +129,10 @@
               <b-button
                 size="is-small"
                 icon-left="clipboard-text-outline"
+                :disabled="!getFullFilePath(read.file.originalName)"
                 @click="copyPath(read.file.originalName)"
               >
-                Copy Path
+                {{ copyButtonLabel }}
               </b-button>
             </td>
           </tr>
@@ -143,11 +151,11 @@
             ></b-icon>
             <span class="ml-1">Verified</span>
           </div>
-          <div class="column is-narrow">
+          <div v-if="!readOnly" class="column is-narrow">
             <b-icon icon="sync" type="is-info" size="is-small"></b-icon>
             <span class="ml-1">Checking</span>
           </div>
-          <div class="column is-narrow">
+          <div v-if="!readOnly" class="column is-narrow">
             <b-icon
               icon="clock-outline"
               type="is-warning"
@@ -194,9 +202,9 @@ export default {
       type: Array,
       default: () => [],
     },
-    runPath: {
-      type: String,
-      required: true,
+    location: {
+      type: Object,
+      default: null,
     },
     allowedExtensions: {
       type: Array,
@@ -206,14 +214,21 @@ export default {
       type: String,
       default: null,
     },
-  },
-  data() {
-    return {
-      datastoreRoot:
-        process.env.HPC_DATASTORE_ROOT?.replace(/['"]+/g, "") || "",
-    };
+    archived: {
+      type: Boolean,
+      default: false,
+    },
+    readOnly: {
+      type: Boolean,
+      default: false,
+    },
   },
   computed: {
+    copyButtonLabel() {
+      return this.location?.authoritative === "s3"
+        ? "Copy S3 location"
+        : "Copy Path";
+    },
     sortedReads() {
       if (!this.reads) return [];
       return [...this.reads].sort((a, b) => {
@@ -309,6 +324,15 @@ export default {
 
       // 3. Run is processing and destination MD5 not yet calculated
       if (!read.destinationMd5 && this.runStatus === "pending") {
+        if (this.readOnly) {
+          return {
+            icon: "minus-circle-outline",
+            type: "is-light",
+            text: `Not checked before ${this.archived ? "archive" : "move"}`,
+            tooltip:
+              "Checksum verification was not completed before this project became storage read-only.",
+          };
+        }
         return {
           icon: "sync",
           type: "is-info",
@@ -320,6 +344,15 @@ export default {
 
       // 4. Has original MD5 but destination not yet checked
       if (!read.destinationMd5) {
+        if (this.readOnly) {
+          return {
+            icon: "minus-circle-outline",
+            type: "is-light",
+            text: `Not checked before ${this.archived ? "archive" : "move"}`,
+            tooltip:
+              "Checksum verification was not completed before this project became storage read-only.",
+          };
+        }
         return {
           icon: "clock-outline",
           type: "is-warning",
@@ -334,7 +367,9 @@ export default {
         return {
           icon: "alert-circle",
           type: "is-danger",
-          text: "Mismatch",
+          text: this.readOnly
+            ? `Mismatch recorded before ${this.archived ? "archive" : "move"}`
+            : "Mismatch",
           tooltip: `CHECKSUM MISMATCH! The file may be corrupted.\n\nOriginal: ${read.MD5}\nDestination: ${read.destinationMd5}\n\nPlease contact an administrator.`,
         };
       }
@@ -346,16 +381,20 @@ export default {
       return {
         icon: "check-circle",
         type: "is-success",
-        text: "Verified",
+        text: this.readOnly
+          ? `Verified before ${this.archived ? "archive" : "move"}`
+          : "Verified",
         tooltip: `File integrity verified - checksums match.\n\nMD5: ${read.MD5}\nChecked: ${lastChecked}`,
       };
     },
     getFullFilePath(fileName) {
-      const safeFileName = fileName.replace(/\s/g, "\\ ");
-      return `${this.datastoreRoot}${this.runPath}/raw/${safeFileName}`;
+      const baseUri = this.location?.rawUri;
+      if (!baseUri || !fileName) return "";
+      return `${baseUri.replace(/\/$/, "")}/${fileName}`;
     },
     copyPath(fileName) {
       const fullPath = this.getFullFilePath(fileName);
+      if (!fullPath) return;
       this.$copyText(fullPath).then(
         () => {
           this.$buefy.toast.open({

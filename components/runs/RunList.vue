@@ -31,7 +31,7 @@
           </b-select>
         </div>
       </div>
-      <p v-if="sample && showNewButton" class="control">
+      <p v-if="canCreateRun" class="control">
         <nuxt-link
           :to="{ name: 'runs-new', query: { sample: sample._id } }"
           class="button is-success"
@@ -49,7 +49,7 @@
         :key="run._id"
         class="column is-6"
       >
-        <RunCard :run="run" />
+        <RunCard :run="run" :project-storage="effectiveStorage" />
       </div>
     </div>
   </div>
@@ -57,12 +57,30 @@
 
 <script>
 import RunCard from "./RunCard.vue";
+import { describeStorage } from "~/utils/storageState";
 
 export default {
   components: {
     RunCard,
   },
-  props: ["sample", "runs", "showNewButton"],
+  props: {
+    sample: {
+      type: Object,
+      default: null,
+    },
+    runs: {
+      type: Array,
+      default: null,
+    },
+    showNewButton: {
+      type: [Boolean, String],
+      default: false,
+    },
+    projectStorage: {
+      type: Object,
+      default: null,
+    },
+  },
   data() {
     return {
       filterText: "",
@@ -71,6 +89,23 @@ export default {
     };
   },
   computed: {
+    effectiveStorage() {
+      return (
+        this.projectStorage ||
+        this.sample?.projectStorage ||
+        this.sample?.project?.storage ||
+        null
+      );
+    },
+    canCreateRun() {
+      const showButton =
+        this.showNewButton === true || this.showNewButton === "true";
+      return (
+        Boolean(this.sample) &&
+        showButton &&
+        !describeStorage(this.effectiveStorage).readOnly
+      );
+    },
     runsList() {
       if (this.runs) {
         return this.runs;

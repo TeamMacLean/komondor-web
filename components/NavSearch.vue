@@ -37,6 +37,12 @@
               class="has-text-grey"
             ></b-icon>
             <span class="truncate">{{ props.option.name }}</span>
+            <b-icon
+              v-if="isStorageReadOnly(props.option)"
+              icon="cloud-outline"
+              size="is-small"
+              class="has-text-info ml-1"
+            />
           </div>
           <div v-if="props.option.type == 'sample'" class="truncate">
             <b-icon
@@ -45,10 +51,22 @@
               class="has-text-grey"
             ></b-icon>
             <span class="truncate">{{ props.option.name }}</span>
+            <b-icon
+              v-if="isStorageReadOnly(props.option)"
+              icon="cloud-outline"
+              size="is-small"
+              class="has-text-info ml-1"
+            />
           </div>
           <div v-if="props.option.type == 'run'" class="truncate">
             <b-icon icon="dna" size="is-small" class="has-text-grey"></b-icon>
             <span class="truncate">{{ props.option.name }}</span>
+            <b-icon
+              v-if="isStorageReadOnly(props.option)"
+              icon="cloud-outline"
+              size="is-small"
+              class="has-text-info ml-1"
+            />
           </div>
         </template>
       </b-autocomplete>
@@ -59,6 +77,7 @@
 <script>
 import debounce from "lodash/debounce";
 import { getApiErrorMessage } from "~/utils/apiError";
+import { describeStorage, storageForEntity } from "~/utils/storageState";
 
 export default {
   data() {
@@ -84,6 +103,9 @@ export default {
     },
   },
   methods: {
+    isStorageReadOnly(item) {
+      return describeStorage(storageForEntity(item)).readOnly;
+    },
     onSelect: function (item) {
       this.query = "";
       this.results = [];

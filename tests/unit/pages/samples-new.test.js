@@ -664,7 +664,8 @@ describe("NewSample.vue", () => {
           "Wild habitat conditions with natural prey availability"
         );
         expect(wrapper.vm.$buefy.toast.open).toHaveBeenCalledWith({
-          message: "Form pre-filled from cloned sample. Please enter a new Sample Name.",
+          message:
+            "Form pre-filled from cloned sample. Please enter a new Sample Name.",
           type: "is-info",
           duration: 5000,
         });
