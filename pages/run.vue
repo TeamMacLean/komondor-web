@@ -326,6 +326,34 @@ export default {
       if (!this.run || !this.run.md5VerificationStatus) {
         return { show: false };
       }
+      const result = this.run.md5VerificationResult;
+      const hasMismatch =
+        result?.mismatches > 0 ||
+        (this.run.rawFiles || []).some((read) => read.md5Mismatch === true);
+      if (hasMismatch) {
+        return {
+          show: true,
+          text: "Checksum Mismatch",
+          type: "is-danger",
+          icon: "alert-circle",
+        };
+      }
+      if (this.run.md5VerificationStatus === "failed") {
+        return {
+          show: true,
+          text: "Checksum Verification Failed",
+          type: "is-danger",
+          icon: "alert-circle",
+        };
+      }
+      if (result?.disabled || result?.skipped > 0 || result?.total === 0) {
+        return {
+          show: true,
+          text: "Checksums Not Fully Verified",
+          type: "is-warning",
+          icon: "alert-circle-outline",
+        };
+      }
       if (this.storageDescription.readOnly) {
         if (this.run.md5VerificationStatus === "complete") {
           return {
@@ -388,7 +416,7 @@ export default {
     if (
       !this.storageDescription.readOnly &&
       this.run &&
-      (this.run.status === "pending" ||
+      (["pending", "processing"].includes(this.run.status) ||
         this.run.md5VerificationStatus === "pending" ||
         this.run.md5VerificationStatus === "in_progress")
     ) {
@@ -444,7 +472,7 @@ export default {
         const updatedRun = response.data.run;
         this.fileLocation = response.data.location || this.fileLocation;
 
-        const wasPending = this.run.status === "pending";
+        const wasPending = ["pending", "processing"].includes(this.run.status);
         const wasMd5Pending =
           this.run.md5VerificationStatus === "pending" ||
           this.run.md5VerificationStatus === "in_progress";
@@ -461,7 +489,7 @@ export default {
           return;
         }
 
-        const isNowComplete = updatedRun.status !== "pending";
+        const isNowComplete = ["complete", "error"].includes(updatedRun.status);
         const isMd5NowComplete =
           updatedRun.md5VerificationStatus === "complete" ||
           updatedRun.md5VerificationStatus === "failed";
@@ -475,11 +503,8 @@ export default {
 
         if (wasMd5Pending && isMd5NowComplete) {
           this.$buefy.toast.open({
-            message: `Run checksum verification updated to: ${updatedRun.md5VerificationStatus}`,
-            type:
-              updatedRun.md5VerificationStatus === "complete"
-                ? "is-success"
-                : "is-danger",
+            message: this.md5Status.text,
+            type: this.md5Status.type,
           });
         }
 
