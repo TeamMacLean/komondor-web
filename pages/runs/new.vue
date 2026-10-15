@@ -189,6 +189,15 @@
                 >- Upload files from your computer</span
               >
             </b-radio>
+            
+            <b-message
+              v-if="uploadMethod === 'local-filesystem'"
+              type="is-warning"
+              class="mt-3 is-size-7"
+              has-icon
+            >
+              <strong>File size limit:</strong> Web uploads are restricted to around <strong>28GB</strong>. If your file is larger than this, please use the <strong>HPC Transfer</strong> method above.
+            </b-message>
           </div>
 
           <!-- HPC Directory Finder -->
