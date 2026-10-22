@@ -26,7 +26,7 @@ describe("file lists after storage is locked", () => {
           reads: [
             {
               _id: "read",
-              file: { originalName: "reads.fq.gz" },
+              file: { originalName: "reads.fq.gz", locationUri: `${rawUri}/reads.fq.gz` },
               MD5: "a".repeat(32),
             },
           ],

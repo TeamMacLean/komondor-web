@@ -129,8 +129,8 @@
               <b-button
                 size="is-small"
                 icon-left="clipboard-text-outline"
-                :disabled="!getFullFilePath(read.file.originalName)"
-                @click="copyPath(read.file.originalName)"
+                :disabled="!getFullFilePath(read.file)"
+                @click="copyPath(read.file)"
               >
                 {{ copyButtonLabel }}
               </b-button>
@@ -388,6 +388,7 @@ export default {
       };
     },
     getFullFilePath(fileName) {
+      if (fileName && typeof fileName === "object") return fileName.locationUri || "";
       const baseUri = this.location?.rawUri;
       if (!baseUri || !fileName) return "";
       return `${baseUri.replace(/\/$/, "")}/${fileName}`;

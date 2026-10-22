@@ -57,10 +57,10 @@
         <div class="fileInfo">
           <b-icon icon="file-outline" size="is-small"></b-icon>
 
-          <div class="fileNamePadding">{{file.file.originalName}}</div>
+          <div class="fileNamePadding">{{file.file.originalName}}<small v-if="file.file.catalogue" class="ml-2">Preserved file — classification unconfirmed</small></div>
 
           <b-button type="button"
-            v-clipboard:copy="getFullFilePath(file.file.path)"
+            v-clipboard:copy="getFullFilePath(file.file)"
             v-clipboard:success="onCopy"
             v-clipboard:error="onError"
           >
@@ -123,6 +123,7 @@ export default {
   },
   methods: {
     getFullFilePath: function (fileName) {
+      if (fileName && typeof fileName === "object") return fileName.locationUri || "";
       const baseUri = this.location?.additionalUri;
       if (!baseUri || !fileName) return "";
       return `${baseUri.replace(/\/$/, "")}/${fileName}`;
