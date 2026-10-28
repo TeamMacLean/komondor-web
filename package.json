@@ -44,7 +44,7 @@
     "identicon.js": "^2.3.3",
     "lodash": "^4.17.20",
     "moment": "^2.29.1",
-    "nuxt": "^2.18.1",
+    "nuxt": "^4.6.2",
     "nuxt-buefy": "^0.4.4",
     "nuxt-compress": "^4.1.0",
     "nuxt-fontawesome": "^0.4.0",
