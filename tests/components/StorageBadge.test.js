@@ -33,6 +33,17 @@ describe("StorageBadge", () => {
     expect(mountBadge(validSummary("aws")).text()).toContain("Archived in AWS");
   });
 
+  it("shows a preservation date as deliberate HPC retention", () => {
+    const until = new Date(Date.now() + 86400000).toISOString();
+    expect(
+      mountBadge(
+        validSummary("aws_pending_hpc_deletion", {
+          preserveOnHpcUntil: until,
+        })
+      ).text()
+    ).toContain("HPC preservation set");
+  });
+
   it("shows migration attention only to admins", () => {
     const storage = validSummary("migrating", {
       migrationHealth: "needs_attention",

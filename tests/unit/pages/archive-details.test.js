@@ -18,6 +18,51 @@ const pages = [
 ];
 
 describe("archived detail pages", () => {
+  it("passes independent location evidence to the project page and retains preservation metadata", async () => {
+    const storageLocations = {
+      hpc: {
+        status: "present",
+        uri: "/reads/group/project",
+        checkedAt: "2026-11-13T12:00:00.000Z",
+      },
+      aws: {
+        status: "verified",
+        uri: "s3://archive/group/project",
+        verifiedAt: "2026-10-30T12:00:00.000Z",
+      },
+    };
+    const project = {
+      _id: "project-1",
+      additionalFiles: [],
+      storage: archivedStorage("aws_pending_hpc_deletion"),
+      preserveOnHpcUntil: "2027-11-13T23:59:59.999Z",
+    };
+    const result = await ProjectPage.asyncData({
+      route: { query: { id: "project-1" } },
+      error: vi.fn(),
+      $axios: {
+        get: vi.fn().mockResolvedValue({
+          status: 200,
+          data: { project, storageLocations, actualAdditionalFiles: null },
+        }),
+      },
+    });
+    expect(result.storageLocations).toEqual(storageLocations);
+    expect(result.project.preserveOnHpcUntil).toBe(project.preserveOnHpcUntil);
+    ProjectPage.methods.updatePreservation.call(
+      {
+        project: result.project,
+        $set: (obj, key, value) => {
+          obj[key] = value;
+        },
+      },
+      null
+    );
+    expect(result.project.preserveOnHpcUntil).toBeNull();
+    expect(result.project.storage.preserveOnHpcUntil).toBeNull();
+    expect(result.project.storage.authoritativeLocation).toBe("s3");
+    expect(result.project.storage.acceptsHpcWrites).toBe(false);
+  });
   it.each(
     pages.flatMap(([kind, page]) =>
       ["aws_pending_hpc_deletion", "aws"].map((state) => [kind, state, page])

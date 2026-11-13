@@ -91,7 +91,13 @@ export const describeStorage = (summary) => {
 
   return {
     state,
-    badge: state === "hpc" ? HPC_BADGE : BADGES[state],
+    badge:
+      state === "aws_pending_hpc_deletion" &&
+      new Date(summary.preserveOnHpcUntil).getTime() > Date.now()
+        ? { ...BADGES[state], text: "Copied to AWS · HPC preservation set" }
+        : state === "hpc"
+        ? HPC_BADGE
+        : BADGES[state],
     readOnly: !expectedWritable,
     authoritative: expectedAuthoritative,
     needsAttention:
@@ -106,7 +112,7 @@ export const storageReadOnlyMessage = (summary) => {
     case "migrating":
       return "This project is being moved to AWS. New samples, runs and files cannot be added.";
     case "aws_pending_hpc_deletion":
-      return "This project has been copied to AWS and is awaiting HPC cleanup. New samples, runs and files cannot be added.";
+      return "This project has a verified AWS copy. New samples, runs and files cannot be added.";
     case "aws":
       return "This project is archived in AWS. New samples, runs and files cannot be added.";
     default:

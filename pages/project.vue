@@ -26,6 +26,14 @@
           class="mt-4"
         />
 
+        <ProjectStorage
+          :project="project"
+          :storage-locations="storageLocations"
+          :location="fileLocation"
+          class="mt-4"
+          @preservation-updated="updatePreservation"
+        />
+
         <p class="subtitle">
           <nuxt-link
             :to="{ name: 'user', query: { username: project.owner } }"
@@ -176,6 +184,7 @@ import AdditionalFileList from "../components/AdditionalFileList.vue";
 import AddAccessionModal from "../components/AddAccessionModal.vue";
 import StorageBadge from "~/components/storage/StorageBadge.vue";
 import StorageReadOnlyNotice from "~/components/storage/StorageReadOnlyNotice.vue";
+import ProjectStorage from "~/components/storage/ProjectStorage.vue";
 import { isEnaAdmin } from "~/utils/adminUsers";
 import { getApiErrorMessage, getApiErrorStatus } from "~/utils/apiError";
 import { describeStorage } from "~/utils/storageState";
@@ -187,6 +196,7 @@ export default {
     AddAccessionModal,
     StorageBadge,
     StorageReadOnlyNotice,
+    ProjectStorage,
   },
   middleware: ["auth"],
 
@@ -226,6 +236,7 @@ export default {
             project: res.data.project,
             additionalFiles: additionalFilesWithVerifiedField,
             fileLocation: res.data.location || null,
+            storageLocations: res.data.storageLocations || null,
             isModalActive: false,
             pendingChange: null,
             loading: false,
@@ -289,6 +300,12 @@ export default {
     },
   },
   methods: {
+    updatePreservation(until) {
+      this.$set(this.project, "preserveOnHpcUntil", until);
+      if (this.project.storage) {
+        this.$set(this.project.storage, "preserveOnHpcUntil", until);
+      }
+    },
     copyLocation(value) {
       return this.$copyText(value).then(
         () =>
