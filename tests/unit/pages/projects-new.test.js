@@ -3,6 +3,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { createLocalVue, shallowMount } from "@vue/test-utils";
 import Vuex from "vuex";
 import NewProject from "~/pages/projects/new.vue";
+import { actions, mutations } from "~/store";
 
 const localVue = createLocalVue();
 localVue.use(Vuex);
@@ -62,8 +63,9 @@ describe("NewProject.vue", () => {
           ],
         },
         "b-select": {
-          template: "<select><slot /></select>",
-          props: ["value", "placeholder", "required"],
+          template:
+            '<select :value="value" :disabled="disabled" @change="$emit(\'input\', $event.target.value)"><slot /></select>',
+          props: ["value", "placeholder", "required", "disabled"],
         },
         "b-checkbox": {
           template: "<input type='checkbox' />",
@@ -738,6 +740,70 @@ describe("NewProject.vue", () => {
 
   describe("Methods", () => {
     describe("submitForm", () => {
+      it("lets an ENA admin without token groups select an API-provided group and create its project", async () => {
+        mockAuth.user = {
+          username: "deeks",
+          isAdmin: false,
+          groups: [],
+        };
+        store = new Vuex.Store({
+          state: {
+            auth: { loggedIn: true, user: mockAuth.user },
+            groups: [],
+          },
+          mutations: { setGroups: mutations.setGroups },
+          actions: { refreshGroups: actions.refreshGroups },
+        });
+        store.$axios = mockAxios;
+        mockAxios.get.mockResolvedValue({
+          data: {
+            groups: [
+              { _id: "group1", name: "First Group", deleted: false },
+              { _id: "group2", name: "Other Group", deleted: false },
+              { _id: "deleted-group", name: "Deleted Group", deleted: true },
+            ],
+          },
+        });
+        mockAxios.post.mockResolvedValue({
+          data: { project: { _id: "new-project-id" } },
+        });
+
+        wrapper = createWrapper();
+        await NewProject.fetch({ store });
+        await wrapper.vm.$nextTick();
+
+        expect(mockAxios.get).toHaveBeenCalledWith("/groups");
+        const groupSelect = wrapper.find("select");
+        expect(groupSelect.element.disabled).toBe(false);
+        expect(
+          groupSelect
+            .findAll("option")
+            .wrappers.map((option) => option.element.value)
+        ).toEqual(["group1", "group2"]);
+        expect(wrapper.vm.project.group).toBe("");
+
+        await wrapper.setData({
+          consent: true,
+          project: {
+            name: "Admin-created project for another group",
+            shortDesc: "A project created for another research group",
+            longDesc:
+              "Valid long description that meets the minimum character requirement for this field to be considered valid and ready for submission",
+          },
+        });
+        await groupSelect.setValue("group2");
+        await wrapper.find("form").trigger("submit");
+
+        expect(mockAxios.post).toHaveBeenCalledWith(
+          "/projects/new",
+          expect.objectContaining({ group: "group2", owner: "deeks" })
+        );
+        expect(mockRouter.push).toHaveBeenCalledWith({
+          name: "project",
+          query: { id: "new-project-id" },
+        });
+      });
+
       it("should show toast warning when form is invalid", async () => {
         mockAuth.user = null;
         wrapper = createWrapper({
