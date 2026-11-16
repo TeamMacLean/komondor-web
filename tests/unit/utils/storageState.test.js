@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   describeStorage,
   storageForEntity,
+  storageIndicator,
   storageReadOnlyMessage,
 } from "~/utils/storageState";
 
@@ -95,6 +96,52 @@ describe("describeStorage", () => {
         })
       )
     ).toMatchObject({ state: "migrating", needsAttention: true });
+  });
+});
+
+describe("storageIndicator", () => {
+  it("shows nothing for a plain HPC project", () => {
+    expect(storageIndicator(undefined)).toBeNull();
+    expect(storageIndicator(validSummary("hpc"))).toBeNull();
+  });
+
+  it("uses the state's own badge icon and label", () => {
+    expect(storageIndicator(validSummary("aws"))).toEqual({
+      icon: "archive",
+      type: "is-info",
+      text: "Archived in AWS",
+    });
+  });
+
+  it("keeps the preservation wording for retained HPC copies", () => {
+    const until = new Date(Date.now() + 86400000).toISOString();
+    expect(
+      storageIndicator(
+        validSummary("aws_pending_hpc_deletion", { preserveOnHpcUntil: until })
+      ).text
+    ).toBe("Copied to AWS · HPC preservation set");
+  });
+
+  it("swaps in the attention warning for admins only", () => {
+    const storage = validSummary("migrating", {
+      migrationHealth: "needs_attention",
+    });
+    expect(storageIndicator(storage)).toMatchObject({
+      type: "is-warning",
+      text: "Moving to AWS",
+    });
+    expect(storageIndicator(storage, { isAdmin: true })).toEqual({
+      icon: "alert-circle-outline",
+      type: "is-danger",
+      text: "Moving to AWS · AWS move needs attention",
+    });
+  });
+
+  it("flags an invalid summary", () => {
+    expect(storageIndicator({ state: "unexpected" })).toMatchObject({
+      type: "is-danger",
+      text: "Storage state needs attention",
+    });
   });
 });
 

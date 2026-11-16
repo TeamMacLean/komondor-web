@@ -3,60 +3,87 @@
     <div class="columns is-gapless">
       <!-- Sidebar for Projects -->
       <aside class="column is-3 is-2-fullhd has-background-light sidebar">
-        <div class="section">
-          <div class="container">
-            <div
-              class="is-flex is-justify-content-space-between is-align-items-center mb-4"
-            >
-              <h2 class="title is-5 mb-0">Projects</h2>
-              <nuxt-link to="/projects/new" class="button is-success is-small">
-                New
-              </nuxt-link>
-            </div>
+        <div class="sidebar-inner">
+          <div class="sidebar-header">
+            <h2 class="title is-5 mb-0">
+              Projects
+              <span v-if="projects.length" class="project-count">
+                {{ projects.length }}
+              </span>
+            </h2>
+            <nuxt-link to="/projects/new" class="button is-success is-small">
+              <b-icon icon="plus" size="is-small" />
+              <span>New</span>
+            </nuxt-link>
+          </div>
 
-            <b-field>
-              <b-input
-                v-model="projectFilterText"
-                placeholder="Find a project..."
-                icon="magnify"
-                clearable
-              ></b-input>
-            </b-field>
+          <b-field class="mb-3">
+            <b-input
+              v-model="projectFilterText"
+              placeholder="Find a project..."
+              icon="magnify"
+              clearable
+            ></b-input>
+          </b-field>
 
-            <div id="sidebar-projects" class="menu">
-              <b-loading :is-full-page="false" :active="isLoading"></b-loading>
-              <ul class="menu-list">
-                <li
-                  v-for="project in displayedProjects"
-                  :key="project._id"
-                  class="truncate"
+          <nav id="sidebar-projects" aria-label="Projects">
+            <b-loading :is-full-page="false" :active="isLoading"></b-loading>
+            <ul class="project-list">
+              <li v-for="project in displayedProjects" :key="project._id">
+                <nuxt-link
+                  :to="{ name: 'project', query: { id: project._id } }"
+                  class="project-link"
                 >
-                  <nuxt-link
+                  <b-icon
+                    icon="folder-text-outline"
+                    size="is-small"
+                    class="project-icon"
+                  />
+                  <!-- The tooltip sits on the name, not the whole row, so it
+                       does not stack on top of the storage icon's own one. -->
+                  <span
                     v-tooltip="{
                       content: project.name,
+                      html: false,
                       delay: 500,
                       placement: 'bottom-start',
                     }"
-                    :to="{ name: 'project', query: { id: project._id } }"
+                    class="project-name"
+                    >{{ project.name }}</span
                   >
-                    <b-icon
-                      icon="folder-text-outline"
-                      size="is-small"
-                      class="has-text-grey mr-1"
-                    />
-                    {{ project.name }}
-                    <StorageBadge :storage="project.storage" class="ml-1" />
-                  </nuxt-link>
-                </li>
-                <li v-if="canShowMore" class="mt-2">
-                  <a class="is-size-7" @click="showAll"> Show more... </a>
-                </li>
-                <li v-if="!isLoading && projects.length === 0">
-                  <p class="is-size-7 has-text-grey p-2">No projects found.</p>
+                  <StorageBadge :storage="project.storage" compact />
+                </nuxt-link>
+              </li>
+            </ul>
+            <button
+              v-if="canShowMore"
+              type="button"
+              class="button is-small is-fullwidth show-more"
+              @click="showAll"
+            >
+              Show all {{ filteredProjects.length }} projects
+            </button>
+            <p v-if="emptyMessage" class="is-size-7 has-text-grey px-2 py-3">
+              {{ emptyMessage }}
+            </p>
+
+            <!-- Follows the list rather than being pinned to the bottom: the
+                 sidebar is 100vh tall but starts below the navbar, so a pinned
+                 footer would sit under the fold until the page scrolls. -->
+            <div v-if="storageKey.length" class="storage-key">
+              <p class="storage-key-title">Storage</p>
+              <ul>
+                <li v-for="item in storageKey" :key="item.text">
+                  <StorageBadge
+                    :storage="item.storage"
+                    compact
+                    aria-hidden="true"
+                  />
+                  <span>{{ item.text }}</span>
                 </li>
               </ul>
             </div>
-          </div>
+          </nav>
         </div>
       </aside>
 
@@ -150,6 +177,7 @@ import { mapState } from "vuex";
 import NewsCard from "./NewsCard.vue";
 import StorageBadge from "~/components/storage/StorageBadge.vue";
 import { isEnaAdmin } from "~/utils/adminUsers";
+import { storageIndicator } from "~/utils/storageState";
 
 export default {
   components: {
@@ -205,6 +233,37 @@ export default {
         this.filteredProjects.length > this.defaultProjectCount
       );
     },
+
+    emptyMessage() {
+      if (this.isLoading) {
+        return "";
+      }
+      if (this.projects.length === 0) {
+        return "No projects found.";
+      }
+      if (this.filteredProjects.length === 0) {
+        return `No projects match “${this.projectFilterText}”.`;
+      }
+      return "";
+    },
+
+    /* One entry per storage icon currently in the list, so the icons explain
+       themselves without hovering. Keyed on the label: the "copied to AWS"
+       icon has two meanings depending on whether HPC preservation is set. */
+    storageKey() {
+      const isAdmin = Boolean(this.$store?.getters?.isAdmin);
+      const entries = new Map();
+      for (const project of this.displayedProjects) {
+        const indicator = storageIndicator(project.storage, { isAdmin });
+        if (indicator && !entries.has(indicator.text)) {
+          entries.set(indicator.text, {
+            text: indicator.text,
+            storage: project.storage,
+          });
+        }
+      }
+      return [...entries.values()];
+    },
   },
   async created() {
     if (this.isLoggedIn) {
@@ -245,6 +304,112 @@ export default {
   border-right: 1px solid #dbdbdb;
 }
 
+/* Bulma's .section padding (3rem at desktop) left a narrow column even
+   narrower; the list needs the width more than the margin does. */
+.sidebar-inner {
+  padding: 1.5rem 1rem;
+}
+
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.project-count {
+  display: inline-block;
+  margin-left: 0.375rem;
+  padding: 0 0.5rem;
+  border-radius: 9999px;
+  background-color: #e8e8e8;
+  color: #4a4a4a;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.5;
+  vertical-align: middle;
+}
+
+#sidebar-projects {
+  /* Positioned so the b-loading overlay covers the list, not the page. */
+  position: relative;
+}
+
+/* Spelled out rather than inherited: an unscoped `ul` rule elsewhere in the
+   app (CollapsibleUploaderHelp) adds a square bullet and an indent to every
+   list once it has loaded. */
+.project-list,
+.storage-key ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.project-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.25rem;
+  padding: 0.375rem 0.5rem;
+  border-radius: 6px;
+  color: #4a4a4a;
+}
+
+.project-link:hover {
+  background-color: rgba(10, 10, 10, 0.05);
+  color: #363636;
+}
+
+.project-link:focus-visible {
+  outline: 2px solid #3273dc;
+  outline-offset: -2px;
+}
+
+.project-icon {
+  flex-shrink: 0;
+  color: #7a7a7a;
+}
+
+/* min-width: 0 lets the name shrink below its text width inside the flex row,
+   which is what makes the ellipsis appear instead of a hard clip. */
+.project-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.show-more {
+  margin-top: 0.5rem;
+}
+
+.storage-key {
+  margin: 1rem 0.5rem 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid #dbdbdb;
+  color: #7a7a7a;
+  font-size: 0.75rem;
+}
+
+.storage-key-title {
+  margin-bottom: 0.375rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.storage-key li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.storage-key li + li {
+  margin-top: 0.25rem;
+}
+
 /* Stick the sidebar only where it sits beside the content — Bulma stacks the
    columns below the tablet breakpoint, and a full-height sticky column there
    would push the main content off screen. `top: 0` rather than the navbar
@@ -261,24 +426,14 @@ export default {
   }
 
   /* Pin the title and search field; only the project list scrolls. */
-  .sidebar > .section {
+  .sidebar-inner {
     display: flex;
     flex-direction: column;
     flex: 1;
     min-height: 0;
-  }
-
-  .sidebar .container {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    min-height: 0;
-    width: 100%;
   }
 
   #sidebar-projects {
-    /* Positioned so the b-loading overlay covers the list, not the page. */
-    position: relative;
     overflow-y: auto;
     flex: 1;
     min-height: 0;
@@ -287,12 +442,6 @@ export default {
 
 .fill-height {
   min-height: calc(100vh - 52px);
-}
-
-.truncate {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .h-100 {

@@ -105,6 +105,35 @@ export const describeStorage = (summary) => {
   };
 };
 
+/**
+ * The single icon a compact storage badge shows, or null when there is
+ * nothing to show (a plain HPC project). A compact row has room for one icon,
+ * so for admins an AWS move that needs attention takes the place of the
+ * "Moving to AWS" icon rather than adding a second one.
+ */
+export const storageIndicator = (summary, { isAdmin = false } = {}) => {
+  const description = describeStorage(summary);
+  const { badge } = description;
+
+  if (!badge.show) {
+    return null;
+  }
+
+  if (
+    isAdmin &&
+    description.state === "migrating" &&
+    description.needsAttention
+  ) {
+    return {
+      icon: "alert-circle-outline",
+      type: "is-danger",
+      text: `${badge.text} · AWS move needs attention`,
+    };
+  }
+
+  return { icon: badge.icon, type: badge.type, text: badge.text };
+};
+
 export const storageReadOnlyMessage = (summary) => {
   const { state } = describeStorage(summary);
 

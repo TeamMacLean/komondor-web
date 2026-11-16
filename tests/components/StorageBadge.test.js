@@ -11,10 +11,11 @@ const validSummary = (state, overrides = {}) => ({
   ...overrides,
 });
 
-const mountBadge = (storage, isAdmin = false) =>
+const mountBadge = (storage, isAdmin = false, props = {}) =>
   mount(StorageBadge, {
-    propsData: { storage },
+    propsData: { storage, ...props },
     mocks: { $store: { getters: { isAdmin } } },
+    directives: { tooltip: {} },
     stubs: {
       "b-tag": {
         props: ["type", "size"],
@@ -66,5 +67,39 @@ describe("StorageBadge", () => {
         })
       ).text()
     ).toContain("Storage state needs attention");
+  });
+
+  describe("compact", () => {
+    const mountCompact = (storage, isAdmin = false) =>
+      mountBadge(storage, isAdmin, { compact: true });
+
+    it("renders nothing for legacy HPC projects", () => {
+      expect(mountCompact(undefined).html()).toBe("");
+    });
+
+    it("shows one labelled icon instead of the text tag", () => {
+      const wrapper = mountCompact(validSummary("aws"));
+      const indicator = wrapper.find(".storage-indicator");
+      expect(indicator.exists()).toBe(true);
+      expect(indicator.classes()).toContain("is-info");
+      expect(indicator.attributes("role")).toBe("img");
+      expect(indicator.attributes("aria-label")).toBe("Archived in AWS");
+      expect(wrapper.find(".tag").exists()).toBe(false);
+      expect(wrapper.text()).toBe("");
+    });
+
+    it("warns admins about a stuck AWS move in the same single icon", () => {
+      const storage = validSummary("migrating", {
+        migrationHealth: "needs_attention",
+      });
+      const indicator = mountCompact(storage, true).find(".storage-indicator");
+      expect(indicator.classes()).toContain("is-danger");
+      expect(indicator.attributes("aria-label")).toContain("needs attention");
+      expect(
+        mountCompact(storage, false)
+          .find(".storage-indicator")
+          .attributes("aria-label")
+      ).toBe("Moving to AWS");
+    });
   });
 });
