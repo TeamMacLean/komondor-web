@@ -1,14 +1,21 @@
 <template>
   <span class="storage-disabled-action">
     <b-tooltip :label="reason" multilined position="is-bottom">
-      <span tabindex="0" :aria-describedby="descriptionId" aria-disabled="true">
+      <span
+        role="button"
+        tabindex="0"
+        :aria-labelledby="`${descriptionId}-label`"
+        :aria-describedby="descriptionId"
+        aria-disabled="true"
+      >
         <b-button
           disabled
+          aria-hidden="true"
           :type="type"
           :icon-left="iconLeft"
           :aria-describedby="descriptionId"
-          ><slot
-        /></b-button>
+          ><span :id="`${descriptionId}-label`"><slot /></span
+        ></b-button>
       </span>
     </b-tooltip>
     <span :id="descriptionId" class="help">{{ reason }}</span>

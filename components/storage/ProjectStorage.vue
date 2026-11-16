@@ -136,8 +136,7 @@
           :aria-describedby="`${inputId}-visibility ${inputId}-reason-help`"
         ></textarea>
         <p :id="`${inputId}-reason-help`" class="help">
-          Required when saving or clearing. When clearing, explain the release;
-          that explanation is kept in the audit history only.
+          Required when saving the keep date or its details.
         </p>
       </div>
       <div class="field is-grouped is-grouped-multiline">
@@ -161,17 +160,32 @@
             Save preservation
           </button>
         </div>
-        <div v-if="savedUntil || preservationInvalid" class="control">
-          <button
-            type="button"
-            class="button"
-            :disabled="saving || conflict || !reason.trim()"
-            data-testid="clear-preservation"
-            @click="updateDate(null)"
-          >
-            Clear preservation date
-          </button>
-        </div>
+      </div>
+      <div v-if="savedUntil || preservationInvalid" class="field">
+        <label :for="`${inputId}-release-reason`" class="label">
+          Reason for releasing the hold
+        </label>
+        <textarea
+          :id="`${inputId}-release-reason`"
+          v-model="releaseReason"
+          class="textarea"
+          maxlength="1000"
+          :disabled="saving || conflict"
+          :aria-describedby="`${inputId}-release-help`"
+        ></textarea>
+        <p :id="`${inputId}-release-help`" class="help mb-2">
+          Enter a new explanation before clearing. This release reason is kept
+          in the audit history only.
+        </p>
+        <button
+          type="button"
+          class="button"
+          :disabled="saving || conflict || !canClear"
+          data-testid="clear-preservation"
+          @click="updateDate(null)"
+        >
+          Clear preservation date
+        </button>
       </div>
       <p v-if="locations.hpc.status === 'absent'" class="help">
         The HPC copy is recorded as absent. Setting a date does not restore it.
@@ -211,6 +225,7 @@ export default {
       selectedDate: retentionDateInput(this.project.preserveOnHpcUntil),
       requestedBy: this.project.hpcPreservationRequestedBy || "",
       reason: this.project.hpcPreservationReason || "",
+      releaseReason: "",
       saving: false,
       conflict: false,
       errorMessage: "",
@@ -272,6 +287,9 @@ export default {
         (this.selectedDeadline === this.savedUntil ||
           new Date(this.selectedDeadline).getTime() > this.now)
       );
+    },
+    canClear() {
+      return this.releaseReason.trim() && this.releaseReason.length <= 1000;
     },
     validUntil() {
       return validIsoDate(this.savedUntil);
@@ -344,6 +362,7 @@ export default {
     },
     savedUntil(value) {
       this.selectedDate = retentionDateInput(value);
+      this.releaseReason = "";
       this.now = Date.now();
     },
   },
@@ -373,13 +392,18 @@ export default {
     },
     async updateDate(until) {
       if (!this.isAdmin || this.saving || this.conflict) return;
+      const submittedReason = until === null ? this.releaseReason : this.reason;
+      if (until === null && !this.canClear) {
+        this.errorMessage = "Enter a release reason (up to 1000 characters).";
+        return;
+      }
       if (
-        !this.reason.trim() ||
-        this.reason.length > 1000 ||
+        !submittedReason.trim() ||
+        submittedReason.length > 1000 ||
         (until && (!this.requestedBy.trim() || this.requestedBy.length > 200))
       ) {
         this.errorMessage =
-          "Enter a requester (up to 200 characters) and reason (up to 1000). Clearing requires a reason.";
+          "Enter a requester (up to 200 characters) and reason (up to 1000).";
         return;
       }
       if (
@@ -401,7 +425,7 @@ export default {
             ? "invalid"
             : this.savedUntil,
           hpcPreservationRequestedBy: until ? this.requestedBy.trim() : "",
-          hpcPreservationReason: this.reason.trim(),
+          hpcPreservationReason: submittedReason.trim(),
         });
         if (
           response.status !== 200 ||
@@ -413,6 +437,7 @@ export default {
           );
         }
         this.$emit("preservation-updated", response.data);
+        this.releaseReason = "";
         this.successMessage = until
           ? "HPC preservation date saved."
           : "HPC preservation date cleared. Manual deletion checks still apply.";

@@ -26,6 +26,12 @@ describe("disabled storage actions", () => {
         propsData: { storage: storage(state), descriptionId: "reason" },
         slots: { default: "Clone data for new Run" },
       });
+      const action = wrapper.find('[tabindex="0"]');
+      expect(action.attributes("role")).toBe("button");
+      expect(action.attributes("aria-disabled")).toBe("true");
+      expect(
+        wrapper.find(`#${action.attributes("aria-labelledby")}`).text()
+      ).toBe("Clone data for new Run");
       const button = wrapper.find("button");
       expect(button.element.disabled).toBe(true);
       expect(button.attributes("aria-describedby")).toBe("reason");

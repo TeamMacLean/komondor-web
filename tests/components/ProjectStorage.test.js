@@ -194,6 +194,12 @@ describe("ProjectStorage", () => {
       project: { preserveOnHpcUntil: future },
       put,
     });
+    expect(wrapper.find('textarea[id$="-release-reason"]').element.value).toBe(
+      ""
+    );
+    await wrapper
+      .find('textarea[id$="-release-reason"]')
+      .setValue("Independent copy verified; release approved");
     await wrapper.find('[data-testid="clear-preservation"]').trigger("click");
     await global.flushPromises();
     expect(put).toHaveBeenCalledExactlyOnceWith("/project/hpc-preservation", {
@@ -201,11 +207,15 @@ describe("ProjectStorage", () => {
       preserveOnHpcUntil: null,
       expectedPreserveOnHpcUntil: future,
       hpcPreservationRequestedBy: "",
-      hpcPreservationReason: "Analysis ongoing",
+      hpcPreservationReason: "Independent copy verified; release approved",
     });
     expect(wrapper.emitted("preservation-updated")).toEqual([
       [{ projectId: id, preserveOnHpcUntil: null }],
     ]);
+    expect(wrapper.vm.reason).toBe("Analysis ongoing");
+    expect(wrapper.find('textarea[id$="-release-reason"]').element.value).toBe(
+      ""
+    );
   });
 
   it("requires reload after a conflict and does not retry or overwrite", async () => {
@@ -300,6 +310,73 @@ describe("ProjectStorage", () => {
 });
 
 describe("HPC retention follow-up", () => {
+  it("does not reuse the saved preservation reason when clearing a hold", async () => {
+    const put = vi.fn();
+    const wrapper = mountPanel({
+      isAdmin: true,
+      project: { preserveOnHpcUntil: future },
+      put,
+    });
+    await wrapper.find('[data-testid="clear-preservation"]').trigger("click");
+    await global.flushPromises();
+    expect(put).not.toHaveBeenCalled();
+    expect(
+      wrapper.find('[data-testid="clear-preservation"]').element.disabled
+    ).toBe(true);
+    // A direct invocation must not bypass the form's release-reason guard.
+    await wrapper.vm.updateDate(null);
+    expect(put).not.toHaveBeenCalled();
+    expect(wrapper.text()).toContain("Enter a release reason");
+  });
+
+  it.each(["   ", "x".repeat(1001)])(
+    "rejects a blank or oversized release reason",
+    async (releaseReason) => {
+      const put = vi.fn();
+      const wrapper = mountPanel({
+        isAdmin: true,
+        project: { preserveOnHpcUntil: future },
+        put,
+      });
+      await wrapper.setData({ releaseReason });
+      await wrapper.vm.updateDate(null);
+      expect(put).not.toHaveBeenCalled();
+      expect(
+        wrapper.find('[data-testid="clear-preservation"]').element.disabled
+      ).toBe(true);
+    }
+  );
+
+  it("keeps the hold and requires reload when a clear returns a stale-date conflict", async () => {
+    const put = vi.fn().mockRejectedValue({ response: { status: 409 } });
+    const wrapper = mountPanel({
+      isAdmin: true,
+      project: { preserveOnHpcUntil: future },
+      put,
+    });
+    await wrapper
+      .find('textarea[id$="-release-reason"]')
+      .setValue("Release approved");
+    await wrapper.find('[data-testid="clear-preservation"]').trigger("click");
+    await global.flushPromises();
+    expect(put).toHaveBeenCalledWith(
+      "/project/hpc-preservation",
+      expect.objectContaining({
+        preserveOnHpcUntil: null,
+        expectedPreserveOnHpcUntil: future,
+        hpcPreservationReason: "Release approved",
+      })
+    );
+    expect(wrapper.vm.project.preserveOnHpcUntil).toBe(future);
+    expect(wrapper.emitted("preservation-updated")).toBeUndefined();
+    expect(
+      wrapper.find('textarea[id$="-release-reason"]').element.disabled
+    ).toBe(true);
+    expect(wrapper.text()).toContain("Reload the project");
+    await wrapper.vm.updateDate(null);
+    expect(put).toHaveBeenCalledTimes(1);
+  });
+
   it("requires a requester and reason for a new hold and a reason to clear", async () => {
     const put = vi.fn();
     const wrapper = mountPanel({
@@ -320,7 +397,9 @@ describe("HPC retention follow-up", () => {
     expect(
       wrapper.find("button[type=submit]").attributes("disabled")
     ).toBeDefined();
-    await wrapper.find("textarea").setValue("Released by requester");
+    await wrapper
+      .find('textarea[id$="-release-reason"]')
+      .setValue("Released by requester");
     expect(
       wrapper.find('[data-testid="clear-preservation"]').attributes("disabled")
     ).toBeUndefined();
