@@ -1,7 +1,9 @@
 <template>
-  <section class="box project-storage" aria-label="Project storage">
-    <h2 class="title is-5">Storage locations</h2>
+  <section class="project-storage" aria-label="Project details and storage">
     <div class="columns">
+      <div v-if="$slots.default" class="column" data-testid="project-details">
+        <slot />
+      </div>
       <div class="column" data-testid="hpc-location">
         <h3 class="is-size-6 has-text-weight-semibold">HPC</h3>
         <p>{{ hpcStatus }}</p>
@@ -21,7 +23,7 @@
           locations.hpc.uri
         }}</code>
       </div>
-      <div class="column" data-testid="aws-location">
+      <div v-if="showAws" class="column" data-testid="aws-location">
         <h3 class="is-size-6 has-text-weight-semibold">AWS</h3>
         <p>{{ awsStatus }}</p>
         <p v-if="locations.aws.verifiedAt" class="is-size-7 has-text-grey">
@@ -186,6 +188,11 @@ export default {
         }[reason] ||
         "The HPC location could not be confirmed. Contact George Deeks."
       );
+    },
+    // Only a project known to have no AWS copy drops the column; an unknown
+    // or unverified copy still needs its status shown.
+    showAws() {
+      return this.locations.aws.status !== "not_archived";
     },
     awsStatus() {
       return {

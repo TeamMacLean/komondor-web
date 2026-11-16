@@ -10,12 +10,14 @@ const mountPanel = ({
   project = {},
   locations = null,
   put = vi.fn(),
+  slots = {},
 } = {}) => {
   const wrapper = mount(ProjectStorage, {
     propsData: {
       project: { _id: id, ...project },
       storageLocations: locations,
     },
+    slots,
     mocks: {
       $auth: { $state: { user: { username: "deeks", isAdmin } } },
       $axios: { put },
@@ -54,6 +56,49 @@ describe("ProjectStorage", () => {
     expect(wrapper.text()).toContain("Contact George Deeks");
     expect(wrapper.find("form").exists()).toBe(false);
   });
+
+  it("puts slotted project details in a first column beside the locations", () => {
+    const wrapper = mountPanel({
+      slots: { default: "<p>strachan</p>" },
+      locations: { aws: { status: "unknown" } },
+    });
+    const columns = wrapper.findAll(".column");
+    expect(columns.length).toBe(3);
+    expect(columns.at(0).attributes("data-testid")).toBe("project-details");
+    expect(columns.at(0).text()).toBe("strachan");
+    expect(columns.at(1).attributes("data-testid")).toBe("hpc-location");
+    expect(columns.at(2).attributes("data-testid")).toBe("aws-location");
+  });
+
+  it("omits the details column when nothing is slotted", () => {
+    expect(mountPanel().find('[data-testid="project-details"]').exists()).toBe(
+      false
+    );
+  });
+
+  it("drops the AWS column only for a project known not to be archived", () => {
+    const hidden = mountPanel({
+      locations: { aws: { status: "not_archived" } },
+    });
+    expect(hidden.find('[data-testid="aws-location"]').exists()).toBe(false);
+    expect(hidden.text()).not.toContain("Not archived in AWS");
+  });
+
+  it.each(["verified", "unverified", "unknown"])(
+    "keeps the AWS column when its status is %s",
+    (status) => {
+      const wrapper = mountPanel({
+        locations: {
+          aws: {
+            status,
+            uri: "s3://archive/project",
+            verifiedAt: "2026-10-30T20:18:30.550Z",
+          },
+        },
+      });
+      expect(wrapper.find('[data-testid="aws-location"]').exists()).toBe(true);
+    }
+  );
 
   it.each([false, "true", undefined])(
     "only a true admin flag exposes editing (%s)",

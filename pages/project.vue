@@ -30,44 +30,44 @@
           :project="project"
           :storage-locations="storageLocations"
           :location="fileLocation"
-          class="mt-4"
+          class="mt-4 mb-5"
           @preservation-updated="updatePreservation"
-        />
-
-        <p class="subtitle">
-          <nuxt-link
-            :to="{ name: 'user', query: { username: project.owner } }"
-            class="has-text-text"
-          >
+        >
+          <p class="subtitle">
+            <nuxt-link
+              :to="{ name: 'user', query: { username: project.owner } }"
+              class="has-text-text"
+            >
+              <b-icon
+                icon="account-outline"
+                size="is-small"
+                class="has-text-grey"
+              ></b-icon>
+              {{ project.owner }}
+            </nuxt-link>
+            <br />
             <b-icon
-              icon="account-outline"
+              icon="account-multiple-outline"
               size="is-small"
               class="has-text-grey"
-            ></b-icon>
-            {{ project.owner }}
-          </nuxt-link>
-          <br />
-          <b-icon
-            icon="account-multiple-outline"
-            size="is-small"
-            class="has-text-grey"
-          />
-          {{ project.group.name }}
-          <br />
-          <b-icon icon="home-lock" size="is-small" class="has-text-grey" />
-          Study accession numbers{{
-            project.accessions.length
-              ? `: ${project.accessions.join(", ")}`
-              : ` unknown`
-          }}
-          <br />
-          <b-icon
-            icon="calendar-account"
-            size="is-small"
-            class="has-text-grey"
-          />
-          {{ enaInfo }}
-        </p>
+            />
+            {{ project.group.name }}
+            <br />
+            <b-icon icon="home-lock" size="is-small" class="has-text-grey" />
+            Study accession numbers{{
+              project.accessions.length
+                ? `: ${project.accessions.join(", ")}`
+                : ` unknown`
+            }}
+            <br />
+            <b-icon
+              icon="calendar-account"
+              size="is-small"
+              class="has-text-grey"
+            />
+            {{ enaInfo }}
+          </p>
+        </ProjectStorage>
 
         <div
           v-if="showAdminEmailNudgeUpdateCheckbox"
