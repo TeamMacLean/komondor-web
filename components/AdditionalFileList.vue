@@ -116,7 +116,7 @@ export default {
         " Could you investigate this please?";
       const bodyText = bodyTextUnformatted.replace(" ", "%20");
       const result =
-        "mailto:george.deeks@tsl.ac.uk?subject=Issue%20with%20missing%20Komondor%20files&body=" +
+        "mailto:george.deeks@tsl.ac.uk?subject=Issue%20with%20missing%20Sequence%20Store%20files&body=" +
         bodyText;
       return result;
     },

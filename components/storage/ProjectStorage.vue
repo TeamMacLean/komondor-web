@@ -23,85 +23,87 @@
           locations.hpc.uri
         }}</code>
       </div>
-      <div v-if="showAws" class="column" data-testid="aws-location">
+      <div class="column" data-testid="aws-location">
         <h3 class="is-size-6 has-text-weight-semibold">AWS</h3>
-        <p>{{ awsStatus }}</p>
+        <p v-if="showAwsStatus">{{ awsStatus }}</p>
         <p v-if="locations.aws.verifiedAt" class="is-size-7 has-text-grey">
           Verified {{ formatDate(locations.aws.verifiedAt) }} UTC
         </p>
         <code v-if="locations.aws.uri" class="storage-path">{{
           locations.aws.uri
         }}</code>
+
+        <div data-testid="retention-schedule">
+          <p v-if="archiveDueAt && !isArchived">
+            <template v-if="new Date(archiveDueAt).getTime() <= now">
+              Due to move to AWS (awaiting the next archive run).
+            </template>
+            <template v-else
+              >Due to move to AWS around
+              {{ formatMonth(archiveDueAt) }}.</template
+            >
+          </p>
+          <p v-else-if="!isArchived">AWS move date unavailable.</p>
+          <p v-if="deletionEligibleAt" class="is-size-7">
+            HPC deletion review eligible from
+            {{ formatDate(deletionEligibleAt) }} UTC.
+            <template v-if="!isArchived"
+              >The project must be copied to AWS first.</template
+            >
+          </p>
+          <p v-else-if="storageState === 'aws'" class="is-size-7">
+            The HPC copy is recorded as removed.
+          </p>
+          <p v-else-if="!preservationInvalid" class="is-size-7">
+            HPC deletion review date unavailable.
+          </p>
+          <StorageRetentionExplanation class="mt-2" />
+        </div>
+
+        <div
+          v-if="savedUntil || preservationInvalid"
+          class="notification is-info is-light mt-3 mb-3"
+          role="status"
+        >
+          <template v-if="validUntil && !preservationInvalid">
+            <p v-if="preservationActive">
+              <strong
+                >Keep on HPC until {{ formatDate(savedUntil) }} UTC.</strong
+              >
+            </p>
+            <p v-else>
+              The HPC preservation date was {{ formatDate(savedUntil) }} UTC.
+              This date has passed; it does not mean the HPC copy has been
+              deleted.
+            </p>
+            <p
+              v-if="
+                project.hpcPreservationRequestedBy ||
+                project.hpcPreservationReason
+              "
+            >
+              Requested by
+              {{ project.hpcPreservationRequestedBy || "not yet recorded" }}:
+              {{ project.hpcPreservationReason || "reason not yet recorded" }}.
+            </p>
+            <p v-if="locations.hpc.status === 'absent'">
+              The HPC copy is recorded as absent. Setting a date does not
+              restore it.
+            </p>
+          </template>
+          <p v-else>
+            The HPC preservation date needs administrator attention. Ask an
+            administrator to repair it before removing the HPC copy.
+          </p>
+        </div>
+
+        <p class="is-size-7 mt-2">
+          Contact <a v-if="contactHref" :href="contactHref">George Deeks</a
+          ><span v-else>George Deeks</span>
+          if you need this project kept on HPC for longer.
+        </p>
       </div>
     </div>
-
-    <div class="mb-4" data-testid="retention-schedule">
-      <p v-if="archiveDueAt && !isArchived">
-        <template v-if="new Date(archiveDueAt).getTime() <= now">
-          Due to move to AWS (awaiting the next archive run).
-        </template>
-        <template v-else
-          >Due to move to AWS around {{ formatMonth(archiveDueAt) }}.</template
-        >
-      </p>
-      <p v-else-if="archiveDueAt">
-        Age-based AWS move date: {{ formatDate(archiveDueAt) }} UTC.
-      </p>
-      <p v-else>AWS move date unavailable.</p>
-      <p v-if="deletionEligibleAt">
-        HPC deletion review eligible from
-        {{ formatDate(deletionEligibleAt) }} UTC.
-        <template v-if="!isArchived"
-          >The project must be copied to AWS first.</template
-        >
-      </p>
-      <p v-else-if="storageState === 'aws'">
-        The HPC copy is recorded as removed.
-      </p>
-      <p v-else-if="!preservationInvalid">
-        HPC deletion review date unavailable.
-      </p>
-      <StorageRetentionExplanation />
-    </div>
-
-    <div
-      v-if="savedUntil || preservationInvalid"
-      class="notification is-info is-light"
-      role="status"
-    >
-      <template v-if="validUntil && !preservationInvalid">
-        <p v-if="preservationActive">
-          <strong>Keep on HPC until {{ formatDate(savedUntil) }} UTC.</strong>
-        </p>
-        <p v-else>
-          The HPC preservation date was {{ formatDate(savedUntil) }} UTC. This
-          date has passed; it does not mean the HPC copy has been deleted.
-        </p>
-        <p
-          v-if="
-            project.hpcPreservationRequestedBy || project.hpcPreservationReason
-          "
-        >
-          Requested by
-          {{ project.hpcPreservationRequestedBy || "not yet recorded" }}:
-          {{ project.hpcPreservationReason || "reason not yet recorded" }}.
-        </p>
-        <p v-if="locations.hpc.status === 'absent'">
-          The HPC copy is recorded as absent. Setting a date does not restore
-          it.
-        </p>
-      </template>
-      <p v-else>
-        The HPC preservation date needs administrator attention. Ask an
-        administrator to repair it before removing the HPC copy.
-      </p>
-    </div>
-
-    <p class="mb-4">
-      Contact <a v-if="contactHref" :href="contactHref">George Deeks</a
-      ><span v-else>George Deeks</span>
-      if you need this project kept on HPC for longer.
-    </p>
 
     <form v-if="isAdmin" data-testid="preservation-form" @submit.prevent="save">
       <label :for="inputId" class="label">Preserve on HPC until</label>
@@ -339,10 +341,11 @@ export default {
         "The HPC location could not be confirmed. Contact George Deeks."
       );
     },
-    // Only a project known to have no AWS copy drops the column; an unknown
-    // or unverified copy still needs its status shown.
-    showAws() {
-      return this.locations.aws.status !== "not_archived";
+    // The AWS column always shows, because it carries the move date and
+    // retention details. "Not archived" is left out when the move date
+    // already says the project is not yet in AWS.
+    showAwsStatus() {
+      return this.locations.aws.status !== "not_archived" || !this.archiveDueAt;
     },
     awsStatus() {
       return {

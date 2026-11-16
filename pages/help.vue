@@ -24,7 +24,8 @@
       <p>
         Older projects may be moved from the HPC to long-term storage in AWS.
         Their metadata and recorded file lists remain visible here, but new
-        samples, runs and files cannot be added. Komondor shows the archived
+        samples, runs and files cannot be added. The Sequence Store shows the
+        archived
         <code>s3://</code> location for reference; retrieval and downloads are
         handled separately by the Bioinformatics team.
       </p>

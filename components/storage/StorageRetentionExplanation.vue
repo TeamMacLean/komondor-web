@@ -1,14 +1,9 @@
 <template>
-  <div class="mb-4">
-    <p>
-      Archiving copies the data to AWS. The HPC copy is removed afterwards
-      unless a keep date is set. This Komondor record stays.
-    </p>
-    <p>
-      Expiry permits manual deletion review only; nothing is deleted
-      automatically.
-    </p>
-  </div>
+  <p class="is-size-7">
+    Archiving copies the data to AWS. The HPC copy is removed afterwards unless
+    a keep date is set; nothing is deleted automatically. The project stays on
+    the Sequence Store.
+  </p>
 </template>
 
 <script>

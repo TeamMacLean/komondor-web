@@ -261,7 +261,7 @@ export default {
         }read files listed. ` +
         `Could you investigate this please?`;
 
-      const subject = "Issue with Komondor Files";
+      const subject = "Issue with Sequence Store files";
       const body = encodeURIComponent(bodyTextUnformatted);
       return `mailto:george.deeks@tsl.ac.uk?subject=${subject}&body=${body}`;
     },

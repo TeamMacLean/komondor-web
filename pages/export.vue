@@ -23,7 +23,8 @@
         </p>
 
         <p class="spacing">
-          Note: run creation date does not predate migration to Komondor.
+          Note: run creation date does not predate migration to the Sequence
+          Store.
         </p>
         <p class="spacing">
           For projects archived in AWS, read-file locations are
