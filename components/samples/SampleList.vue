@@ -31,13 +31,21 @@
           </b-select>
         </div>
       </div>
-      <p v-if="canCreateSample" class="control">
+      <div v-if="showCreateSample" class="control">
+        <StorageDisabledAction
+          v-if="readOnly"
+          :storage="effectiveStorage"
+          :description-id="`new-sample-${project._id}-reason`"
+          type="is-success"
+          >New</StorageDisabledAction
+        >
         <nuxt-link
+          v-else
           :to="{ name: 'samples-new', query: { projectId: project._id } }"
           class="button is-success"
           >New</nuxt-link
         >
-      </p>
+      </div>
     </div>
     <div
       v-for="i in Math.ceil(filteredSamples.length / 2)"
@@ -57,10 +65,12 @@
 
 <script>
 import SampleCard from "./SampleCard.vue";
+import StorageDisabledAction from "~/components/storage/StorageDisabledAction.vue";
 import { describeStorage } from "~/utils/storageState";
 
 export default {
   components: {
+    StorageDisabledAction,
     SampleCard,
   },
   props: {
@@ -92,14 +102,13 @@ export default {
     effectiveStorage() {
       return this.projectStorage || this.project?.storage || null;
     },
-    canCreateSample() {
+    readOnly() {
+      return describeStorage(this.effectiveStorage).readOnly;
+    },
+    showCreateSample() {
       const showButton =
         this.showNewButton === true || this.showNewButton === "true";
-      return (
-        Boolean(this.project) &&
-        showButton &&
-        !describeStorage(this.effectiveStorage).readOnly
-      );
+      return Boolean(this.project) && showButton;
     },
     samplesList() {
       if (this.samples) {

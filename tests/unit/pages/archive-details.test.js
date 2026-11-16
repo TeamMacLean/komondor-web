@@ -49,14 +49,19 @@ describe("archived detail pages", () => {
     });
     expect(result.storageLocations).toEqual(storageLocations);
     expect(result.project.preserveOnHpcUntil).toBe(project.preserveOnHpcUntil);
-    ProjectPage.methods.updatePreservation.call(
+    await ProjectPage.methods.updatePreservation.call(
       {
         project: result.project,
         $set: (obj, key, value) => {
           obj[key] = value;
         },
       },
-      null
+      {
+        preserveOnHpcUntil: null,
+        hpcPreservationRequestedBy: null,
+        hpcPreservationReason: null,
+        hpcPreservationInvalid: false,
+      }
     );
     expect(result.project.preserveOnHpcUntil).toBeNull();
     expect(result.project.storage.preserveOnHpcUntil).toBeNull();

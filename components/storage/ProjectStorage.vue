@@ -35,8 +35,41 @@
       </div>
     </div>
 
-    <div v-if="savedUntil" class="notification is-info is-light" role="status">
-      <template v-if="validUntil">
+    <div class="mb-4" data-testid="retention-schedule">
+      <p v-if="archiveDueAt && !isArchived">
+        <template v-if="new Date(archiveDueAt).getTime() <= now">
+          Due to move to AWS (awaiting the next archive run).
+        </template>
+        <template v-else
+          >Due to move to AWS around {{ formatMonth(archiveDueAt) }}.</template
+        >
+      </p>
+      <p v-else-if="archiveDueAt">
+        Age-based AWS move date: {{ formatDate(archiveDueAt) }} UTC.
+      </p>
+      <p v-else>AWS move date unavailable.</p>
+      <p v-if="deletionEligibleAt">
+        HPC deletion review eligible from
+        {{ formatDate(deletionEligibleAt) }} UTC.
+        <template v-if="!isArchived"
+          >The project must be copied to AWS first.</template
+        >
+      </p>
+      <p v-else-if="storageState === 'aws'">
+        The HPC copy is recorded as removed.
+      </p>
+      <p v-else-if="!preservationInvalid">
+        HPC deletion review date unavailable.
+      </p>
+      <StorageRetentionExplanation />
+    </div>
+
+    <div
+      v-if="savedUntil || preservationInvalid"
+      class="notification is-info is-light"
+      role="status"
+    >
+      <template v-if="validUntil && !preservationInvalid">
         <p v-if="preservationActive">
           <strong>Keep on HPC until {{ formatDate(savedUntil) }} UTC.</strong>
         </p>
@@ -44,8 +77,14 @@
           The HPC preservation date was {{ formatDate(savedUntil) }} UTC. This
           date has passed; it does not mean the HPC copy has been deleted.
         </p>
-        <p>
-          Contact George Deeks if you need this project kept on HPC for longer.
+        <p
+          v-if="
+            project.hpcPreservationRequestedBy || project.hpcPreservationReason
+          "
+        >
+          Requested by
+          {{ project.hpcPreservationRequestedBy || "not yet recorded" }}:
+          {{ project.hpcPreservationReason || "reason not yet recorded" }}.
         </p>
         <p v-if="locations.hpc.status === 'absent'">
           The HPC copy is recorded as absent. Setting a date does not restore
@@ -53,10 +92,16 @@
         </p>
       </template>
       <p v-else>
-        The HPC preservation date needs administrator attention. Contact George
-        Deeks before removing the HPC copy.
+        The HPC preservation date needs administrator attention. Ask an
+        administrator to repair it before removing the HPC copy.
       </p>
     </div>
+
+    <p class="mb-4">
+      Contact <a v-if="contactHref" :href="contactHref">George Deeks</a
+      ><span v-else>George Deeks</span>
+      if you need this project kept on HPC for longer.
+    </p>
 
     <form v-if="isAdmin" data-testid="preservation-form" @submit.prevent="save">
       <label :for="inputId" class="label">Preserve on HPC until</label>
@@ -64,6 +109,37 @@
         Keep the HPC copy through the end of this date (UTC). A passed date
         allows manual review; it never deletes files automatically.
       </p>
+      <p :id="`${inputId}-visibility`" class="help mb-2">
+        The date, requester and reason are visible to everyone who can see this
+        project.
+      </p>
+      <div class="field">
+        <label :for="`${inputId}-requester`" class="label">Requested by</label>
+        <input
+          :id="`${inputId}-requester`"
+          v-model="requestedBy"
+          type="text"
+          class="input"
+          maxlength="200"
+          :disabled="saving || conflict"
+          :aria-describedby="`${inputId}-visibility`"
+        />
+      </div>
+      <div class="field">
+        <label :for="`${inputId}-reason`" class="label">Reason</label>
+        <textarea
+          :id="`${inputId}-reason`"
+          v-model="reason"
+          class="textarea"
+          maxlength="1000"
+          :disabled="saving || conflict"
+          :aria-describedby="`${inputId}-visibility ${inputId}-reason-help`"
+        ></textarea>
+        <p :id="`${inputId}-reason-help`" class="help">
+          Required when saving or clearing. When clearing, explain the release;
+          that explanation is kept in the audit history only.
+        </p>
+      </div>
       <div class="field is-grouped is-grouped-multiline">
         <div class="control">
           <input
@@ -80,16 +156,16 @@
             type="submit"
             class="button is-primary"
             :class="{ 'is-loading': saving }"
-            :disabled="saving || conflict || !selectedDeadline"
+            :disabled="saving || conflict || !canSave"
           >
-            Save date
+            Save preservation
           </button>
         </div>
-        <div v-if="savedUntil" class="control">
+        <div v-if="savedUntil || preservationInvalid" class="control">
           <button
             type="button"
             class="button"
-            :disabled="saving || conflict"
+            :disabled="saving || conflict || !reason.trim()"
             data-testid="clear-preservation"
             @click="updateDate(null)"
           >
@@ -111,6 +187,8 @@
 </template>
 
 <script>
+import StorageRetentionExplanation from "~/components/storage/StorageRetentionExplanation.vue";
+import { describeStorage } from "~/utils/storageState";
 import { getApiErrorMessage, getApiErrorStatus } from "~/utils/apiError";
 import {
   formatStorageDate,
@@ -122,6 +200,7 @@ import {
 
 export default {
   name: "ProjectStorage",
+  components: { StorageRetentionExplanation },
   props: {
     project: { type: Object, required: true },
     storageLocations: { type: Object, default: null },
@@ -130,6 +209,8 @@ export default {
   data() {
     return {
       selectedDate: retentionDateInput(this.project.preserveOnHpcUntil),
+      requestedBy: this.project.hpcPreservationRequestedBy || "",
+      reason: this.project.hpcPreservationReason || "",
       saving: false,
       conflict: false,
       errorMessage: "",
@@ -147,6 +228,51 @@ export default {
     savedUntil() {
       return this.project.preserveOnHpcUntil || null;
     },
+    preservationInvalid() {
+      return (
+        this.project.hpcPreservationInvalid === true ||
+        this.project.storage?.hpcPreservationInvalid === true ||
+        this.storageLocations?.hpcPreservationInvalid === true ||
+        Boolean(this.savedUntil && !validIsoDate(this.savedUntil))
+      );
+    },
+    storageState() {
+      return describeStorage(this.project.storage).state;
+    },
+    isArchived() {
+      return ["aws_pending_hpc_deletion", "aws"].includes(this.storageState);
+    },
+    archiveDueAt() {
+      return validIsoDate(this.storageLocations?.archiveDueAt);
+    },
+    deletionEligibleAt() {
+      return this.preservationInvalid
+        ? null
+        : validIsoDate(this.storageLocations?.hpcDeletionEligibleAt);
+    },
+    contactHref() {
+      const email = this.$config?.HPC_RETENTION_CONTACT_EMAIL?.trim();
+      if (!email || !/^[^\s@?&#]+@[^\s@?&#]+$/.test(email)) return null;
+      const origin =
+        typeof window === "undefined" ? "" : window.location.origin;
+      const url = `${origin}/project?id=${encodeURIComponent(
+        this.project._id
+      )}`;
+      return `mailto:${email}?subject=${encodeURIComponent(
+        `HPC retention request: ${this.project.name || "Project"}`
+      )}&body=${encodeURIComponent(
+        `Project: ${url}\n\nPlease explain how long the HPC copy is needed and why.`
+      )}`;
+    },
+    canSave() {
+      return (
+        this.selectedDeadline &&
+        this.requestedBy.trim() &&
+        this.reason.trim() &&
+        (this.selectedDeadline === this.savedUntil ||
+          new Date(this.selectedDeadline).getTime() > this.now)
+      );
+    },
     validUntil() {
       return validIsoDate(this.savedUntil);
     },
@@ -154,6 +280,12 @@ export default {
       return this.validUntil && new Date(this.validUntil).getTime() > this.now;
     },
     selectedDeadline() {
+      // A metadata-only edit must preserve an older API's exact timestamp.
+      if (
+        this.validUntil &&
+        this.selectedDate === retentionDateInput(this.savedUntil)
+      )
+        return this.savedUntil;
       return retentionDeadline(this.selectedDate);
     },
     locations() {
@@ -204,6 +336,12 @@ export default {
     },
   },
   watch: {
+    "project.hpcPreservationRequestedBy"(value) {
+      this.requestedBy = value || "";
+    },
+    "project.hpcPreservationReason"(value) {
+      this.reason = value || "";
+    },
     savedUntil(value) {
       this.selectedDate = retentionDateInput(value);
       this.now = Date.now();
@@ -219,6 +357,13 @@ export default {
   },
   methods: {
     formatDate: formatStorageDate,
+    formatMonth(value) {
+      return new Intl.DateTimeFormat("en-GB", {
+        month: "long",
+        year: "numeric",
+        timeZone: "UTC",
+      }).format(new Date(value));
+    },
     save() {
       if (!this.selectedDeadline) {
         this.errorMessage = "Choose a valid date. Use Clear to remove a date.";
@@ -228,6 +373,23 @@ export default {
     },
     async updateDate(until) {
       if (!this.isAdmin || this.saving || this.conflict) return;
+      if (
+        !this.reason.trim() ||
+        this.reason.length > 1000 ||
+        (until && (!this.requestedBy.trim() || this.requestedBy.length > 200))
+      ) {
+        this.errorMessage =
+          "Enter a requester (up to 200 characters) and reason (up to 1000). Clearing requires a reason.";
+        return;
+      }
+      if (
+        until &&
+        until !== this.savedUntil &&
+        new Date(until).getTime() <= Date.now()
+      ) {
+        this.errorMessage = "Choose a future date.";
+        return;
+      }
       this.saving = true;
       this.errorMessage = "";
       this.successMessage = "";
@@ -235,7 +397,11 @@ export default {
         const response = await this.$axios.put("/project/hpc-preservation", {
           _id: this.project._id,
           preserveOnHpcUntil: until,
-          expectedPreserveOnHpcUntil: this.savedUntil,
+          expectedPreserveOnHpcUntil: this.preservationInvalid
+            ? "invalid"
+            : this.savedUntil,
+          hpcPreservationRequestedBy: until ? this.requestedBy.trim() : "",
+          hpcPreservationReason: this.reason.trim(),
         });
         if (
           response.status !== 200 ||
@@ -246,7 +412,7 @@ export default {
             "Unexpected response. Reload this project to check the saved date."
           );
         }
-        this.$emit("preservation-updated", response.data.preserveOnHpcUntil);
+        this.$emit("preservation-updated", response.data);
         this.successMessage = until
           ? "HPC preservation date saved."
           : "HPC preservation date cleared. Manual deletion checks still apply.";

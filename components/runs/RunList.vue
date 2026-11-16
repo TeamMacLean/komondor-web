@@ -31,13 +31,21 @@
           </b-select>
         </div>
       </div>
-      <p v-if="canCreateRun" class="control">
+      <div v-if="showCreateRun" class="control">
+        <StorageDisabledAction
+          v-if="readOnly"
+          :storage="effectiveStorage"
+          :description-id="`new-run-${sample._id}-reason`"
+          type="is-success"
+          >New</StorageDisabledAction
+        >
         <nuxt-link
+          v-else
           :to="{ name: 'runs-new', query: { sample: sample._id } }"
           class="button is-success"
           >New</nuxt-link
         >
-      </p>
+      </div>
     </div>
     <div
       v-for="i in Math.ceil(filteredRuns.length / 2)"
@@ -57,10 +65,12 @@
 
 <script>
 import RunCard from "./RunCard.vue";
+import StorageDisabledAction from "~/components/storage/StorageDisabledAction.vue";
 import { describeStorage } from "~/utils/storageState";
 
 export default {
   components: {
+    StorageDisabledAction,
     RunCard,
   },
   props: {
@@ -97,14 +107,13 @@ export default {
         null
       );
     },
-    canCreateRun() {
+    readOnly() {
+      return describeStorage(this.effectiveStorage).readOnly;
+    },
+    showCreateRun() {
       const showButton =
         this.showNewButton === true || this.showNewButton === "true";
-      return (
-        Boolean(this.sample) &&
-        showButton &&
-        !describeStorage(this.effectiveStorage).readOnly
-      );
+      return Boolean(this.sample) && showButton;
     },
     runsList() {
       if (this.runs) {

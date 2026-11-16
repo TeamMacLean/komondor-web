@@ -37,6 +37,7 @@
           :storage="projectStorage"
           class="mt-4"
         />
+        <StorageRetentionExplanation class="mt-4" />
 
         <p class="subtitle mt-2">
           <b-icon
@@ -81,8 +82,16 @@
           administrator for assistance.
         </div>
 
-        <div v-if="!storageDescription.readOnly" class="buttons-wrapper">
+        <div class="buttons-wrapper">
+          <StorageDisabledAction
+            v-if="storageDescription.readOnly"
+            :storage="projectStorage"
+            description-id="clone-run-reason"
+            icon-left="content-copy"
+            >Clone data for new Run</StorageDisabledAction
+          >
           <b-button
+            v-else
             type="is-secondary"
             icon-left="content-copy"
             @click="cloneRun"
@@ -195,6 +204,8 @@ import AdditionalFileList from "../components/AdditionalFileList.vue";
 import ReadList from "../components/ReadList.vue";
 import AddAccessionModal from "../components/AddAccessionModal.vue";
 import StorageBadge from "~/components/storage/StorageBadge.vue";
+import StorageDisabledAction from "~/components/storage/StorageDisabledAction.vue";
+import StorageRetentionExplanation from "~/components/storage/StorageRetentionExplanation.vue";
 import StorageReadOnlyNotice from "~/components/storage/StorageReadOnlyNotice.vue";
 import { isEnaAdmin } from "~/utils/adminUsers";
 import { getApiErrorMessage, getApiErrorStatus } from "~/utils/apiError";
@@ -207,6 +218,8 @@ export default {
     AddAccessionModal,
     StorageBadge,
     StorageReadOnlyNotice,
+    StorageRetentionExplanation,
+    StorageDisabledAction,
   },
   middleware: ["auth"],
   async asyncData({ route, $axios, error }) {
@@ -444,6 +457,7 @@ export default {
       );
     },
     cloneRun() {
+      if (this.storageDescription.readOnly) return;
       this.$router.push({
         path: "/runs/new",
         query: {

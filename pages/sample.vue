@@ -30,12 +30,18 @@
           :storage="projectStorage"
           class="mt-4"
         />
+        <StorageRetentionExplanation class="mt-4" />
 
-        <div
-          v-if="!sample.tplexCsv && !storageDescription.readOnly"
-          class="buttons-wrapper"
-        >
+        <div v-if="!sample.tplexCsv" class="buttons-wrapper">
+          <StorageDisabledAction
+            v-if="storageDescription.readOnly"
+            :storage="projectStorage"
+            description-id="clone-sample-reason"
+            icon-left="content-copy"
+            >Clone data for new Sample</StorageDisabledAction
+          >
           <b-button
+            v-else
             type="is-secondary"
             icon-left="content-copy"
             @click="cloneSample"
@@ -197,7 +203,7 @@
           :sample="sample"
           :runs="sample.runs"
           :project-storage="projectStorage"
-          :show-new-button="!storageDescription.readOnly"
+          :show-new-button="true"
         />
       </div>
     </div>
@@ -209,6 +215,8 @@ import RunList from "../components/runs/RunList.vue";
 import AdditionalFileList from "../components/AdditionalFileList.vue";
 import AddAccessionModal from "../components/AddAccessionModal.vue";
 import StorageBadge from "~/components/storage/StorageBadge.vue";
+import StorageDisabledAction from "~/components/storage/StorageDisabledAction.vue";
+import StorageRetentionExplanation from "~/components/storage/StorageRetentionExplanation.vue";
 import StorageReadOnlyNotice from "~/components/storage/StorageReadOnlyNotice.vue";
 import Papa from "papaparse"; // Import papaparse
 import { isEnaAdmin } from "~/utils/adminUsers";
@@ -222,6 +230,8 @@ export default {
     AddAccessionModal,
     StorageBadge,
     StorageReadOnlyNotice,
+    StorageRetentionExplanation,
+    StorageDisabledAction,
   },
   middleware: ["auth"],
   asyncData({ route, $axios, error }) {
@@ -388,6 +398,7 @@ export default {
       );
     },
     cloneSample() {
+      if (this.storageDescription.readOnly) return;
       this.$router.push({
         path: "/samples/new",
         query: {

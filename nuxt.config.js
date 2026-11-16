@@ -18,6 +18,9 @@ export default {
     DATAHOG_DEATH: process.env.DATAHOG_DEATH,
     ENA_ADMINS: process.env.ENA_ADMINS,
   },
+  publicRuntimeConfig: {
+    HPC_RETENTION_CONTACT_EMAIL: process.env.HPC_RETENTION_CONTACT_EMAIL || "",
+  },
   server: {
     port: process.env.PORT || 3000, // default: 3000
     host: process.env.HOST || "localhost", // default: localhost

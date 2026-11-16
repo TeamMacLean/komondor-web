@@ -171,7 +171,7 @@
           :project="project"
           :samples="project.samples"
           :project-storage="project.storage"
-          :show-new-button="!storageDescription.readOnly"
+          :show-new-button="true"
         />
       </div>
     </div>
@@ -300,10 +300,27 @@ export default {
     },
   },
   methods: {
-    updatePreservation(until) {
-      this.$set(this.project, "preserveOnHpcUntil", until);
-      if (this.project.storage) {
-        this.$set(this.project.storage, "preserveOnHpcUntil", until);
+    async updatePreservation(saved) {
+      for (const field of [
+        "preserveOnHpcUntil",
+        "hpcPreservationRequestedBy",
+        "hpcPreservationReason",
+        "hpcPreservationInvalid",
+      ]) {
+        this.$set(this.project, field, saved[field]);
+        if (this.project.storage)
+          this.$set(this.project.storage, field, saved[field]);
+      }
+      // Dates are computed by the API; never leave the previous eligibility
+      // date displayed after the administrator changes a hold.
+      this.storageLocations = null;
+      try {
+        const response = await this.$axios.get("/project", {
+          params: { id: this.project._id },
+        });
+        this.storageLocations = response.data.storageLocations || null;
+      } catch (_error) {
+        // The saved policy remains visible; unavailable dates are explicit.
       }
     },
     copyLocation(value) {
