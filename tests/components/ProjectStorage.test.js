@@ -59,7 +59,9 @@ describe("ProjectStorage", () => {
       },
     });
     expect(wrapper.text()).toContain("On HPC");
-    expect(wrapper.text()).toContain("Verified in AWS");
+    expect(wrapper.text()).toContain("Transfer verified in AWS");
+    expect(wrapper.text()).toContain("recorded transfer verification");
+    expect(wrapper.text()).toContain("a fresh S3 check");
     expect(wrapper.text()).toContain("Keep on HPC until 13 November 2027");
     expect(wrapper.text()).toContain("Contact George Deeks");
     expect(wrapper.find("form").exists()).toBe(false);
@@ -181,7 +183,7 @@ describe("ProjectStorage", () => {
         archiveDueAt: "2031-11-16T00:00:00.000Z",
       },
     });
-    expect(wrapper.text()).toContain("Verified in AWS");
+    expect(wrapper.text()).toContain("Transfer verified in AWS");
     expect(wrapper.text()).not.toContain("move date");
     expect(wrapper.text()).not.toContain("Due to move to AWS");
   });

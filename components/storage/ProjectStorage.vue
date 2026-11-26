@@ -27,7 +27,11 @@
         <h3 class="is-size-6 has-text-weight-semibold">AWS</h3>
         <p v-if="showAwsStatus">{{ awsStatus }}</p>
         <p v-if="locations.aws.verifiedAt" class="is-size-7 has-text-grey">
-          Verified {{ formatDate(locations.aws.verifiedAt) }} UTC
+          Transfer verified {{ formatDate(locations.aws.verifiedAt) }} UTC
+        </p>
+        <p v-if="locations.aws.status === 'verified'" class="is-size-7">
+          This is the recorded transfer verification; this page does not perform
+          a fresh S3 check.
         </p>
         <code v-if="locations.aws.uri" class="storage-path">{{
           locations.aws.uri
@@ -349,7 +353,7 @@ export default {
     },
     awsStatus() {
       return {
-        verified: "Verified in AWS",
+        verified: "Transfer verified in AWS",
         unverified: "AWS copy not yet verified",
         not_archived: "Not archived in AWS",
         unknown: "AWS status unknown",
