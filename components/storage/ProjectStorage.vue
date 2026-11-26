@@ -130,25 +130,27 @@
       <section class="modal-card-body aws-info" data-testid="aws-info">
         <h4 class="title is-4">What is AWS?</h4>
         <p>
-          AWS (Amazon Web Services) is the cloud storage TSL uses to keep
-          sequencing data for the long term, once it no longer needs to sit on
-          the HPC.
+          AWS (Amazon Web Services) is the cloud storage solution that TSL uses
+          to keep sequencing data for the long term, once it no longer needs to
+          sit on the HPC. We only have a limit to how much data we can store on
+          the HPC, hence the need to archive older projects.
         </p>
         <p>
-          When a project is archived, its files are copied to AWS and checked
-          against the originals. The HPC copy is only removed after that check,
-          and only after a manual review. If a keep date has been agreed, the
-          HPC copy stays until at least that date.
+          Once its keep-on-HPC date has expired, the webmaster schedules copying
+          files to AWS and then removing from the HPC.
         </p>
         <p>
-          Archived data is held in cold storage, so it cannot be read in place
-          the way files on the HPC can. It can be restored on request, which can
-          take a couple of days.
+          Users can request to keep certain project data on the HPC longer than
+          the default, by requesting to the webmaster.
         </p>
         <p>
-          Nothing disappears from this site. The project, its samples and runs
-          stay listed here, and the page shows where the files now live.
-          Archived projects are read-only, so new files cannot be added to them.
+          Once on AWS, archived data is held in cold storage, so it cannot be
+          read in place the way files on the HPC can. It can be restored on
+          request, which can take days, and incur a financial cost to retrieve.
+        </p>
+        <p>
+          The project records stay on this site even after archive. Archived
+          projects are read-only, so new files cannot be added to them.
         </p>
         <p>
           Contact George Deeks if you need archived data back, or need a project
