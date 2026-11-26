@@ -27,6 +27,15 @@ export const formatStorageDate = (value) => {
   }).format(new Date(value));
 };
 
+/** The calendar day only, for dates where the time of day is noise. */
+export const formatStorageDay = (value) => {
+  if (!validIsoDate(value)) return null;
+  return new Intl.DateTimeFormat("en-GB", {
+    dateStyle: "long",
+    timeZone: "UTC",
+  }).format(new Date(value));
+};
+
 const hpcUri = (value) =>
   typeof value === "string" && value.startsWith("/") ? value : null;
 const s3Uri = (value) =>

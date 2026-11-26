@@ -24,7 +24,17 @@
         }}</code>
       </div>
       <div class="column" data-testid="aws-location">
-        <h3 class="is-size-6 has-text-weight-semibold">AWS</h3>
+        <h3 class="is-size-6 has-text-weight-semibold">
+          AWS
+          <a
+            href="#"
+            role="button"
+            class="is-size-7 has-text-weight-normal ml-1"
+            data-testid="aws-info-link"
+            @click.prevent="awsInfoOpen = true"
+            >What is AWS?</a
+          >
+        </h3>
         <p v-if="showAwsStatus">{{ awsStatus }}</p>
         <p v-if="locations.aws.verifiedAt" class="is-size-7 has-text-grey">
           Transfer verified {{ formatDate(locations.aws.verifiedAt) }} UTC
@@ -38,64 +48,71 @@
         }}</code>
 
         <div data-testid="retention-schedule">
-          <p v-if="archiveDueAt && !isArchived">
-            <template v-if="new Date(archiveDueAt).getTime() <= now">
-              Due to move to AWS (awaiting the next archive run).
+          <p v-if="deletionEligibleAt && !isArchived">
+            <template v-if="deletionDue">
+              This project has been due for deletion from the HPC since
+              {{ formatDay(deletionEligibleAt) }}. It will be copied to
+              <a href="#" role="button" @click.prevent="awsInfoOpen = true"
+                >AWS</a
+              >
+              first and preserved there instead.
             </template>
-            <template v-else
-              >Due to move to AWS around
-              {{ formatMonth(archiveDueAt) }}.</template
-            >
+            <template v-else>
+              This project is scheduled to be deleted from the HPC from
+              {{ formatDay(deletionEligibleAt) }}. It will be preserved on
+              <a href="#" role="button" @click.prevent="awsInfoOpen = true"
+                >AWS</a
+              >
+              instead from that point.
+            </template>
+            Project records will remain on this site.
           </p>
-          <p v-else-if="!isArchived">AWS move date unavailable.</p>
-          <p v-if="deletionEligibleAt" class="is-size-7">
-            HPC deletion review eligible from
-            {{ formatDate(deletionEligibleAt) }} UTC.
-            <template v-if="!isArchived"
-              >The project must be copied to AWS first.</template
-            >
+          <p v-else-if="deletionEligibleAt">
+            The HPC copy is scheduled to be deleted from
+            {{ formatDay(deletionEligibleAt) }}. The project is preserved on
+            <a href="#" role="button" @click.prevent="awsInfoOpen = true">AWS</a
+            >. Project records will remain on this site.
           </p>
-          <p v-else-if="storageState === 'aws'" class="is-size-7">
-            The HPC copy is recorded as removed.
+          <p v-else-if="storageState === 'aws'">
+            The HPC copy is recorded as removed. The project is preserved on
+            <a href="#" role="button" @click.prevent="awsInfoOpen = true">AWS</a
+            >. Project records remain on this site.
           </p>
           <p v-else-if="!preservationInvalid" class="is-size-7">
-            HPC deletion review date unavailable.
+            HPC deletion date unavailable.
           </p>
-          <StorageRetentionExplanation class="mt-2" />
         </div>
 
-        <div
-          v-if="savedUntil || preservationInvalid"
-          class="notification is-info is-light mt-3 mb-3"
-          role="status"
+        <details
+          v-if="validUntil && !preservationInvalid"
+          class="keep-request mt-2"
+          data-testid="keep-request"
         >
-          <template v-if="validUntil && !preservationInvalid">
-            <p v-if="preservationActive">
-              <strong
-                >Keep on HPC until {{ formatDate(savedUntil) }} UTC.</strong
-              >
-            </p>
-            <p v-else>
-              The HPC preservation date was {{ formatDate(savedUntil) }} UTC.
-              This date has passed; it does not mean the HPC copy has been
-              deleted.
-            </p>
-            <p
-              v-if="
-                project.hpcPreservationRequestedBy ||
-                project.hpcPreservationReason
-              "
-            >
-              Requested by
-              {{ project.hpcPreservationRequestedBy || "not yet recorded" }}:
-              {{ project.hpcPreservationReason || "reason not yet recorded" }}.
+          <summary>
+            <template v-if="preservationActive">
+              Approved to stay on the HPC until {{ formatDay(savedUntil) }}
+            </template>
+            <template v-else>
+              HPC keep date passed on {{ formatDay(savedUntil) }}
+            </template>
+          </summary>
+          <div class="is-size-7 mt-1">
+            <p v-if="preservationRequest">{{ preservationRequest }}</p>
+            <p v-if="!preservationActive">
+              A passed date does not mean the HPC copy has been deleted.
             </p>
             <p v-if="locations.hpc.status === 'absent'">
               The HPC copy is recorded as absent. Setting a date does not
               restore it.
             </p>
-          </template>
-          <p v-else>
+          </div>
+        </details>
+        <div
+          v-else-if="savedUntil || preservationInvalid"
+          class="notification is-info is-light mt-3 mb-3"
+          role="status"
+        >
+          <p>
             The HPC preservation date needs administrator attention. Ask an
             administrator to repair it before removing the HPC copy.
           </p>
@@ -104,114 +121,180 @@
         <p class="is-size-7 mt-2">
           Contact <a v-if="contactHref" :href="contactHref">George Deeks</a
           ><span v-else>George Deeks</span>
-          if you need this project kept on HPC for longer.
+          if you need this project kept on the HPC for longer.
         </p>
       </div>
     </div>
 
-    <form v-if="isAdmin" data-testid="preservation-form" @submit.prevent="save">
-      <label :for="inputId" class="label">Preserve on HPC until</label>
-      <p :id="`${inputId}-help`" class="help mb-2">
-        Keep the HPC copy through the end of this date (UTC). A passed date
-        allows manual review; it never deletes files automatically.
-      </p>
-      <p :id="`${inputId}-visibility`" class="help mb-2">
-        The date, requester and reason are visible to everyone who can see this
-        project.
-      </p>
-      <div class="field">
-        <label :for="`${inputId}-requester`" class="label">Requested by</label>
-        <input
-          :id="`${inputId}-requester`"
-          v-model="requestedBy"
-          type="text"
-          class="input"
-          maxlength="200"
-          :disabled="saving || conflict"
-          :aria-describedby="`${inputId}-visibility`"
-        />
-      </div>
-      <div class="field">
-        <label :for="`${inputId}-reason`" class="label">Reason</label>
-        <textarea
-          :id="`${inputId}-reason`"
-          v-model="reason"
-          class="textarea"
-          maxlength="1000"
-          :disabled="saving || conflict"
-          :aria-describedby="`${inputId}-visibility ${inputId}-reason-help`"
-        ></textarea>
-        <p :id="`${inputId}-reason-help`" class="help">
-          Required when saving the keep date or its details.
+    <b-modal :active.sync="awsInfoOpen">
+      <section class="modal-card-body aws-info" data-testid="aws-info">
+        <h4 class="title is-4">What is AWS?</h4>
+        <p>
+          AWS (Amazon Web Services) is the cloud storage TSL uses to keep
+          sequencing data for the long term, once it no longer needs to sit on
+          the HPC.
         </p>
-      </div>
-      <div class="field is-grouped is-grouped-multiline">
-        <div class="control">
-          <input
-            :id="inputId"
-            v-model="selectedDate"
-            class="input"
-            type="date"
-            :aria-describedby="`${inputId}-help`"
-            :disabled="saving || conflict"
-          />
-        </div>
-        <div class="control">
-          <button
-            type="submit"
-            class="button is-primary"
-            :class="{ 'is-loading': saving }"
-            :disabled="saving || conflict || !canSave"
-          >
-            Save preservation
-          </button>
-        </div>
-      </div>
-      <div v-if="savedUntil || preservationInvalid" class="field">
-        <label :for="`${inputId}-release-reason`" class="label">
-          Reason for releasing the hold
-        </label>
-        <textarea
-          :id="`${inputId}-release-reason`"
-          v-model="releaseReason"
-          class="textarea"
-          maxlength="1000"
-          :disabled="saving || conflict"
-          :aria-describedby="`${inputId}-release-help`"
-        ></textarea>
-        <p :id="`${inputId}-release-help`" class="help mb-2">
-          Enter a new explanation before clearing. This release reason is kept
-          in the audit history only.
+        <p>
+          When a project is archived, its files are copied to AWS and checked
+          against the originals. The HPC copy is only removed after that check,
+          and only after a manual review. If a keep date has been agreed, the
+          HPC copy stays until at least that date.
         </p>
-        <button
-          type="button"
-          class="button"
-          :disabled="saving || conflict || !canClear"
-          data-testid="clear-preservation"
-          @click="updateDate(null)"
+        <p>
+          Archived data is held in cold storage, so it cannot be read in place
+          the way files on the HPC can. It can be restored on request, which can
+          take a couple of days.
+        </p>
+        <p>
+          Nothing disappears from this site. The project, its samples and runs
+          stay listed here, and the page shows where the files now live.
+          Archived projects are read-only, so new files cannot be added to them.
+        </p>
+        <p>
+          Contact George Deeks if you need archived data back, or need a project
+          kept on the HPC for longer.
+        </p>
+      </section>
+    </b-modal>
+
+    <section
+      v-if="isAdmin || $scopedSlots['admin-tools']"
+      class="admin-tools"
+      data-testid="admin-tools"
+      aria-label="Admin-only tools"
+    >
+      <p class="admin-tools-label">
+        Admin only
+        <span class="has-text-weight-normal"
+          >&middot; other users do not see this section</span
         >
-          Clear preservation date
-        </button>
-      </div>
-      <p v-if="locations.hpc.status === 'absent'" class="help">
-        The HPC copy is recorded as absent. Setting a date does not restore it.
       </p>
-      <p v-if="errorMessage" class="help is-danger" role="alert">
-        {{ errorMessage }}
-      </p>
-      <p v-if="successMessage" class="help is-success" role="status">
-        {{ successMessage }}
-      </p>
-    </form>
+      <details
+        v-if="isAdmin"
+        class="admin-tool"
+        data-testid="preservation-panel"
+      >
+        <summary>
+          <span class="has-text-weight-semibold">Preserve on HPC</span>
+          <span class="is-size-7 has-text-grey ml-2">{{
+            preservationSummary
+          }}</span>
+        </summary>
+        <form
+          class="mt-3"
+          data-testid="preservation-form"
+          @submit.prevent="save"
+        >
+          <div class="field">
+            <label :for="inputId" class="label">Preserve on HPC until</label>
+            <div class="control">
+              <input
+                :id="inputId"
+                v-model="selectedDate"
+                class="input preservation-date"
+                type="date"
+                :aria-describedby="`${inputId}-help`"
+                :disabled="saving || conflict"
+              />
+            </div>
+            <p :id="`${inputId}-help`" class="help">
+              Keep the HPC copy through the end of this date (UTC). A passed
+              date allows manual review; it never deletes files automatically.
+            </p>
+          </div>
+          <div class="field">
+            <label :for="`${inputId}-requester`" class="label"
+              >Requested by</label
+            >
+            <input
+              :id="`${inputId}-requester`"
+              v-model="requestedBy"
+              type="text"
+              class="input"
+              maxlength="200"
+              :disabled="saving || conflict"
+              :aria-describedby="`${inputId}-visibility`"
+            />
+          </div>
+          <div class="field">
+            <label :for="`${inputId}-reason`" class="label">Reason</label>
+            <textarea
+              :id="`${inputId}-reason`"
+              v-model="reason"
+              class="textarea"
+              rows="2"
+              maxlength="1000"
+              :disabled="saving || conflict"
+              :aria-describedby="`${inputId}-visibility ${inputId}-reason-help`"
+            ></textarea>
+            <p :id="`${inputId}-reason-help`" class="help">
+              Required when saving the keep date or its details.
+            </p>
+            <p :id="`${inputId}-visibility`" class="help">
+              The date, requester and reason are visible to everyone who can see
+              this project.
+            </p>
+          </div>
+          <div class="field">
+            <button
+              type="submit"
+              class="button is-primary"
+              :class="{ 'is-loading': saving }"
+              :disabled="saving || conflict || !canSave"
+            >
+              Save preservation
+            </button>
+          </div>
+          <div v-if="savedUntil || preservationInvalid" class="field">
+            <label :for="`${inputId}-release-reason`" class="label">
+              Reason for releasing the hold
+            </label>
+            <textarea
+              :id="`${inputId}-release-reason`"
+              v-model="releaseReason"
+              class="textarea"
+              rows="2"
+              maxlength="1000"
+              :disabled="saving || conflict"
+              :aria-describedby="`${inputId}-release-help`"
+            ></textarea>
+            <p :id="`${inputId}-release-help`" class="help mb-2">
+              Enter a new explanation before clearing. This release reason is
+              kept in the audit history only.
+            </p>
+            <button
+              type="button"
+              class="button"
+              :disabled="saving || conflict || !canClear"
+              data-testid="clear-preservation"
+              @click="updateDate(null)"
+            >
+              Clear preservation date
+            </button>
+          </div>
+          <p v-if="locations.hpc.status === 'absent'" class="help">
+            The HPC copy is recorded as absent. Setting a date does not restore
+            it.
+          </p>
+          <p v-if="errorMessage" class="help is-danger" role="alert">
+            {{ errorMessage }}
+          </p>
+          <p v-if="successMessage" class="help is-success" role="status">
+            {{ successMessage }}
+          </p>
+        </form>
+      </details>
+      <slot name="admin-tools" />
+    </section>
   </section>
 </template>
 
 <script>
-import StorageRetentionExplanation from "~/components/storage/StorageRetentionExplanation.vue";
 import { describeStorage } from "~/utils/storageState";
 import { getApiErrorMessage, getApiErrorStatus } from "~/utils/apiError";
 import {
   formatStorageDate,
+  formatStorageDay,
   projectStorageLocations,
   retentionDateInput,
   retentionDeadline,
@@ -220,7 +303,6 @@ import {
 
 export default {
   name: "ProjectStorage",
-  components: { StorageRetentionExplanation },
   props: {
     project: { type: Object, required: true },
     storageLocations: { type: Object, default: null },
@@ -232,6 +314,7 @@ export default {
       requestedBy: this.project.hpcPreservationRequestedBy || "",
       reason: this.project.hpcPreservationReason || "",
       releaseReason: "",
+      awsInfoOpen: false,
       saving: false,
       conflict: false,
       errorMessage: "",
@@ -263,13 +346,34 @@ export default {
     isArchived() {
       return ["aws_pending_hpc_deletion", "aws"].includes(this.storageState);
     },
-    archiveDueAt() {
-      return validIsoDate(this.storageLocations?.archiveDueAt);
-    },
     deletionEligibleAt() {
       return this.preservationInvalid
         ? null
         : validIsoDate(this.storageLocations?.hpcDeletionEligibleAt);
+    },
+    deletionDue() {
+      return (
+        this.deletionEligibleAt &&
+        new Date(this.deletionEligibleAt).getTime() <= this.now
+      );
+    },
+    preservationRequest() {
+      const by = (this.project.hpcPreservationRequestedBy || "").trim();
+      const why = (this.project.hpcPreservationReason || "")
+        .trim()
+        .replace(/\.+$/, "");
+      if (!by && !why) return null;
+      return `Requested by ${by || "not yet recorded"}: ${
+        why || "reason not yet recorded"
+      }.`;
+    },
+    preservationSummary() {
+      if (this.preservationInvalid) return "Keep date needs attention";
+      if (!this.savedUntil) return "No keep date set";
+      const day = formatStorageDay(this.savedUntil);
+      return this.preservationActive
+        ? `Kept until ${day}`
+        : `Keep date passed (${day})`;
     },
     contactHref() {
       const email = this.$config?.HPC_RETENTION_CONTACT_EMAIL?.trim();
@@ -345,11 +449,14 @@ export default {
         "The HPC location could not be confirmed. Contact George Deeks."
       );
     },
-    // The AWS column always shows, because it carries the move date and
-    // retention details. "Not archived" is left out when the move date
-    // already says the project is not yet in AWS.
+    // "Not archived" is left out when the schedule sentence already says the
+    // project has yet to move to AWS.
     showAwsStatus() {
-      return this.locations.aws.status !== "not_archived" || !this.archiveDueAt;
+      return (
+        this.locations.aws.status !== "not_archived" ||
+        !this.deletionEligibleAt ||
+        this.isArchived
+      );
     },
     awsStatus() {
       return {
@@ -383,13 +490,7 @@ export default {
   },
   methods: {
     formatDate: formatStorageDate,
-    formatMonth(value) {
-      return new Intl.DateTimeFormat("en-GB", {
-        month: "long",
-        year: "numeric",
-        timeZone: "UTC",
-      }).format(new Date(value));
-    },
+    formatDay: formatStorageDay,
     save() {
       if (!this.selectedDeadline) {
         this.errorMessage = "Choose a valid date. Use Clear to remove a date.";
@@ -471,5 +572,47 @@ export default {
   display: block;
   margin-top: 0.5rem;
   overflow-wrap: anywhere;
+}
+
+.admin-tools {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border: 1px dashed #b5b5b5;
+  border-radius: 4px;
+  background: #fafafa;
+}
+
+.admin-tools-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #7a7a7a;
+}
+
+.admin-tools-label span {
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.admin-tool {
+  padding: 0.75rem 1rem;
+  border: 1px solid #dbdbdb;
+  background: #fff;
+}
+
+.keep-request > summary,
+.admin-tool > summary {
+  cursor: pointer;
+}
+
+.preservation-date {
+  width: auto;
+}
+
+.aws-info > p {
+  padding-bottom: 1rem;
 }
 </style>

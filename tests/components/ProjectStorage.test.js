@@ -5,12 +5,20 @@ import ProjectStorage from "~/components/storage/ProjectStorage.vue";
 const id = "5fc012bda3efcb29338b7d58";
 const future = "2027-11-13T23:59:59.999Z";
 const wrappers = [];
+// Buefy is not registered in these tests; render the modal body only when open.
+const ModalStub = {
+  props: ["active"],
+  render(h) {
+    return this.active ? h("div", this.$slots.default) : null;
+  },
+};
 const mountPanel = ({
   isAdmin = false,
   project = {},
   locations = null,
   put = vi.fn(),
   slots = {},
+  scopedSlots = {},
   contactEmail = "",
 } = {}) => {
   const wrapper = mount(ProjectStorage, {
@@ -25,6 +33,8 @@ const mountPanel = ({
       storageLocations: locations,
     },
     slots,
+    scopedSlots,
+    stubs: { "b-modal": ModalStub },
     mocks: {
       $auth: { $state: { user: { username: "deeks", isAdmin } } },
       $axios: { put },
@@ -62,7 +72,9 @@ describe("ProjectStorage", () => {
     expect(wrapper.text()).toContain("Transfer verified in AWS");
     expect(wrapper.text()).toContain("recorded transfer verification");
     expect(wrapper.text()).toContain("a fresh S3 check");
-    expect(wrapper.text()).toContain("Keep on HPC until 13 November 2027");
+    expect(wrapper.text()).toContain(
+      "Approved to stay on the HPC until 13 November 2027"
+    );
     expect(wrapper.text()).toContain("Contact George Deeks");
     expect(wrapper.find("form").exists()).toBe(false);
   });
@@ -92,7 +104,6 @@ describe("ProjectStorage", () => {
     expect(wrapper.text()).not.toContain("Storage locations");
     expect(wrapper.findAll(".columns > .column").length).toBe(3);
     expect(wrapper.find(".column").text()).toBe("Project owner and group");
-    expect(wrapper.text()).toContain("Archiving copies the data to AWS");
     expect(wrapper.text()).toContain(
       "Requested by researcher: Analysis ongoing"
     );
@@ -107,18 +118,22 @@ describe("ProjectStorage", () => {
     );
   });
 
-  it("keeps the AWS column for an unarchived project, led by its move date", () => {
+  it("keeps the AWS column for an unarchived project, led by its schedule", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-11-16T12:00:00.000Z"));
     const dated = mountPanel({
       locations: {
         aws: { status: "not_archived" },
         archiveDueAt: "2027-10-07T14:55:00.000Z",
+        hpcDeletionEligibleAt: "2027-10-07T14:55:00.000Z",
       },
     });
     const aws = dated.find('[data-testid="aws-location"]');
     expect(aws.exists()).toBe(true);
-    expect(aws.text()).toContain("Due to move to AWS around October 2027");
+    expect(aws.text()).toContain(
+      "scheduled to be deleted from the HPC from 7 October 2027."
+    );
+    expect(aws.text()).not.toContain("Due to move to AWS");
     expect(aws.text()).not.toContain("Not archived in AWS");
 
     const undated = mountPanel({
@@ -129,7 +144,7 @@ describe("ProjectStorage", () => {
     );
   });
 
-  it("puts the retention details, keep date and contact in the AWS column", () => {
+  it("puts the schedule, keep date and contact in the AWS column", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-11-16T12:00:00.000Z"));
     const wrapper = mountPanel({
@@ -144,14 +159,108 @@ describe("ProjectStorage", () => {
     });
     const aws = wrapper.find('[data-testid="aws-location"]');
     expect(aws.find('[data-testid="retention-schedule"]').exists()).toBe(true);
-    expect(aws.text()).toContain("HPC deletion review eligible from");
-    expect(aws.text()).toContain("Archiving copies the data to AWS");
-    expect(aws.text()).toContain("Keep on HPC until 13 November 2027");
+    expect(aws.text()).toContain("scheduled to be deleted from the HPC from");
+    expect(aws.text()).toContain(
+      "Approved to stay on the HPC until 13 November 2027"
+    );
     expect(aws.text()).toContain("Contact George Deeks");
-    // Only the administrator's form sits outside the three columns.
+    // Only the admin-only section sits outside the three columns.
     const outside = wrapper.findAll(".project-storage > :not(.columns)");
     expect(outside.length).toBe(1);
-    expect(outside.at(0).attributes("data-testid")).toBe("preservation-form");
+    expect(outside.at(0).attributes("data-testid")).toBe("admin-tools");
+  });
+
+  it("collapses the keep-date form inside a labelled admin-only section", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-11-16T12:00:00.000Z"));
+    const wrapper = mountPanel({
+      isAdmin: true,
+      project: { preserveOnHpcUntil: future },
+    });
+    const section = wrapper.find('[data-testid="admin-tools"]');
+    expect(section.text()).toContain("Admin only");
+    const panel = section.find("details");
+    expect(panel.attributes("open")).toBeUndefined();
+    expect(panel.find("summary").text()).toContain("Preserve on HPC");
+    expect(panel.find("summary").text()).toContain(
+      "Kept until 13 November 2027"
+    );
+    expect(panel.find("summary").text()).not.toContain("UTC");
+    expect(panel.find('[data-testid="preservation-form"]').exists()).toBe(true);
+
+    expect(
+      mountPanel({ isAdmin: true }).find("details summary").text()
+    ).toContain("No keep date set");
+  });
+
+  it("shows the keep date as one collapsed line with the request inside", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-11-16T12:00:00.000Z"));
+    const wrapper = mountPanel({
+      project: {
+        preserveOnHpcUntil: future,
+        hpcPreservationRequestedBy: "Joe Win",
+        hpcPreservationReason: "as per the Kamoun review.",
+      },
+    });
+    const keep = wrapper.find('[data-testid="keep-request"]');
+    expect(keep.element.tagName).toBe("DETAILS");
+    expect(keep.attributes("open")).toBeUndefined();
+    expect(keep.find("summary").text()).toBe(
+      "Approved to stay on the HPC until 13 November 2027"
+    );
+    expect(keep.text()).toContain(
+      "Requested by Joe Win: as per the Kamoun review."
+    );
+    expect(keep.text()).not.toContain("review..");
+    expect(keep.text()).not.toContain("UTC");
+    expect(wrapper.find(".notification").exists()).toBe(false);
+  });
+
+  it("labels a passed keep date without implying deletion", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2028-01-01T00:00:00.000Z"));
+    const keep = mountPanel({ project: { preserveOnHpcUntil: future } }).find(
+      '[data-testid="keep-request"]'
+    );
+    expect(keep.find("summary").text()).toBe(
+      "HPC keep date passed on 13 November 2027"
+    );
+    expect(keep.text()).toContain(
+      "does not mean the HPC copy has been deleted"
+    );
+  });
+
+  it("hides the admin-only section from non-admins with nothing slotted", () => {
+    const wrapper = mountPanel();
+    expect(wrapper.find('[data-testid="admin-tools"]').exists()).toBe(false);
+    expect(wrapper.text()).not.toContain("Admin only");
+  });
+
+  it("wraps slotted admin tools without showing the keep-date form", () => {
+    const wrapper = mountPanel({
+      scopedSlots: { "admin-tools": "<p>Nudge emails</p>" },
+    });
+    const section = wrapper.find('[data-testid="admin-tools"]');
+    expect(section.text()).toContain("Admin only");
+    expect(section.text()).toContain("Nudge emails");
+    expect(section.find("details").exists()).toBe(false);
+    expect(wrapper.find("form").exists()).toBe(false);
+  });
+
+  it("explains AWS in a modal opened from the AWS links", async () => {
+    const wrapper = mountPanel({
+      locations: { hpcDeletionEligibleAt: "2031-10-30T14:41:00.000Z" },
+    });
+    expect(wrapper.find('[data-testid="aws-info"]').exists()).toBe(false);
+    const links = wrapper.findAll(
+      '[data-testid="aws-location"] a[role=button]'
+    );
+    expect(links.length).toBe(2);
+    await links.at(1).trigger("click");
+    expect(wrapper.find('[data-testid="aws-info"]').text()).toContain(
+      "Amazon Web Services"
+    );
   });
 
   it("never names the internal Komondor system to readers", () => {
@@ -161,7 +270,6 @@ describe("ProjectStorage", () => {
       locations: { archiveDueAt: "2031-11-16T00:00:00.000Z" },
     });
     expect(wrapper.text()).not.toMatch(/komondor/i);
-    expect(wrapper.text()).toContain("The project stays on the Sequence Store");
   });
 
   it("gives an archived project no age-based move date", () => {
@@ -332,7 +440,7 @@ describe("ProjectStorage", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2027-11-13T23:59:50.000Z"));
     const wrapper = mountPanel({ project: { preserveOnHpcUntil: future } });
-    expect(wrapper.text()).toContain("Keep on HPC until");
+    expect(wrapper.text()).toContain("Approved to stay on the HPC until");
     vi.advanceTimersByTime(60000);
     await wrapper.vm.$nextTick();
     expect(wrapper.text()).toContain(
@@ -544,7 +652,7 @@ describe("HPC retention follow-up", () => {
     expect(wrapper.text()).toContain(
       "Requested by researcher: Analysis ongoing"
     );
-    const link = new URL(wrapper.find("a").attributes("href"));
+    const link = new URL(wrapper.find('a[href^="mailto:"]').attributes("href"));
     expect(link.protocol).toBe("mailto:");
     expect(link.pathname).toBe("retention@example.test");
     expect(link.searchParams.get("subject")).toBe(
@@ -560,29 +668,35 @@ describe("HPC retention follow-up", () => {
     expect(wrapper.find('a[href^="mailto:"]').exists()).toBe(false);
   });
 
-  it("shows computed dates from project creation and explains the independent copies", () => {
+  it("shows the deletion date as a day and says where the project goes", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-11-16T12:00:00.000Z"));
     const wrapper = mountPanel({
       locations: {
-        archiveDueAt: "2031-11-16T00:00:00.000Z",
-        hpcDeletionEligibleAt: "2031-11-16T00:00:00.000Z",
+        archiveDueAt: "2031-10-30T14:41:00.000Z",
+        hpcDeletionEligibleAt: "2031-10-30T14:41:00.000Z",
       },
     });
-    expect(wrapper.text()).toContain("Due to move to AWS around November 2031");
-    expect(wrapper.text()).toContain(
-      "HPC deletion review eligible from 16 November 2031"
+    const text = wrapper.text().replace(/\s+/g, " ");
+    expect(text).toContain(
+      "This project is scheduled to be deleted from the HPC from 30 October 2031. It will be preserved on AWS instead from that point. Project records will remain on this site."
     );
-    expect(wrapper.text()).toContain("must be copied to AWS first");
-    expect(wrapper.text()).toContain("The project stays on the Sequence Store");
+    expect(text).not.toContain("14:41");
+    expect(text).not.toContain("Due to move to AWS");
+    expect(text).not.toContain("deletion review eligible");
   });
 
-  it("labels an overdue archive date without implying automatic deletion", () => {
-    const wrapper = mountPanel({
-      locations: { archiveDueAt: "2020-01-01T00:00:00.000Z" },
-    });
-    expect(wrapper.text()).toContain("awaiting the next archive run");
-    expect(wrapper.text()).toContain("nothing is deleted automatically");
+  it("says a passed deletion date is due, with the AWS copy coming first", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-11-16T12:00:00.000Z"));
+    const text = mountPanel({
+      locations: { hpcDeletionEligibleAt: "2020-01-01T00:00:00.000Z" },
+    })
+      .text()
+      .replace(/\s+/g, " ");
+    expect(text).toContain(
+      "due for deletion from the HPC since 1 January 2020. It will be copied to AWS first"
+    );
   });
 
   it("never shows a deletion eligibility date for an invalid hold", () => {
@@ -590,7 +704,7 @@ describe("HPC retention follow-up", () => {
       project: { hpcPreservationInvalid: true },
       locations: { hpcDeletionEligibleAt: future },
     });
-    expect(wrapper.text()).not.toContain("HPC deletion review eligible from");
+    expect(wrapper.text()).not.toContain("deleted from the HPC from");
     expect(wrapper.text()).toContain("needs administrator attention");
   });
 });
