@@ -6,22 +6,45 @@
       </div>
       <div class="column hpc-column" data-testid="hpc-location">
         <h3 class="is-size-6 has-text-weight-semibold">HPC</h3>
-        <p>{{ hpcStatus }}</p>
-        <p v-if="locations.hpc.checkedAt" class="is-size-7 has-text-grey">
-          {{
-            locations.hpc.status === "absent" ? "Absence recorded" : "Checked"
-          }}
-          {{ formatDate(locations.hpc.checkedAt) }} UTC
-        </p>
+        <details
+          v-if="hpcCopyDeleted"
+          class="retention-details"
+          data-testid="hpc-removed-details"
+        >
+          <summary>
+            <span>{{ hpcStatus }}</span>
+            <template v-if="hpcCheckedLabel">
+              <br />
+              <span class="is-size-7 has-text-grey">{{ hpcCheckedLabel }}</span>
+            </template>
+          </summary>
+          <div class="mt-1">
+            <p>
+              The HPC copy is recorded as removed. The project is preserved on
+              <a href="#" role="button" @click.prevent="awsInfoOpen = true"
+                >AWS</a
+              >. Project records remain on this site.
+            </p>
+            <p class="is-size-7 mt-2">
+              Contact <a v-if="contactHref" :href="contactHref">George Deeks</a
+              ><span v-else>George Deeks</span> if you need this project
+              restored to the HPC for a set amount of time - this will take days
+              and incur a cost for your group.
+            </p>
+          </div>
+        </details>
+        <template v-else>
+          <p>{{ hpcStatus }}</p>
+          <p v-if="hpcCheckedLabel" class="is-size-7 has-text-grey">
+            {{ hpcCheckedLabel }}
+          </p>
+        </template>
         <p v-if="locations.hpc.status === 'present'" class="is-size-7">
           The directory is present; this page does not check its file contents.
         </p>
         <p v-if="hpcReason" class="is-size-7">
           {{ hpcReason }}
         </p>
-        <code v-if="showHpcPath" class="storage-path">{{
-          locations.hpc.uri
-        }}</code>
       </div>
       <div class="column aws-column" data-testid="aws-location">
         <h3 class="is-size-6 has-text-weight-semibold">
@@ -43,7 +66,11 @@
           This is the recorded transfer verification; this page does not perform
           a fresh S3 check.
         </p>
-        <details class="retention-details mt-2" data-testid="retention-details">
+        <details
+          v-if="!hpcCopyDeleted"
+          class="retention-details mt-2"
+          data-testid="retention-details"
+        >
           <summary>{{ retentionSummary }}</summary>
           <div class="mt-1">
             <div data-testid="retention-schedule">
@@ -73,12 +100,6 @@
                   >AWS</a
                 >. Project records will remain on this site.
               </p>
-              <p v-else-if="storageState === 'aws'">
-                The HPC copy is recorded as removed. The project is preserved on
-                <a href="#" role="button" @click.prevent="awsInfoOpen = true"
-                  >AWS</a
-                >. Project records remain on this site.
-              </p>
               <p v-else-if="!preservationInvalid" class="is-size-7">
                 HPC deletion date unavailable.
               </p>
@@ -86,14 +107,8 @@
 
             <p class="is-size-7 mt-2">
               Contact <a v-if="contactHref" :href="contactHref">George Deeks</a
-              ><span v-else>George Deeks</span>
-              <template v-if="hpcCopyDeleted">
-                if you need this project restored to the HPC for a set amount of
-                time - this will take days and incur a cost for your group.
-              </template>
-              <template v-else>
-                if you need this project kept on the HPC for longer.
-              </template>
+              ><span v-else>George Deeks</span> if you need this project kept on
+              the HPC for longer.
             </p>
           </div>
         </details>
@@ -360,14 +375,6 @@ export default {
     hpcCopyDeleted() {
       return isHpcCopyDeleted(this.project.storage);
     },
-    // A path nobody can read is noise, and inviting someone to try it is worse.
-    showHpcPath() {
-      return (
-        Boolean(this.locations.hpc.uri) &&
-        !this.hpcCopyDeleted &&
-        this.locations.hpc.status !== "absent"
-      );
-    },
     // Keeping or releasing an HPC copy is only a decision while one exists.
     showPreservationForm() {
       return this.isAdmin && !this.hpcCopyDeleted;
@@ -462,6 +469,13 @@ export default {
         unknown: "HPC presence unknown",
       }[this.locations.hpc.status];
     },
+    hpcCheckedLabel() {
+      const at = this.locations.hpc.checkedAt;
+      if (!at) return null;
+      const label =
+        this.locations.hpc.status === "absent" ? "Absence recorded" : "Checked";
+      return `${label} ${formatStorageDate(at)} UTC`;
+    },
     hpcReason() {
       const reason = this.locations.hpc.reason;
       if (!reason || reason === "absence_recorded") return null;
@@ -490,19 +504,19 @@ export default {
         this.isArchived
       );
     },
-    // One closed line naming what happens to the HPC copy; the full sentence
-    // and the contact sit inside the collapsible.
+    // One closed line naming what happens next; the full sentence and the
+    // contact sit inside the collapsible. A removed HPC copy has its own
+    // collapsible in the HPC column.
     retentionSummary() {
       const day = this.deletionEligibleAt
         ? formatStorageDay(this.deletionEligibleAt)
         : null;
       if (day && !this.isArchived) {
         return this.deletionDue
-          ? `HPC deletion due since ${day}`
-          : `HPC deletion scheduled from ${day}`;
+          ? `AWS move (with HPC deletion) due since ${day}`
+          : `AWS move (with HPC deletion) scheduled from ${day}`;
       }
       if (day) return `HPC copy to be deleted from ${day}`;
-      if (this.storageState === "aws") return "HPC copy removed";
       if (!this.preservationInvalid) return "HPC deletion date unavailable";
       return "HPC retention contact";
     },
@@ -616,12 +630,6 @@ export default {
 </script>
 
 <style scoped>
-.storage-path {
-  display: block;
-  margin-top: 0.5rem;
-  overflow-wrap: anywhere;
-}
-
 .admin-tools {
   display: flex;
   flex-direction: column;

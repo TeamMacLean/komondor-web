@@ -78,63 +78,62 @@
             {{ enaInfo }}
           </p>
           <template v-if="showAdminEmailNudgeUpdateCheckbox" #admin-tools>
-            <div class="nudge-email-wrapper">
-              <div class="is-size-5">
-                <b-icon
-                  icon="email-send-outline"
-                  size="is-small"
-                  class="has-text-grey"
-                />
-                Nudge emails
+            <details class="nudge-email-wrapper" data-testid="nudge-panel">
+              <summary>
+                <span class="has-text-weight-semibold">Nudge emails</span>
+                <span class="is-size-7 has-text-grey ml-2">{{
+                  nudgeSummary
+                }}</span>
+              </summary>
+              <div class="nudge-email-body mt-3">
+                <a @click="openModal"> I don't get this? </a>
+
+                <b-modal :active.sync="isModalActive">
+                  <section class="modal-card-body custom-modal-text">
+                    <p>
+                      Admins for this site can set email 'nudge' reminders for
+                      projects that have not released their data to ENA.
+                    </p>
+                    <p>
+                      When enabled, the system will check daily to whether it
+                      needs to send reminder emails to TSL's ENA admins and
+                      persons responsible for the project.
+                    </p>
+                    <p>
+                      Emails are sent 2 years after project creation, and then
+                      every 6 months thereafter. You can review when reminders
+                      have been sent in the 'Nudges Sent' section.
+                    </p>
+                    <p>
+                      All projects can have this feature toggled on/off, but it
+                      was initialised for all projects from 01-09-2021 onwards,
+                      and excluded for all 2Blades projects. When data is
+                      released to ENA, please toggle this off.
+                    </p>
+                  </section>
+                </b-modal>
+
+                <b-checkbox
+                  :value="projectNudgeable"
+                  class="nudge-email-label"
+                  :loading="loading"
+                  :disabled="loading"
+                  @input="updateDatabase"
+                >
+                  Send emails to remind stakeholders to about ENA / release date
+                  for data.
+                </b-checkbox>
+
+                <div v-if="project.nudges.length">
+                  Nudges sent:
+                  <span v-for="(nudge, index) in project.nudges" :key="index">
+                    {{ new Date(nudge).toLocaleDateString()
+                    }}<span v-if="index < project.nudges.length - 1">,</span>
+                  </span>
+                </div>
+                <div v-else>No nudges sent for this project.</div>
               </div>
-
-              <a @click="openModal"> I don't get this? </a>
-
-              <b-modal :active.sync="isModalActive">
-                <section class="modal-card-body custom-modal-text">
-                  <p>
-                    Admins for this site can set email 'nudge' reminders for
-                    projects that have not released their data to ENA.
-                  </p>
-                  <p>
-                    When enabled, the system will check daily to whether it
-                    needs to send reminder emails to TSL's ENA admins and
-                    persons responsible for the project.
-                  </p>
-                  <p>
-                    Emails are sent 2 years after project creation, and then
-                    every 6 months thereafter. You can review when reminders
-                    have been sent in the 'Nudges Sent' section.
-                  </p>
-                  <p>
-                    All projects can have this feature toggled on/off, but it
-                    was initialised for all projects from 01-09-2021 onwards,
-                    and excluded for all 2Blades projects. When data is released
-                    to ENA, please toggle this off.
-                  </p>
-                </section>
-              </b-modal>
-
-              <b-checkbox
-                :value="projectNudgeable"
-                class="nudge-email-label"
-                :loading="loading"
-                :disabled="loading"
-                @input="updateDatabase"
-              >
-                Send emails to remind stakeholders to about ENA / release date
-                for data.
-              </b-checkbox>
-
-              <div v-if="project.nudges.length">
-                Nudges sent:
-                <span v-for="(nudge, index) in project.nudges" :key="index">
-                  {{ new Date(nudge).toLocaleDateString()
-                  }}<span v-if="index < project.nudges.length - 1">,</span>
-                </span>
-              </div>
-              <div v-else>No nudges sent for this project.</div>
-            </div>
+            </details>
           </template>
         </ProjectStorage>
 
@@ -312,6 +311,12 @@ export default {
         noBlockingOfSendingToEna && !isGroupThatNeverSubmitsToEna;
       return isSending;
     },
+    nudgeSummary() {
+      const sent = this.project.nudges.length;
+      return `${this.projectNudgeable ? "On" : "Off"} · ${
+        sent ? `${sent} sent` : "none sent"
+      }`;
+    },
     showAdminEmailNudgeUpdateCheckbox() {
       if (!this.isSendingToEna) {
         return false;
@@ -426,10 +431,18 @@ export default {
   font-style: italic;
 }
 
+/* Matches the Preserve on HPC panel in ProjectStorage's admin section. */
 .nudge-email-wrapper {
   border: 1px solid #dbdbdb;
   background: #fff;
   padding: 0.75rem 1rem;
+}
+
+.nudge-email-wrapper > summary {
+  cursor: pointer;
+}
+
+.nudge-email-body {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;

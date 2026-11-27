@@ -69,6 +69,10 @@ describe("ProjectStorage", () => {
       },
     });
     expect(wrapper.text()).toContain("On HPC");
+    expect(wrapper.text()).not.toContain("/reads/two_blades/gargy_2019_rnaseq");
+    expect(wrapper.find('[data-testid="hpc-removed-details"]').exists()).toBe(
+      false
+    );
     expect(wrapper.text()).toContain("Transfer verified in AWS");
     expect(wrapper.text()).toContain("recorded transfer verification");
     expect(wrapper.text()).toContain("a fresh S3 check");
@@ -717,13 +721,13 @@ describe("retention details summary", () => {
       "a future deletion date",
       {},
       "2027-10-07T14:55:00.000Z",
-      "HPC deletion scheduled from 7 October 2027",
+      "AWS move (with HPC deletion) scheduled from 7 October 2027",
     ],
     [
       "a passed deletion date",
       {},
       "2020-01-01T00:00:00.000Z",
-      "HPC deletion due since 1 January 2020",
+      "AWS move (with HPC deletion) due since 1 January 2020",
     ],
     [
       "an AWS copy awaiting HPC deletion",
@@ -791,7 +795,7 @@ describe("after the HPC copy is deleted", () => {
     expect(wrapper.text()).not.toContain("kept on the HPC for longer");
   });
 
-  it("leaves the S3 path to the file lists and folds the details away", () => {
+  it("moves the removal details under the HPC status, with no S3 path", () => {
     const wrapper = mountPanel({
       project: { storage: deleted },
       locations: absent,
@@ -799,12 +803,19 @@ describe("after the HPC copy is deleted", () => {
     const aws = wrapper.find('[data-testid="aws-location"]');
     expect(aws.find("code").exists()).toBe(false);
     expect(aws.text()).not.toContain("s3://archive/group/project");
-    const details = aws.find('[data-testid="retention-details"]');
+    expect(aws.find('[data-testid="retention-details"]').exists()).toBe(false);
+    expect(aws.text()).not.toContain("Contact George Deeks");
+
+    // The removal story lives under the HPC column's own status line.
+    const hpc = wrapper.find('[data-testid="hpc-location"]');
+    const details = hpc.find('[data-testid="hpc-removed-details"]');
     expect(details.element.tagName).toBe("DETAILS");
     expect(details.attributes("open")).toBeUndefined();
-    expect(details.find("summary").text()).toBe("HPC copy removed");
+    expect(details.find("summary").text()).toMatch(
+      /^HPC removal confirmed\s*Absence recorded 25 November 2026 at 02:14 UTC$/
+    );
     expect(details.text()).toContain("The HPC copy is recorded as removed.");
-    expect(details.text()).toContain("Contact George Deeks");
+    expect(details.text()).toContain("restored to the HPC");
   });
 
   it("hides the preservation form and any recorded keep date", () => {
@@ -861,7 +872,7 @@ describe("after the HPC copy is deleted", () => {
       true
     );
     expect(wrapper.find('[data-testid="keep-request"]').exists()).toBe(true);
-    expect(wrapper.text()).toContain("/tsl/data/reads/group/project");
+    expect(wrapper.text()).not.toContain("/tsl/data/reads/group/project");
     expect(wrapper.text()).toContain("kept on the HPC for longer");
   });
 });
