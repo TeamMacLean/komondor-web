@@ -4,7 +4,7 @@
       <div v-if="$slots.default" class="column" data-testid="project-details">
         <slot />
       </div>
-      <div class="column" data-testid="hpc-location">
+      <div class="column hpc-column" data-testid="hpc-location">
         <h3 class="is-size-6 has-text-weight-semibold">HPC</h3>
         <p>{{ hpcStatus }}</p>
         <p v-if="locations.hpc.checkedAt" class="is-size-7 has-text-grey">
@@ -23,7 +23,7 @@
           locations.hpc.uri
         }}</code>
       </div>
-      <div class="column" data-testid="aws-location">
+      <div class="column aws-column" data-testid="aws-location">
         <h3 class="is-size-6 has-text-weight-semibold">
           AWS
           <a
@@ -43,45 +43,60 @@
           This is the recorded transfer verification; this page does not perform
           a fresh S3 check.
         </p>
-        <code v-if="locations.aws.uri" class="storage-path">{{
-          locations.aws.uri
-        }}</code>
+        <details class="retention-details mt-2" data-testid="retention-details">
+          <summary>{{ retentionSummary }}</summary>
+          <div class="mt-1">
+            <div data-testid="retention-schedule">
+              <p v-if="deletionEligibleAt && !isArchived">
+                <template v-if="deletionDue">
+                  This project has been due for deletion from the HPC since
+                  {{ formatDay(deletionEligibleAt) }}. It will be copied to
+                  <a href="#" role="button" @click.prevent="awsInfoOpen = true"
+                    >AWS</a
+                  >
+                  first and preserved there instead.
+                </template>
+                <template v-else>
+                  This project is scheduled to be deleted from the HPC from
+                  {{ formatDay(deletionEligibleAt) }}. It will be preserved on
+                  <a href="#" role="button" @click.prevent="awsInfoOpen = true"
+                    >AWS</a
+                  >
+                  instead from that point.
+                </template>
+                Project records will remain on this site.
+              </p>
+              <p v-else-if="deletionEligibleAt">
+                The HPC copy is scheduled to be deleted from
+                {{ formatDay(deletionEligibleAt) }}. The project is preserved on
+                <a href="#" role="button" @click.prevent="awsInfoOpen = true"
+                  >AWS</a
+                >. Project records will remain on this site.
+              </p>
+              <p v-else-if="storageState === 'aws'">
+                The HPC copy is recorded as removed. The project is preserved on
+                <a href="#" role="button" @click.prevent="awsInfoOpen = true"
+                  >AWS</a
+                >. Project records remain on this site.
+              </p>
+              <p v-else-if="!preservationInvalid" class="is-size-7">
+                HPC deletion date unavailable.
+              </p>
+            </div>
 
-        <div data-testid="retention-schedule">
-          <p v-if="deletionEligibleAt && !isArchived">
-            <template v-if="deletionDue">
-              This project has been due for deletion from the HPC since
-              {{ formatDay(deletionEligibleAt) }}. It will be copied to
-              <a href="#" role="button" @click.prevent="awsInfoOpen = true"
-                >AWS</a
-              >
-              first and preserved there instead.
-            </template>
-            <template v-else>
-              This project is scheduled to be deleted from the HPC from
-              {{ formatDay(deletionEligibleAt) }}. It will be preserved on
-              <a href="#" role="button" @click.prevent="awsInfoOpen = true"
-                >AWS</a
-              >
-              instead from that point.
-            </template>
-            Project records will remain on this site.
-          </p>
-          <p v-else-if="deletionEligibleAt">
-            The HPC copy is scheduled to be deleted from
-            {{ formatDay(deletionEligibleAt) }}. The project is preserved on
-            <a href="#" role="button" @click.prevent="awsInfoOpen = true">AWS</a
-            >. Project records will remain on this site.
-          </p>
-          <p v-else-if="storageState === 'aws'">
-            The HPC copy is recorded as removed. The project is preserved on
-            <a href="#" role="button" @click.prevent="awsInfoOpen = true">AWS</a
-            >. Project records remain on this site.
-          </p>
-          <p v-else-if="!preservationInvalid" class="is-size-7">
-            HPC deletion date unavailable.
-          </p>
-        </div>
+            <p class="is-size-7 mt-2">
+              Contact <a v-if="contactHref" :href="contactHref">George Deeks</a
+              ><span v-else>George Deeks</span>
+              <template v-if="hpcCopyDeleted">
+                if you need this project restored to the HPC for a set amount of
+                time - this will take days and incur a cost for your group.
+              </template>
+              <template v-else>
+                if you need this project kept on the HPC for longer.
+              </template>
+            </p>
+          </div>
+        </details>
 
         <details
           v-if="showPreservationNotice && validUntil && !preservationInvalid"
@@ -117,18 +132,6 @@
             administrator to repair it before removing the HPC copy.
           </p>
         </div>
-
-        <p class="is-size-7 mt-2">
-          Contact <a v-if="contactHref" :href="contactHref">George Deeks</a
-          ><span v-else>George Deeks</span>
-          <template v-if="hpcCopyDeleted">
-            if you need this project restored to the HPC for a set amount of
-            time - this will take days and incur a cost for your group.
-          </template>
-          <template v-else>
-            if you need this project kept on the HPC for longer.
-          </template>
-        </p>
       </div>
     </div>
 
@@ -487,6 +490,22 @@ export default {
         this.isArchived
       );
     },
+    // One closed line naming what happens to the HPC copy; the full sentence
+    // and the contact sit inside the collapsible.
+    retentionSummary() {
+      const day = this.deletionEligibleAt
+        ? formatStorageDay(this.deletionEligibleAt)
+        : null;
+      if (day && !this.isArchived) {
+        return this.deletionDue
+          ? `HPC deletion due since ${day}`
+          : `HPC deletion scheduled from ${day}`;
+      }
+      if (day) return `HPC copy to be deleted from ${day}`;
+      if (this.storageState === "aws") return "HPC copy removed";
+      if (!this.preservationInvalid) return "HPC deletion date unavailable";
+      return "HPC retention contact";
+    },
     awsStatus() {
       return {
         verified: "Transfer verified in AWS",
@@ -632,7 +651,17 @@ export default {
   background: #fff;
 }
 
+/* HPC needs less room once its path is hidden; AWS carries the longer text. */
+.hpc-column {
+  flex-grow: 0.8;
+}
+
+.aws-column {
+  flex-grow: 1.2;
+}
+
 .keep-request > summary,
+.retention-details > summary,
 .admin-tool > summary {
   cursor: pointer;
 }

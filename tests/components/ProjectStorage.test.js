@@ -189,7 +189,9 @@ describe("ProjectStorage", () => {
     expect(panel.find('[data-testid="preservation-form"]').exists()).toBe(true);
 
     expect(
-      mountPanel({ isAdmin: true }).find("details summary").text()
+      mountPanel({ isAdmin: true })
+        .find('[data-testid="preservation-panel"] summary')
+        .text()
     ).toContain("No keep date set");
   });
 
@@ -709,6 +711,47 @@ describe("HPC retention follow-up", () => {
   });
 });
 
+describe("retention details summary", () => {
+  it.each([
+    [
+      "a future deletion date",
+      {},
+      "2027-10-07T14:55:00.000Z",
+      "HPC deletion scheduled from 7 October 2027",
+    ],
+    [
+      "a passed deletion date",
+      {},
+      "2020-01-01T00:00:00.000Z",
+      "HPC deletion due since 1 January 2020",
+    ],
+    [
+      "an AWS copy awaiting HPC deletion",
+      {
+        storage: {
+          state: "aws_pending_hpc_deletion",
+          acceptsHpcWrites: false,
+          authoritativeLocation: "s3",
+          s3Uri: "s3://archive/project",
+        },
+      },
+      "2027-10-07T14:55:00.000Z",
+      "HPC copy to be deleted from 7 October 2027",
+    ],
+    ["no deletion date", {}, null, "HPC deletion date unavailable"],
+  ])("names %s in the closed line", (_, project, eligible, summary) => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-11-16T12:00:00.000Z"));
+    const details = mountPanel({
+      project,
+      locations: { hpcDeletionEligibleAt: eligible },
+    }).find('[data-testid="retention-details"]');
+    expect(details.attributes("open")).toBeUndefined();
+    expect(details.find("summary").text()).toBe(summary);
+    expect(details.text()).toContain("Contact George Deeks");
+  });
+});
+
 describe("after the HPC copy is deleted", () => {
   const deleted = {
     state: "aws",
@@ -746,6 +789,22 @@ describe("after the HPC copy is deleted", () => {
     );
     expect(wrapper.text()).toContain("incur a cost for your group");
     expect(wrapper.text()).not.toContain("kept on the HPC for longer");
+  });
+
+  it("leaves the S3 path to the file lists and folds the details away", () => {
+    const wrapper = mountPanel({
+      project: { storage: deleted },
+      locations: absent,
+    });
+    const aws = wrapper.find('[data-testid="aws-location"]');
+    expect(aws.find("code").exists()).toBe(false);
+    expect(aws.text()).not.toContain("s3://archive/group/project");
+    const details = aws.find('[data-testid="retention-details"]');
+    expect(details.element.tagName).toBe("DETAILS");
+    expect(details.attributes("open")).toBeUndefined();
+    expect(details.find("summary").text()).toBe("HPC copy removed");
+    expect(details.text()).toContain("The HPC copy is recorded as removed.");
+    expect(details.text()).toContain("Contact George Deeks");
   });
 
   it("hides the preservation form and any recorded keep date", () => {
