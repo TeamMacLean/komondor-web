@@ -30,37 +30,18 @@
           <div v-else>Type in the search bar to see results</div>
         </template>
         <template slot-scope="props">
-          <div v-if="props.option.type == 'project'" class="truncate">
+          <div
+            class="truncate search-result"
+            :title="`Open ${props.option.type}: ${props.option.name}`"
+          >
             <b-icon
-              icon="folder-text-outline"
+              :icon="typeIcon(props.option.type)"
               size="is-small"
               class="has-text-grey"
             ></b-icon>
-            <span class="truncate">{{ props.option.name }}</span>
-            <b-icon
-              v-if="isStorageReadOnly(props.option)"
-              icon="cloud-outline"
-              size="is-small"
-              class="has-text-info ml-1"
-            />
-          </div>
-          <div v-if="props.option.type == 'sample'" class="truncate">
-            <b-icon
-              icon="flask-outline"
-              size="is-small"
-              class="has-text-grey"
-            ></b-icon>
-            <span class="truncate">{{ props.option.name }}</span>
-            <b-icon
-              v-if="isStorageReadOnly(props.option)"
-              icon="cloud-outline"
-              size="is-small"
-              class="has-text-info ml-1"
-            />
-          </div>
-          <div v-if="props.option.type == 'run'" class="truncate">
-            <b-icon icon="dna" size="is-small" class="has-text-grey"></b-icon>
-            <span class="truncate">{{ props.option.name }}</span>
+            <span class="search-result-name has-text-link">{{
+              props.option.name
+            }}</span>
             <b-icon
               v-if="isStorageReadOnly(props.option)"
               icon="cloud-outline"
@@ -78,6 +59,12 @@
 import debounce from "lodash/debounce";
 import { getApiErrorMessage } from "~/utils/apiError";
 import { describeStorage, storageForEntity } from "~/utils/storageState";
+
+const TYPE_ICONS = {
+  project: "folder-text-outline",
+  sample: "flask-outline",
+  run: "dna",
+};
 
 export default {
   data() {
@@ -106,16 +93,23 @@ export default {
     isStorageReadOnly(item) {
       return describeStorage(storageForEntity(item)).readOnly;
     },
-    onSelect: function (item) {
+    typeIcon(type) {
+      return TYPE_ICONS[type] || "file-outline";
+    },
+    onSelect(item, event) {
+      // Buefy also emits select(null) when the selection is cleared.
+      if (!item || !item._id) return;
+      // Named route, not `path: item.type`: a relative path resolves against
+      // the current URL, so from e.g. /projects/new it went to the wrong page.
+      const location = { name: item.type, query: { id: item._id } };
       this.query = "";
       this.results = [];
       this.selected = null;
-      this.isFetching = true;
-      this.$router.push({
-        path: item.type,
-        query: { id: item._id },
-      });
-      this.isFetching = false;
+      if (event && (event.metaKey || event.ctrlKey)) {
+        window.open(this.$router.resolve(location).href, "_blank");
+        return;
+      }
+      this.$router.push(location);
     },
     // TODO can't get this to work
     // @keyup.enter="searchEntireSite"
@@ -191,5 +185,15 @@ export default {
 .custom-width-child {
   width: 100%;
   max-width: 499px;
+}
+
+/* Results are Buefy dropdown items (an <a> without href), so they don't look
+   clickable by default. Make them read as links. */
+.search-result {
+  cursor: pointer;
+}
+
+.search-result:hover .search-result-name {
+  text-decoration: underline;
 }
 </style>

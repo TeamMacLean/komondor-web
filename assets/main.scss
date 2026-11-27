@@ -130,6 +130,12 @@ $mdi-font-path: "~@mdi/font/fonts";
 //  border-bottom-left-radius: 0;
 //}
 
+// The custom $colors map above leaves out "link", so Bulma never generates
+// .has-text-link. Provide it so text can be coloured like a link.
+.has-text-link {
+  color: $link !important;
+}
+
 .truncate {
   width: 100%;
   white-space: nowrap;

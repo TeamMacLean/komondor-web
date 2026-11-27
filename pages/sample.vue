@@ -240,6 +240,7 @@ import {
 } from "~/utils/storageState";
 
 export default {
+  key: (route) => route.fullPath,
   components: {
     RunList,
     AdditionalFileList,
@@ -402,6 +403,12 @@ export default {
       return false;
     },
   },
+  // These pages are addressed by ?id=, so moving from one record to another
+  // (e.g. picking a different project in the nav search while on a project
+  // page) is a query-only change. Without these, Nuxt keeps the old instance
+  // and skips asyncData, so the URL changes but the page still shows the
+  // previous record. Re-run asyncData and remount for a fresh state.
+  watchQuery: ["id"],
   methods: {
     copyLocation(value) {
       return this.$copyText(value).then(

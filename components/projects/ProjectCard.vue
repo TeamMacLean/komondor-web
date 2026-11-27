@@ -1,42 +1,29 @@
 <template>
   <div class="card">
     <div class="card-content">
-      <div>
-        <b-tooltip
-          v-if="project.name.length > 40"
-          position="is-bottom"
-          :label="multilinedLabel"
-          multilined
-          size="is-large"
-        >
-          <p class="truncate">
-            <b-icon
-              icon="folder-text-outline"
-              size="is-small"
-              class="has-text-grey"
-            ></b-icon>
-            <nuxt-link
-              :to="{ name: 'project', query: { id: project._id } }"
-              class="title is-5"
-            >
-              <span class="truncate">{{ truncatedProjectName }}</span>
-            </nuxt-link>
-          </p>
-        </b-tooltip>
-        <p v-else class="truncate">
+      <b-tooltip
+        :active="isLongName"
+        position="is-bottom"
+        :label="multilinedLabel"
+        multilined
+        size="is-large"
+        class="card-title-tooltip"
+      >
+        <p class="card-title">
           <b-icon
             icon="folder-text-outline"
             size="is-small"
-            class="has-text-grey"
+            class="has-text-grey card-title-icon"
           ></b-icon>
           <nuxt-link
             :to="{ name: 'project', query: { id: project._id } }"
-            class="title is-5"
+            class="title card-title-link"
+            :class="isLongName ? 'is-6' : 'is-5'"
           >
-            <span class="truncate">{{ project.name }}</span>
+            <MiddleTruncate :text="displayName" />
           </nuxt-link>
         </p>
-      </div>
+      </b-tooltip>
       <p>
         <b-icon
           icon="account-outline"
@@ -65,16 +52,19 @@
 
 <script>
 import StorageBadge from "~/components/storage/StorageBadge.vue";
+import MiddleTruncate from "~/components/MiddleTruncate.vue";
 
 export default {
-  components: { StorageBadge },
+  components: { StorageBadge, MiddleTruncate },
   props: ["project"],
   computed: {
-    truncatedProjectName() {
-      const totalLength = this.project.name.length;
-      const beginning = this.project.name.substring(0, 24);
-      const end = this.project.name.substring(totalLength - 24, totalLength);
-      return `${beginning}...${end}`;
+    displayName() {
+      return this.project.name;
+    },
+    // Long names get a smaller font (and a tooltip with the full name);
+    // MiddleTruncate handles whatever still doesn't fit.
+    isLongName() {
+      return (this.project.name || "").length > 40;
     },
     multilinedLabel() {
       const { name } = this.project;
@@ -101,3 +91,35 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+/* b-tooltip is inline-flex and sizes to its content, which let a long title
+   push past the card edge. Pin it (and everything inside) to the card width
+   so MiddleTruncate has a width to shrink into. */
+.card-title-tooltip {
+  display: flex;
+  max-width: 100%;
+}
+
+.card-title-tooltip ::v-deep .tooltip-trigger {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.card-title {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.card-title-icon {
+  flex-shrink: 0;
+  margin-right: 0.25rem;
+}
+
+.card-title-link {
+  display: flex;
+  min-width: 0;
+  margin-bottom: 0;
+}
+</style>

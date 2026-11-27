@@ -229,6 +229,7 @@ import {
 } from "~/utils/storageState";
 
 export default {
+  key: (route) => route.fullPath,
   components: {
     AdditionalFileList,
     ReadList,
@@ -444,6 +445,12 @@ export default {
       return isEnaAdmin(this?.$auth?.$state?.user?.username);
     },
   },
+  // These pages are addressed by ?id=, so moving from one record to another
+  // (e.g. picking a different project in the nav search while on a project
+  // page) is a query-only change. Without these, Nuxt keeps the old instance
+  // and skips asyncData, so the URL changes but the page still shows the
+  // previous record. Re-run asyncData and remount for a fresh state.
+  watchQuery: ["id"],
   async created() {
     // Ensure library types are loaded for extension checking
     await this.$store.dispatch("refreshOptions");
