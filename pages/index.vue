@@ -12,7 +12,7 @@
               <h1 class="title is-1 has-text-centered">TSL Sequence Store</h1>
             </div>
             <br />
-            <SigninCard hide-header="true" />
+            <SigninCard hide-header />
           </div>
         </div>
       </section>

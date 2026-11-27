@@ -56,7 +56,9 @@ import MiddleTruncate from "~/components/MiddleTruncate.vue";
 
 export default {
   components: { StorageBadge, MiddleTruncate },
-  props: ["project"],
+  props: {
+    project: { type: Object, required: true },
+  },
   computed: {
     displayName() {
       return this.project.name;

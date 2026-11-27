@@ -196,7 +196,12 @@ export default {
   components: {
     ModalForm,
   },
-  props: ["typeId", "type", "initialAccessions", "initialReleaseDate"],
+  props: {
+    typeId: { type: String, required: true },
+    type: { type: String, required: true },
+    initialAccessions: { type: Array, default: undefined },
+    initialReleaseDate: { type: [String, Date], default: undefined },
+  },
   data() {
     return {
       isComponentModalActive: false,

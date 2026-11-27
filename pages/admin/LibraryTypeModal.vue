@@ -62,7 +62,9 @@
 import { getApiErrorMessage, isBodyError } from "~/utils/apiError";
 
 export default {
-  props: ["existingNames"],
+  props: {
+    existingNames: { type: Array, default: () => [] },
+  },
   data() {
     return {
       name: "",

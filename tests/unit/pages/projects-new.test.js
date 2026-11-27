@@ -50,6 +50,11 @@ describe("NewProject.vue", () => {
         "b-field": {
           template: "<div class='b-field'><slot /></div>",
         },
+        "b-button": {
+          template:
+            '<button :disabled="disabled" :type="nativeType" @click="$emit(\'click\')"><slot /></button>',
+          props: ["loading", "disabled", "type", "nativeType"],
+        },
         "b-input": {
           template: "<input />",
           props: [

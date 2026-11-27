@@ -168,6 +168,9 @@ describe("NewRun.vue", () => {
             '<select @change="$emit(\'input\', $event.target.value)" :value="value"><slot /></select>',
           props: ["value", "expanded", "required"],
         },
+        "b-message": {
+          template: "<div class='b-message'><slot /></div>",
+        },
         "b-button": {
           template:
             '<button @click="$emit(\'click\')" :disabled="disabled" :type="nativeType"><slot /></button>',

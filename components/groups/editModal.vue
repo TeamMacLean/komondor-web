@@ -110,7 +110,9 @@
 import { getApiErrorMessage } from "~/utils/apiError";
 
 export default {
-  props: ["groupToEdit"],
+  props: {
+    groupToEdit: { type: Object, default: null },
+  },
   data() {
     return {
       newGroupsName: "",

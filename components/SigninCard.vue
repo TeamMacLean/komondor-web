@@ -60,7 +60,9 @@
 import { getApiErrorMessage } from "~/utils/apiError";
 
 export default {
-  props: ["hideHeader"],
+  props: {
+    hideHeader: { type: Boolean, default: false },
+  },
   data() {
     return {
       submitting: false,
