@@ -16,9 +16,11 @@
         <thead>
           <tr>
             <th>File Name</th>
-            <th>MD5 Status</th>
+            <th>{{ archiveStatus ? "Storage" : "MD5 Status" }}</th>
             <th class="monospace-column">Original MD5</th>
-            <th class="monospace-column">Destination MD5</th>
+            <th v-if="!archiveStatus" class="monospace-column">
+              Destination MD5
+            </th>
             <th>Paired</th>
             <th>Index</th>
             <th class="has-text-right">Actions</th>
@@ -38,7 +40,33 @@
                 auxiliary
               </b-tag>
             </td>
-            <td class="status-cell">
+            <td v-if="archiveStatus" class="status-cell">
+              <b-tooltip
+                :label="archiveTooltip(read)"
+                position="is-top"
+                multilined
+              >
+                <b-icon
+                  :icon="archiveStatus.icon"
+                  :type="archiveStatus.type"
+                  size="is-small"
+                ></b-icon>
+                <span :class="archiveTextClass">
+                  {{ archiveStatus.text }}
+                </span>
+              </b-tooltip>
+              <!-- A recorded mismatch is a warning about the archived bytes
+                   themselves, so it must stay visible, not sit in a tooltip. -->
+              <p v-if="read.md5Mismatch === true" class="has-text-danger mt-1">
+                <b-icon
+                  icon="alert-circle"
+                  type="is-danger"
+                  size="is-small"
+                ></b-icon>
+                <span>{{ md5Status(read).text }}</span>
+              </p>
+            </td>
+            <td v-else class="status-cell">
               <b-tooltip
                 :label="md5Status(read).tooltip"
                 position="is-top"
@@ -60,7 +88,7 @@
                 >Not provided</span
               >
             </td>
-            <td class="monospace-column">
+            <td v-if="!archiveStatus" class="monospace-column">
               <span
                 v-if="!isAllowedExtension(read.file.originalName)"
                 class="has-text-grey-light"
@@ -139,8 +167,14 @@
         </tbody>
       </table>
 
+      <p v-if="archiveStatus" class="mt-4 is-size-7 legend-box">
+        These files are held in AWS archive storage and cannot be read in place
+        the way files on the HPC can. Contact an administrator to have them
+        restored.
+      </p>
+
       <!-- Legend -->
-      <div class="mt-4 is-size-7 legend-box">
+      <div v-else class="mt-4 is-size-7 legend-box">
         <p class="has-text-weight-semibold mb-2">Status Legend:</p>
         <div class="columns is-multiline is-mobile">
           <div class="column is-narrow">
@@ -195,6 +229,7 @@
 
 <script>
 import { CHECKSUM_EXTENSIONS } from "~/utils/constants";
+import { archivedFileStatus } from "~/utils/projectStorage";
 
 export default {
   props: {
@@ -203,6 +238,12 @@ export default {
       default: () => [],
     },
     location: {
+      type: Object,
+      default: null,
+    },
+    // The project's storage summary. Once its AWS copy is authoritative the
+    // table reports that instead of the ingest-time MD5 check.
+    storage: {
       type: Object,
       default: null,
     },
@@ -224,6 +265,12 @@ export default {
     },
   },
   computed: {
+    archiveStatus() {
+      return this.archived ? archivedFileStatus(this.storage) : null;
+    },
+    archiveTextClass() {
+      return `has-text-${this.archiveStatus.type.replace(/^is-/, "")}`;
+    },
     copyButtonLabel() {
       return this.location?.authoritative === "s3"
         ? "Copy S3 location"
@@ -300,6 +347,13 @@ export default {
     // A naive split dropped the second word of a colour ("is-grey-dark").
     md5TextClass(read) {
       return `has-text-${this.md5Status(read).type.replace(/^is-/, "")}`;
+    },
+    // The ingest-time MD5 result is history once the file is in AWS, so it
+    // moves into the tooltip, after the storage facts.
+    archiveTooltip(read) {
+      return `${this.archiveStatus.tooltip}\n\nChecksum on arrival: ${
+        this.md5Status(read).text
+      }.`;
     },
     md5Status(read) {
       const fileName = read.file?.originalName || "";
@@ -392,7 +446,8 @@ export default {
       };
     },
     getFullFilePath(fileName) {
-      if (fileName && typeof fileName === "object") return fileName.locationUri || "";
+      if (fileName && typeof fileName === "object")
+        return fileName.locationUri || "";
       const baseUri = this.location?.rawUri;
       if (!baseUri || !fileName) return "";
       return `${baseUri.replace(/\/$/, "")}/${fileName}`;

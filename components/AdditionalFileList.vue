@@ -12,6 +12,16 @@
     </p>
   </div>
   <div v-else>
+    <p v-if="archiveStatus" class="is-size-7 mb-2">
+      <b-tooltip :label="archiveStatus.tooltip" position="is-right" multilined>
+        <b-icon
+          :icon="archiveStatus.icon"
+          :type="archiveStatus.type"
+          size="is-small"
+        ></b-icon>
+        <span :class="archiveTextClass">{{ archiveStatus.text }}</span>
+      </b-tooltip>
+    </p>
     <div>
       <ul>
         <li v-for="file in files" :key="file._id || file.fileName">
@@ -75,11 +85,18 @@
 </template>
 
 <script>
+import { archivedFileStatus } from "~/utils/projectStorage";
+
 export default {
   props: {
     files: {
       type: Array,
       default: () => [],
+    },
+    // The project's storage summary; see archivedFileStatus.
+    storage: {
+      type: Object,
+      default: null,
     },
     location: {
       type: Object,
@@ -101,6 +118,12 @@ export default {
     },
   },
   computed: {
+    archiveStatus() {
+      return this.archived ? archivedFileStatus(this.storage) : null;
+    },
+    archiveTextClass() {
+      return `has-text-${this.archiveStatus.type.replace(/^is-/, "")}`;
+    },
     copyButtonLabel() {
       return this.location?.authoritative === "s3"
         ? "Copy S3 location"
@@ -130,7 +153,8 @@ export default {
   },
   methods: {
     getFullFilePath: function (fileName) {
-      if (fileName && typeof fileName === "object") return fileName.locationUri || "";
+      if (fileName && typeof fileName === "object")
+        return fileName.locationUri || "";
       const baseUri = this.location?.additionalUri;
       if (!baseUri || !fileName) return "";
       return `${baseUri.replace(/\/$/, "")}/${fileName}`;

@@ -185,6 +185,7 @@
         <b-field label="Additional Files">
           <AdditionalFileList
             :files="additionalFiles"
+            :storage="projectStorage"
             :location="fileLocation"
             :archived="isArchived"
             :read-only="storageDescription.readOnly"
@@ -197,6 +198,7 @@
         <b-field label="Raw Files">
           <ReadList
             :reads="run.rawFiles"
+            :storage="projectStorage"
             :location="fileLocation"
             :allowed-extensions="libraryTypeExtensions"
             :run-status="run.status"

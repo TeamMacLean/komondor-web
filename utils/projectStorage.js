@@ -93,3 +93,48 @@ export const projectStorageLocations = (project, observed, location) => {
   }
   return { hpc, aws };
 };
+
+/**
+ * What a file row can honestly say once the project's AWS copy is the
+ * authoritative one, or null while the files still live on the HPC.
+ *
+ * Verification is recorded once for the whole project, not per file, so the
+ * wording names the project's transfer and never claims a per-file check.
+ */
+export const archivedFileStatus = (summary) => {
+  const { state } = describeStorage(summary);
+  if (!["aws_pending_hpc_deletion", "aws"].includes(state)) return null;
+
+  const verifiedAt = validIsoDate(summary?.s3VerifiedAt);
+  const hpcAbsentAt =
+    state === "aws" ? validIsoDate(summary?.hpcVerifiedAbsentAt) : null;
+  const hpcLine =
+    state !== "aws"
+      ? "The HPC copy has not yet been removed."
+      : hpcAbsentAt
+      ? `The HPC copy was confirmed removed on ${formatStorageDay(
+          hpcAbsentAt
+        )}.`
+      : "The HPC copy has been removed.";
+
+  if (!verifiedAt) {
+    return {
+      verified: false,
+      icon: "cloud-outline",
+      type: "is-grey-dark",
+      text: "In AWS · verification date not recorded",
+      tooltip: `No transfer verification date is recorded for this project. ${hpcLine}`,
+    };
+  }
+  return {
+    verified: true,
+    icon: "cloud-check",
+    type: "is-success",
+    text: `In AWS · verified ${formatStorageDay(verifiedAt)}`,
+    tooltip:
+      `Verified as part of this project's transfer to AWS on ${formatStorageDate(
+        verifiedAt
+      )} UTC. This is the recorded verification for the whole project; ` +
+      `this page does not run a fresh check. ${hpcLine}`,
+  };
+};

@@ -181,6 +181,7 @@
         >
           <AdditionalFileList
             :files="additionalFiles"
+            :storage="projectStorage"
             :location="fileLocation"
             :archived="isArchived"
             :read-only="storageDescription.readOnly"
