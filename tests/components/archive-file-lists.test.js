@@ -26,7 +26,10 @@ describe("file lists after storage is locked", () => {
           reads: [
             {
               _id: "read",
-              file: { originalName: "reads.fq.gz", locationUri: `${rawUri}/reads.fq.gz` },
+              file: {
+                originalName: "reads.fq.gz",
+                locationUri: `${rawUri}/reads.fq.gz`,
+              },
               MD5: "a".repeat(32),
             },
           ],
@@ -59,5 +62,38 @@ describe("file lists after storage is locked", () => {
       expect(wrapper.text()).not.toMatch(/HPC|processing|contact admin/i);
       wrapper.destroy();
     }
+  });
+});
+
+describe("additional files once the HPC copy is deleted", () => {
+  const files = [{ fileName: "notes.txt", verified: true }];
+  const location = {
+    authoritative: "s3",
+    additionalUri: "s3://archive/group/project/additional",
+  };
+
+  it("offers no per-file copy button", () => {
+    const wrapper = mount(AdditionalFileList, {
+      propsData: {
+        files,
+        location,
+        archived: true,
+        readOnly: true,
+        hideCopy: true,
+      },
+      stubs,
+    });
+    expect(wrapper.text()).toContain("notes.txt");
+    expect(wrapper.find("button").exists()).toBe(false);
+    wrapper.destroy();
+  });
+
+  it("still offers it while the HPC copy exists", () => {
+    const wrapper = mount(AdditionalFileList, {
+      propsData: { files, location, archived: true, readOnly: true },
+      stubs,
+    });
+    expect(wrapper.find("button").text()).toBe("Copy S3 location");
+    wrapper.destroy();
   });
 });

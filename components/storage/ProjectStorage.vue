@@ -19,7 +19,7 @@
         <p v-if="hpcReason" class="is-size-7">
           {{ hpcReason }}
         </p>
-        <code v-if="locations.hpc.uri" class="storage-path">{{
+        <code v-if="showHpcPath" class="storage-path">{{
           locations.hpc.uri
         }}</code>
       </div>
@@ -84,7 +84,7 @@
         </div>
 
         <details
-          v-if="validUntil && !preservationInvalid"
+          v-if="showPreservationNotice && validUntil && !preservationInvalid"
           class="keep-request mt-2"
           data-testid="keep-request"
         >
@@ -108,7 +108,7 @@
           </div>
         </details>
         <div
-          v-else-if="savedUntil || preservationInvalid"
+          v-else-if="showPreservationNotice"
           class="notification is-info is-light mt-3 mb-3"
           role="status"
         >
@@ -121,7 +121,13 @@
         <p class="is-size-7 mt-2">
           Contact <a v-if="contactHref" :href="contactHref">George Deeks</a
           ><span v-else>George Deeks</span>
-          if you need this project kept on the HPC for longer.
+          <template v-if="hpcCopyDeleted">
+            if you need this project restored to the HPC for a set amount of
+            time - this will take days and incur a cost for your group.
+          </template>
+          <template v-else>
+            if you need this project kept on the HPC for longer.
+          </template>
         </p>
       </div>
     </div>
@@ -160,7 +166,7 @@
     </b-modal>
 
     <section
-      v-if="isAdmin || $scopedSlots['admin-tools']"
+      v-if="showPreservationForm || $scopedSlots['admin-tools']"
       class="admin-tools"
       data-testid="admin-tools"
       aria-label="Admin-only tools"
@@ -172,7 +178,7 @@
         >
       </p>
       <details
-        v-if="isAdmin"
+        v-if="showPreservationForm"
         class="admin-tool"
         data-testid="preservation-panel"
       >
@@ -292,7 +298,7 @@
 </template>
 
 <script>
-import { describeStorage } from "~/utils/storageState";
+import { describeStorage, isHpcCopyDeleted } from "~/utils/storageState";
 import { getApiErrorMessage, getApiErrorStatus } from "~/utils/apiError";
 import {
   formatStorageDate,
@@ -347,6 +353,27 @@ export default {
     },
     isArchived() {
       return ["aws_pending_hpc_deletion", "aws"].includes(this.storageState);
+    },
+    hpcCopyDeleted() {
+      return isHpcCopyDeleted(this.project.storage);
+    },
+    // A path nobody can read is noise, and inviting someone to try it is worse.
+    showHpcPath() {
+      return (
+        Boolean(this.locations.hpc.uri) &&
+        !this.hpcCopyDeleted &&
+        this.locations.hpc.status !== "absent"
+      );
+    },
+    // Keeping or releasing an HPC copy is only a decision while one exists.
+    showPreservationForm() {
+      return this.isAdmin && !this.hpcCopyDeleted;
+    },
+    showPreservationNotice() {
+      return (
+        (Boolean(this.savedUntil) || this.preservationInvalid) &&
+        !this.hpcCopyDeleted
+      );
     },
     deletionEligibleAt() {
       return this.preservationInvalid

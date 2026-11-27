@@ -41,6 +41,7 @@
             <div class="fileNamePadding">{{ file.fileName }}</div>
 
             <b-button
+              v-if="!hideCopy"
               :disabled="!getFullFilePath(file.fileName)"
               type="button"
               @click="copyPath(file.fileName)"
@@ -89,6 +90,12 @@ export default {
       default: false,
     },
     readOnly: {
+      type: Boolean,
+      default: false,
+    },
+    // Once the HPC copy is gone there is no per-file path worth copying; the
+    // project's own S3 location covers what is left.
+    hideCopy: {
       type: Boolean,
       default: false,
     },

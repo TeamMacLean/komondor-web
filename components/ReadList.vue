@@ -49,7 +49,7 @@
                   :type="md5Status(read).type"
                   size="is-small"
                 ></b-icon>
-                <span :class="`has-text-${md5Status(read).type.split('-')[1]}`">
+                <span :class="md5TextClass(read)">
                   {{ md5Status(read).text }}
                 </span>
               </b-tooltip>
@@ -69,7 +69,7 @@
               <span v-else-if="!read.MD5" class="has-text-grey-light">—</span>
               <span
                 v-else-if="readOnly && !read.destinationMd5"
-                class="has-text-grey is-italic"
+                class="has-text-grey-dark"
               >
                 Not checked before {{ archived ? "archive" : "move" }}
               </span>
@@ -174,7 +174,7 @@
           <div class="column is-narrow">
             <b-icon
               icon="minus-circle-outline"
-              type="is-light"
+              type="is-grey-dark"
               size="is-small"
             ></b-icon>
             <span class="ml-1">No MD5</span>
@@ -182,7 +182,7 @@
           <div class="column is-narrow">
             <b-icon
               icon="file-cancel-outline"
-              type="is-light"
+              type="is-grey-dark"
               size="is-small"
             ></b-icon>
             <span class="ml-1">N/A</span>
@@ -297,6 +297,10 @@ export default {
         typeof read.sibling === "object" ? read.sibling._id : read.sibling;
       return this.readIdToFileName[siblingId] || null;
     },
+    // A naive split dropped the second word of a colour ("is-grey-dark").
+    md5TextClass(read) {
+      return `has-text-${this.md5Status(read).type.replace(/^is-/, "")}`;
+    },
     md5Status(read) {
       const fileName = read.file?.originalName || "";
 
@@ -304,7 +308,7 @@ export default {
       if (!this.isAllowedExtension(fileName)) {
         return {
           icon: "file-cancel-outline",
-          type: "is-light",
+          type: "is-grey-dark",
           text: "N/A",
           tooltip:
             "Auxiliary file type - MD5 validation not required for this file extension.",
@@ -315,7 +319,7 @@ export default {
       if (!read.MD5) {
         return {
           icon: "minus-circle-outline",
-          type: "is-light",
+          type: "is-grey-dark",
           text: "No MD5",
           tooltip:
             "No MD5 checksum was provided when this file was uploaded. Cannot verify integrity.",
@@ -327,7 +331,7 @@ export default {
         if (this.readOnly) {
           return {
             icon: "minus-circle-outline",
-            type: "is-light",
+            type: "is-grey-dark",
             text: `Not checked before ${this.archived ? "archive" : "move"}`,
             tooltip:
               "Checksum verification was not completed before this project became storage read-only.",
@@ -347,7 +351,7 @@ export default {
         if (this.readOnly) {
           return {
             icon: "minus-circle-outline",
-            type: "is-light",
+            type: "is-grey-dark",
             text: `Not checked before ${this.archived ? "archive" : "move"}`,
             tooltip:
               "Checksum verification was not completed before this project became storage read-only.",

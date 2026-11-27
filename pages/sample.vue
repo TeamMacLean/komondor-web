@@ -17,12 +17,22 @@
               class="ml-3"
             />
           </div>
-          <AddAccessionModal
-            v-if="!!showAddAcession"
-            type="sample"
-            :type-id="sample._id"
-            :initial-accessions="sample.accessions"
-          />
+          <div v-if="showAddAcession">
+            <StorageDisabledAction
+              v-if="isArchived"
+              :storage="projectStorage"
+              description-id="edit-accessions-reason"
+              type="is-primary"
+              :reason-override="accessionsDisabledReason"
+              >Edit sample accessions</StorageDisabledAction
+            >
+            <AddAccessionModal
+              v-else
+              type="sample"
+              :type-id="sample._id"
+              :initial-accessions="sample.accessions"
+            />
+          </div>
         </div>
 
         <StorageReadOnlyNotice
@@ -174,6 +184,7 @@
             :location="fileLocation"
             :archived="isArchived"
             :read-only="storageDescription.readOnly"
+            :hide-copy="hpcCopyDeleted"
           />
         </b-field>
         <b-field :label="locationLabel">
@@ -221,7 +232,11 @@ import StorageReadOnlyNotice from "~/components/storage/StorageReadOnlyNotice.vu
 import Papa from "papaparse"; // Import papaparse
 import { isEnaAdmin } from "~/utils/adminUsers";
 import { getApiErrorMessage, getApiErrorStatus } from "~/utils/apiError";
-import { describeStorage } from "~/utils/storageState";
+import {
+  accessionsLockedMessage,
+  describeStorage,
+  isHpcCopyDeleted,
+} from "~/utils/storageState";
 
 export default {
   components: {
@@ -303,6 +318,12 @@ export default {
     },
     isArchived() {
       return this.storageDescription.authoritative === "s3";
+    },
+    hpcCopyDeleted() {
+      return isHpcCopyDeleted(this.projectStorage);
+    },
+    accessionsDisabledReason() {
+      return accessionsLockedMessage("sample");
     },
     locationLabel() {
       return this.fileLocation?.authoritative === "s3"

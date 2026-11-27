@@ -151,3 +151,21 @@ export const storageReadOnlyMessage = (summary) => {
 
 export const storageForEntity = (entity, fallback = null) =>
   (entity && (entity.storage || entity.projectStorage)) || fallback;
+
+/** True once the AWS copy is the authoritative one, deletion pending or done. */
+export const isArchivedInAws = (summary) =>
+  ["aws_pending_hpc_deletion", "aws"].includes(describeStorage(summary).state);
+
+/** True once the HPC copy has been removed, so HPC-only controls are moot. */
+export const isHpcCopyDeleted = (summary) =>
+  describeStorage(summary).state === "aws";
+
+/**
+ * Why accession editing is closed. Accessions describe data this site no
+ * longer holds on HPC, so they are frozen with the rest of the record once
+ * AWS is authoritative.
+ */
+export const accessionsLockedMessage = (type = "project") =>
+  type === "project"
+    ? "This project is archived in AWS. Its accessions and release date can no longer be edited."
+    : `This project is archived in AWS. The ${type}'s accessions can no longer be edited.`;

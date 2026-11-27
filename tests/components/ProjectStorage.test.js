@@ -708,3 +708,101 @@ describe("HPC retention follow-up", () => {
     expect(wrapper.text()).toContain("needs administrator attention");
   });
 });
+
+describe("after the HPC copy is deleted", () => {
+  const deleted = {
+    state: "aws",
+    acceptsHpcWrites: false,
+    authoritativeLocation: "s3",
+    s3Uri: "s3://archive/group/project",
+    s3VerifiedAt: "2026-10-23T08:30:00.000Z",
+    hpcVerifiedAbsentAt: "2026-11-25T02:14:00.000Z",
+  };
+  const absent = {
+    hpc: {
+      status: "absent",
+      uri: "/tsl/data/reads/group/project",
+      checkedAt: "2026-11-25T02:14:00.000Z",
+      reason: "absence_recorded",
+    },
+    aws: {
+      status: "verified",
+      uri: "s3://archive/group/project",
+      verifiedAt: "2026-10-23T08:30:00.000Z",
+    },
+    hpcDeletionEligibleAt: null,
+  };
+
+  it("drops the dead HPC path and offers restoration instead of a keep date", () => {
+    const wrapper = mountPanel({
+      isAdmin: true,
+      project: { storage: deleted },
+      locations: absent,
+    });
+    expect(wrapper.text()).toContain("HPC removal confirmed");
+    expect(wrapper.text()).not.toContain("/tsl/data/reads/group/project");
+    expect(wrapper.text()).toContain(
+      "restored to the HPC for a set amount of time"
+    );
+    expect(wrapper.text()).toContain("incur a cost for your group");
+    expect(wrapper.text()).not.toContain("kept on the HPC for longer");
+  });
+
+  it("hides the preservation form and any recorded keep date", () => {
+    const wrapper = mountPanel({
+      isAdmin: true,
+      project: { storage: deleted, preserveOnHpcUntil: future },
+      locations: absent,
+    });
+    expect(wrapper.find('[data-testid="preservation-form"]').exists()).toBe(
+      false
+    );
+    expect(wrapper.find('[data-testid="keep-request"]').exists()).toBe(false);
+    // With no keep-date form and nothing slotted, the admin section goes too.
+    expect(wrapper.find('[data-testid="admin-tools"]').exists()).toBe(false);
+    expect(wrapper.text()).not.toContain("Approved to stay on the HPC");
+  });
+
+  it("still shows slotted admin tools once the keep-date form is gone", () => {
+    const wrapper = mountPanel({
+      isAdmin: true,
+      project: { storage: deleted },
+      locations: absent,
+      scopedSlots: { "admin-tools": "<p>Other tool</p>" },
+    });
+    const section = wrapper.find('[data-testid="admin-tools"]');
+    expect(section.text()).toContain("Other tool");
+    expect(section.find('[data-testid="preservation-form"]').exists()).toBe(
+      false
+    );
+  });
+
+  it("keeps both for a project whose HPC copy still exists", () => {
+    const wrapper = mountPanel({
+      isAdmin: true,
+      project: {
+        storage: {
+          ...deleted,
+          state: "aws_pending_hpc_deletion",
+          hpcVerifiedAbsentAt: null,
+        },
+        preserveOnHpcUntil: future,
+      },
+      locations: {
+        ...absent,
+        hpc: {
+          status: "unknown",
+          uri: "/tsl/data/reads/group/project",
+          checkedAt: "2026-11-27T11:04:00.000Z",
+          reason: "path_not_found",
+        },
+      },
+    });
+    expect(wrapper.find('[data-testid="preservation-form"]').exists()).toBe(
+      true
+    );
+    expect(wrapper.find('[data-testid="keep-request"]').exists()).toBe(true);
+    expect(wrapper.text()).toContain("/tsl/data/reads/group/project");
+    expect(wrapper.text()).toContain("kept on the HPC for longer");
+  });
+});

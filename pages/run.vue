@@ -24,12 +24,22 @@
               class="ml-3"
             />
           </div>
-          <AddAccessionModal
-            v-if="showAddAcession"
-            type="run"
-            :type-id="run._id"
-            :initial-accessions="run.accessions"
-          />
+          <div v-if="showAddAcession">
+            <StorageDisabledAction
+              v-if="isArchived"
+              :storage="projectStorage"
+              description-id="edit-accessions-reason"
+              type="is-primary"
+              :reason-override="accessionsDisabledReason"
+              >Edit run accessions</StorageDisabledAction
+            >
+            <AddAccessionModal
+              v-else
+              type="run"
+              :type-id="run._id"
+              :initial-accessions="run.accessions"
+            />
+          </div>
         </div>
 
         <StorageReadOnlyNotice
@@ -178,6 +188,7 @@
             :location="fileLocation"
             :archived="isArchived"
             :read-only="storageDescription.readOnly"
+            :hide-copy="hpcCopyDeleted"
           />
         </b-field>
 
@@ -209,7 +220,11 @@ import StorageRetentionExplanation from "~/components/storage/StorageRetentionEx
 import StorageReadOnlyNotice from "~/components/storage/StorageReadOnlyNotice.vue";
 import { isEnaAdmin } from "~/utils/adminUsers";
 import { getApiErrorMessage, getApiErrorStatus } from "~/utils/apiError";
-import { describeStorage } from "~/utils/storageState";
+import {
+  accessionsLockedMessage,
+  describeStorage,
+  isHpcCopyDeleted,
+} from "~/utils/storageState";
 
 export default {
   components: {
@@ -289,6 +304,12 @@ export default {
     },
     isArchived() {
       return this.storageDescription.authoritative === "s3";
+    },
+    hpcCopyDeleted() {
+      return isHpcCopyDeleted(this.projectStorage);
+    },
+    accessionsDisabledReason() {
+      return accessionsLockedMessage("run");
     },
     locationLabel() {
       return this.fileLocation?.authoritative === "s3"

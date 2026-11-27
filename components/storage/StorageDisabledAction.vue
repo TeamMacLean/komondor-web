@@ -32,10 +32,12 @@ export default {
     descriptionId: { type: String, required: true },
     type: { type: String, default: "is-secondary" },
     iconLeft: { type: String, default: undefined },
+    // Actions blocked for a reason other than "no new files" say so themselves.
+    reasonOverride: { type: String, default: "" },
   },
   computed: {
     reason() {
-      return storageReadOnlyMessage(this.storage);
+      return this.reasonOverride || storageReadOnlyMessage(this.storage);
     },
   },
 };

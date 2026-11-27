@@ -11,13 +11,23 @@
               class="ml-3"
             />
           </div>
-          <AddAccessionModal
-            v-if="!!showAddAccession"
-            type="project"
-            :type-id="project._id"
-            :initial-accessions="project.accessions"
-            :initial-release-date="project.releaseDate"
-          />
+          <div v-if="showAddAccession">
+            <StorageDisabledAction
+              v-if="isArchived"
+              :storage="project.storage"
+              description-id="edit-accessions-reason"
+              type="is-primary"
+              :reason-override="accessionsDisabledReason"
+              >Edit project accessions</StorageDisabledAction
+            >
+            <AddAccessionModal
+              v-else
+              type="project"
+              :type-id="project._id"
+              :initial-accessions="project.accessions"
+              :initial-release-date="project.releaseDate"
+            />
+          </div>
         </div>
 
         <StorageReadOnlyNotice
@@ -137,6 +147,7 @@
             :location="fileLocation"
             :archived="isArchived"
             :read-only="storageDescription.readOnly"
+            :hide-copy="hpcCopyDeleted"
           />
         </b-field>
 
@@ -182,10 +193,15 @@ import AdditionalFileList from "../components/AdditionalFileList.vue";
 import AddAccessionModal from "../components/AddAccessionModal.vue";
 import StorageBadge from "~/components/storage/StorageBadge.vue";
 import StorageReadOnlyNotice from "~/components/storage/StorageReadOnlyNotice.vue";
+import StorageDisabledAction from "~/components/storage/StorageDisabledAction.vue";
 import ProjectStorage from "~/components/storage/ProjectStorage.vue";
 import { isEnaAdmin } from "~/utils/adminUsers";
 import { getApiErrorMessage, getApiErrorStatus } from "~/utils/apiError";
-import { describeStorage } from "~/utils/storageState";
+import {
+  accessionsLockedMessage,
+  describeStorage,
+  isHpcCopyDeleted,
+} from "~/utils/storageState";
 
 export default {
   components: {
@@ -194,6 +210,7 @@ export default {
     AddAccessionModal,
     StorageBadge,
     StorageReadOnlyNotice,
+    StorageDisabledAction,
     ProjectStorage,
   },
   middleware: ["auth"],
@@ -263,6 +280,12 @@ export default {
     isArchived() {
       return this.storageDescription.authoritative === "s3";
     },
+    hpcCopyDeleted() {
+      return isHpcCopyDeleted(this.project?.storage);
+    },
+    accessionsDisabledReason() {
+      return accessionsLockedMessage("project");
+    },
     locationLabel() {
       return this.fileLocation?.authoritative === "s3"
         ? "S3 location"
@@ -290,6 +313,11 @@ export default {
     },
     showAdminEmailNudgeUpdateCheckbox() {
       if (!this.isSendingToEna) {
+        return false;
+      }
+      // Nudges chase an ENA release for live data; once the HPC copy is gone
+      // the reminder has no deadline left to protect.
+      if (this.hpcCopyDeleted) {
         return false;
       }
       // Unguarded before: an unset ENA_ADMINS threw a TypeError inside a

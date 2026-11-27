@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import ProjectPage from "~/pages/project.vue";
 import SamplePage from "~/pages/sample.vue";
 import RunPage from "~/pages/run.vue";
-import { describeStorage } from "~/utils/storageState";
+import { accessionsLockedMessage, describeStorage } from "~/utils/storageState";
 
 const archivedStorage = (state) => ({
   state,
@@ -128,4 +128,75 @@ describe("archived detail pages", () => {
       expect(startPolling).not.toHaveBeenCalled();
     }
   );
+});
+
+describe("project controls once the AWS copy is authoritative", () => {
+  const deleted = {
+    ...archivedStorage("aws"),
+    hpcVerifiedAbsentAt: "2026-11-25T02:14:00.000Z",
+  };
+
+  it("treats a pending deletion as archived, so accessions can no longer be edited", () => {
+    for (const state of ["aws_pending_hpc_deletion", "aws"]) {
+      const storage = archivedStorage(state);
+      expect(
+        ProjectPage.computed.isArchived.call({
+          storageDescription: describeStorage(storage),
+        })
+      ).toBe(true);
+    }
+    expect(
+      ProjectPage.computed.isArchived.call({
+        storageDescription: describeStorage(null),
+      })
+    ).toBe(false);
+  });
+
+  it("marks the HPC copy deleted only once absence is recorded", () => {
+    expect(
+      ProjectPage.computed.hpcCopyDeleted.call({
+        project: { storage: deleted },
+      })
+    ).toBe(true);
+    expect(
+      ProjectPage.computed.hpcCopyDeleted.call({
+        project: { storage: archivedStorage("aws_pending_hpc_deletion") },
+      })
+    ).toBe(false);
+  });
+
+  it("stops offering nudge emails for a project with no HPC copy left", () => {
+    expect(
+      ProjectPage.computed.showAdminEmailNudgeUpdateCheckbox.call({
+        isSendingToEna: true,
+        hpcCopyDeleted: true,
+        $auth: { $state: { user: { username: "deeks" } } },
+      })
+    ).toBe(false);
+  });
+});
+
+describe("accession editing on archived sample and run pages", () => {
+  it.each([
+    ["sample", SamplePage],
+    ["run", RunPage],
+  ])("locks %s accessions once the AWS copy is authoritative", (kind, page) => {
+    for (const state of ["aws_pending_hpc_deletion", "aws"]) {
+      expect(
+        page.computed.isArchived.call({
+          storageDescription: describeStorage(archivedStorage(state)),
+        })
+      ).toBe(true);
+    }
+    expect(
+      page.computed.isArchived.call({
+        storageDescription: describeStorage(archivedStorage("migrating")),
+      })
+    ).toBe(false);
+    const reason = page.computed.accessionsDisabledReason.call({});
+    expect(reason).toBe(accessionsLockedMessage(kind));
+    expect(reason).toContain(
+      `The ${kind}'s accessions can no longer be edited`
+    );
+  });
 });
